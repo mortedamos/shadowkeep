@@ -2,6 +2,7 @@
 import { W, H, clamp, lerp, fmtTime, easeOut } from './util.js';
 import { drawText, textWidth, wrapText } from './font.js';
 import { Input } from './input.js';
+import { Touch } from './touch.js';
 import { Audio_ as A } from './audio.js';
 import { SHEET, IMG, drawSheet } from './assets.js';
 import { ICON } from './procart.js';
@@ -112,6 +113,8 @@ export class Dialog {
     if (this.choices && this.t >= this.full.length) {                                       // a question: LEFT / RIGHT (or UP / DOWN) choose, ENTER / SPACE answers, ESC says no
       this.done = true; const n = this.choices.length;
       if (Input.pressed.left || Input.pressed.up) { this.sel = (this.sel + n - 1) % n; A.sfx('click'); } if (Input.pressed.right || Input.pressed.down) { this.sel = (this.sel + 1) % n; A.sfx('click'); }
+      for (const t of Input.taps) { const i = Math.floor((t.x - 40) / 52); if (t.y > H - 60 && i >= 0 && i < n) { this.sel = i; this.choice = i; this.closed = true; } }          // (a tap on an answer)
+      if (this.closed) return;
       if (Input.pressed.confirm || Input.pressed.jump) { this.choice = this.sel; this.closed = true; } else if (Input.pressed.back) { this.choice = n - 1; this.closed = true; }
       return;
     }
@@ -143,18 +146,24 @@ function logo() {
 
 // ---------------------------------------------------------------------------------------------- menus
 class Menu {
-  constructor(items) { this.items = items; this.i = 0; }
+  constructor(items) { this.items = items; this.i = 0; this.hit = []; }
   update(g) {
+    for (const t of Input.taps) for (let k = 0; k < this.hit.length; k++) {                  // a finger on an item (the rows are measured when the menu is drawn)
+      const r = this.hit[k]; if (!r || t.x < r.x0 || t.x > r.x1 || t.y < r.y0 || t.y > r.y1) continue;
+      this.i = k; const it = this.items[k]; if (it.adjust) { it.adjust(t.x < (r.x0 + r.x1) / 2 ? -1 : 1); A.sfx('click'); } else if (it.action && !it.disabled) { A.sfx('select'); it.action(); } return;
+    }
     const n = this.items.length; if (Input.pressed.up) { this.i = (this.i + n - 1) % n; A.sfx('click'); } if (Input.pressed.down) { this.i = (this.i + 1) % n; A.sfx('click'); }
     const it = this.items[this.i];
     if (Input.pressed.left && it.adjust) { it.adjust(-1); A.sfx('click'); } if (Input.pressed.right && it.adjust) { it.adjust(1); A.sfx('click'); }
     if ((Input.pressed.confirm) && it.action && !it.disabled) { A.sfx('select'); it.action(); }
   }
   draw(ctx, x, y, gap = 14, align = 'center') {
+    this.hit = [];
     this.items.forEach((it, i) => {
       const sel = i === this.i, label = typeof it.label === 'function' ? it.label() : it.label, yy = y + i * gap, col = it.disabled ? '#4a4258' : sel ? GOLD : PALE;
       const sc = 1.25, w = textWidth(label, sc, { outline: true }), lx = align === 'center' ? x - w / 2 : align === 'right' ? x - w : x, o = { color: col, outline: '#000', scale: sc };
       drawText(ctx, label, lx, yy, o);
+      this.hit[i] = align === 'center' ? { x0: x - Math.max(w / 2 + 14, 56), x1: x + Math.max(w / 2 + 14, 56), y0: yy - 2, y1: yy + gap - 3 } : { x0: lx - 14, x1: lx + Math.max(w + 14, 150), y0: yy - 2, y1: yy + gap - 3 };
       if (it.bar) { const v = clamp(it.bar(), 0, 1), bx = lx + 84; for (let k = 0; k < 10; k++) { ctx.fillStyle = '#05030a'; ctx.fillRect(bx + k * 7 - 1, yy - 0.5, 7, 8); ctx.fillStyle = k < Math.round(v * 10) ? col : '#3a3048'; ctx.fillRect(bx + k * 7, yy + 0.5, 5, 6); } }
       if (it.val) drawText(ctx, it.val(), lx + 84, yy, o);
       if (sel) { drawText(ctx, '>', lx - 11, yy, o); if (!it.bar && !it.val) drawText(ctx, '<', lx + w + 5, yy, o); }
@@ -181,7 +190,9 @@ export class TitleScreen {
     this.g = g; this.t = 0; this.mode = 'main'; const has = g.hasSave();
     this.main = new Menu([
       { label: 'NEW GAME', action: () => g.newGame() }, { label: 'CONTINUE', disabled: !has, action: () => g.continueGame() },
-      { label: 'CHOOSE SEED', action: () => { this.mode = 'seed'; this.seed = ''; Input.typed.length = 0; } },
+      { label: 'CHOOSE SEED', action: () => {
+        if (Input.touchOn) { const v = window.prompt('Choose a seed: numbers only (0 = the classic castle, empty = a random castle)', ''); if (v !== null) { const d = v.replace(/\D/g, '').slice(0, 9); g.newGame(d === '' ? undefined : +d); } }          // (a phone has no keys to type the number with: its own keyboard asks)
+        else { this.mode = 'seed'; this.seed = ''; Input.typed.length = 0; } } },
       { label: 'CONTROLS', action: () => { this.mode = 'controls'; } }, { label: 'OPTIONS', action: () => { this.mode = 'options'; this.opts.i = 0; } }, { label: 'CREDITS', action: () => this.openCredits() },
     ]); if (has) this.main.i = 1;
     this.opts = optionsMenu(() => { this.mode = 'main'; });
@@ -198,13 +209,13 @@ export class TitleScreen {
     else if (this.mode === 'credits') {
       const c = this.cr;
       if (c.lines) { const view = H - 44 - 30, max = Math.max(0, c.lines.height - view); c.t++; if (Input.held.down) c.scroll += 2; else if (Input.held.up) c.scroll -= 2; else if (c.t > 100) c.scroll += 0.2; c.scroll = clamp(c.scroll, 0, max); }
-      if (Input.pressed.back || Input.pressed.confirm) { this.mode = 'main'; A.sfx('back'); }
+      if (Input.pressed.back || Input.pressed.confirm || Input.taps.length) { this.mode = 'main'; A.sfx('back'); }
     }
     else if (this.mode === 'seed') {
       for (const k of Input.typed.splice(0)) { if (k === '<') this.seed = this.seed.slice(0, -1); else if (this.seed.length < 9) this.seed += k; }
       if (Input.pressed.esc) { this.mode = 'main'; A.sfx('back'); } else if (Input.pressed.confirm) g.newGame(this.seed === '' ? undefined : +this.seed);
     } else if (this.mode === 'options') { this.opts.update(g); if (Input.pressed.back) { this.mode = 'main'; A.sfx('back'); } }
-    else if (Input.pressed.back || Input.pressed.confirm) { this.mode = 'main'; A.sfx('back'); }
+    else if (Input.pressed.back || Input.pressed.confirm || Input.taps.length) { this.mode = 'main'; A.sfx('back'); }
   }
   draw(ctx) {
     const t = this.t; ctx.fillStyle = '#0a0a1c'; ctx.fillRect(0, 0, W, H);
@@ -213,7 +224,7 @@ export class TitleScreen {
     const gx = -((t * 0.4) % 384); for (let x = gx; x < W; x += 384) ctx.drawImage(IMG.cemetery_graveyard, Math.round(x), H - 123 + 20);
     ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(0, 0, W, H);
     const lg = logo(); const bob = Math.sin(t * 0.03) * 1.5; ctx.drawImage(lg, Math.round(W / 2 - lg.lw / 2), Math.round(14 + bob), lg.lw, lg.lh);
-    if (this.mode === 'main') { this.main.draw(ctx, W / 2, 110); drawText(ctx, 'ENTER / Z TO SELECT', W / 2, H - 14, { align: 'center', color: DIM }); }
+    if (this.mode === 'main') { this.main.draw(ctx, W / 2, 110); drawText(ctx, Input.touchOn ? 'TAP AN ITEM' : 'ENTER / Z TO SELECT', W / 2, H - 14, { align: 'center', color: DIM }); }
     else if (this.mode === 'credits') {
       const c = this.cr; ctx.fillStyle = 'rgba(6,4,14,0.95)'; ctx.fillRect(0, 0, W, H); drawText(ctx, 'CREDITS', W / 2, 12, { align: 'center', scale: 1.8, color: GOLD, outline: '#000' });
       const top = 38, view = H - top - 30; ctx.save(); ctx.beginPath(); ctx.rect(0, top, W, view); ctx.clip();
@@ -226,9 +237,9 @@ export class TitleScreen {
         else drawText(ctx, it.text, W / 2, y, { align: 'center', color: PALE, outline: '#000' });
       }
       ctx.restore(); ctx.fillStyle = 'rgba(10,10,28,0.9)'; ctx.fillRect(0, top - 6, W, 6);
-      drawText(ctx, 'UP / DOWN SCROLL     ESC BACK', W / 2, H - 14, { align: 'center', color: DIM });
+      drawText(ctx, Input.touchOn ? 'UP / DOWN SCROLL     TAP TO GO BACK' : 'UP / DOWN SCROLL     ESC BACK', W / 2, H - 14, { align: 'center', color: DIM });
     }
-    else if (this.mode === 'options') { panel(ctx, 60, 76, W - 120, 126); drawText(ctx, 'OPTIONS', W / 2, 83, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 84, 102, 14, 'left'); }
+    else if (this.mode === 'options') { panel(ctx, 60, 66, W - 120, 148); drawText(ctx, 'OPTIONS', W / 2, 73, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 84, 92, 14, 'left'); }
     else if (this.mode === 'seed') {
       panel(ctx, 50, 84, W - 100, 112); drawText(ctx, 'CHOOSE A SEED', W / 2, 91, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' });
       const tw = textWidth(this.seed, 2); drawText(ctx, this.seed || 'RANDOM', W / 2 - (this.seed ? 3 : 0), 112, { align: 'center', scale: 2, color: this.seed ? PALE : DIM });
@@ -249,14 +260,15 @@ function optionsMenu(onBack) {
     { label: 'BOSS HINTS', val: () => (A.settings.hints ? 'ON' : 'OFF'), action: () => { A.settings.hints = !A.settings.hints; A.save(); } },
     { label: 'WHITE CLOAK', val: () => (A.settings.cloak ? 'ON' : 'OFF'), action: () => { A.settings.cloak = !A.settings.cloak; A.save(); } },
     { label: '3D HAIR', val: () => (A.settings.hair ? 'ON' : 'OFF'), action: () => { A.settings.hair = !A.settings.hair; A.save(); } },
+    { label: 'TOUCH PAD', val: () => (Touch.on ? 'ON' : 'OFF'), action: () => Touch.show(!Touch.on, true) },
     { label: 'BACK', action: onBack },
   ]);
 }
 export function controlsScreen(ctx) {
   panel(ctx, 36, 14, W - 72, H - 28, 0.96); drawText(ctx, 'CONTROLS', W / 2, 22, { align: 'center', color: GOLD, scale: 2 });
-  const rows = [['MOVE', 'ARROWS / WASD'], ['JUMP', 'SPACE / Z / K (AGAIN = DOUBLE)'], ['ATTACK', 'X / J  (TAP AGAIN TO CHAIN A COMBO)'], ['DUCK', 'HOLD DOWN / S  (ATTACK WHILE DUCKING)'], ['DROP DOWN', 'DOWN / S + JUMP (THIN PLATFORMS)'], ['DASH', 'SHIFT / L'], ['USE SELECTED', 'C / I  (SPELL OR ITEM)'], ['SELECT', 'Q / V  (THE BOX AT THE TOP)'], ['USE / DOOR', 'UP / W / E'], ['MAP', 'M / TAB'], ['PAUSE', 'ESC / P / ENTER'], ['MUTE', 'N']];
+  const rows = Input.touchOn ? [['MOVE', 'SLIDE A THUMB ROUND THE PAD'], ['JUMP', 'JUMP  (AGAIN IN THE AIR = DOUBLE)'], ['ATTACK', 'HIT  (TAP AGAIN TO CHAIN A COMBO)'], ['DUCK', 'HOLD THE PAD DOWN  (HIT WHILE DUCKING)'], ['DROP DOWN', 'PAD DOWN + JUMP (THIN PLATFORMS)'], ['DASH', 'DASH'], ['USE SELECTED', 'ITEM  (SPELL OR ITEM)'], ['SELECT', 'ARROWS BESIDE ITEM / TOP BOX'], ['USE / DOOR', 'PAD UP'], ['MAP', 'MAP'], ['PAUSE', 'II'], ['FULL SCREEN', 'THE SQUARE AT THE TOP']] : [['MOVE', 'ARROWS / WASD'], ['JUMP', 'SPACE / Z / K (AGAIN = DOUBLE)'], ['ATTACK', 'X / J  (TAP AGAIN TO CHAIN A COMBO)'], ['DUCK', 'HOLD DOWN / S  (ATTACK WHILE DUCKING)'], ['DROP DOWN', 'DOWN / S + JUMP (THIN PLATFORMS)'], ['DASH', 'SHIFT / L'], ['USE SELECTED', 'C / I  (SPELL OR ITEM)'], ['SELECT', 'Q / V  (THE BOX AT THE TOP)'], ['USE / DOOR', 'UP / W / E'], ['MAP', 'M / TAB'], ['PAUSE', 'ESC / P / ENTER'], ['MUTE', 'N']];
   rows.forEach(([a, b], i) => { drawText(ctx, a, 50, 46 + i * 11, { color: PALE }); drawText(ctx, b, 148, 46 + i * 11, { color: '#b5a47a' }); });
-  drawText(ctx, 'GAMEPAD WORKS TOO.   ANY KEY TO RETURN', W / 2, H - 28, { align: 'center', color: DIM });
+  drawText(ctx, Input.touchOn ? 'TAP ANYWHERE TO RETURN' : 'GAMEPAD WORKS TOO.   ANY KEY TO RETURN', W / 2, H - 28, { align: 'center', color: DIM });
 }
 
 export class PauseMenu {
@@ -264,14 +276,14 @@ export class PauseMenu {
     this.g = g; this.mode = 'main'; this.opts = optionsMenu(() => { this.mode = 'main'; });
     this.main = new Menu([{ label: 'RESUME', action: () => g.resume() }, { label: 'MAP', action: () => g.openMap() }, { label: 'OPTIONS', action: () => { this.mode = 'options'; this.opts.i = 0; } }, { label: 'CONTROLS', action: () => { this.mode = 'controls'; } }, { label: 'QUIT TO TITLE', action: () => g.toTitle() }]);
   }
-  update() { if (this.mode === 'main') { this.main.update(this.g); if (Input.pressed.pkey || Input.pressed.back) this.g.resume(); } else if (this.mode === 'options') { this.opts.update(this.g); if (Input.pressed.back) this.mode = 'main'; } else if (Input.pressed.back || Input.pressed.confirm) this.mode = 'main'; }
+  update() { if (this.mode === 'main') { this.main.update(this.g); if (Input.pressed.pkey || Input.pressed.back) this.g.resume(); } else if (this.mode === 'options') { this.opts.update(this.g); if (Input.pressed.back) this.mode = 'main'; } else if (Input.pressed.back || Input.pressed.confirm || Input.taps.length) this.mode = 'main'; }
   draw(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 0, W, H);
     if (this.mode === 'main') {
       const g = this.g, S = g.save; panel(ctx, 100, 36, W - 200, 150); drawText(ctx, 'PAUSED', W / 2, 46, { align: 'center', scale: 2, color: GOLD });
       this.main.draw(ctx, W / 2, 74, 13);
       drawText(ctx, `LV ${S.level}   HP ${S.hp}/${S.maxHp}   MP ${S.mp}/${S.maxMp}`, W / 2, 146, { align: 'center', color: PALE }); drawText(ctx, `POWER ${g.player.atkPower}   GOLD ${S.gold}   TIME ${fmtTime(S.time)}`, W / 2, 158, { align: 'center', color: '#b5a47a' }); drawText(ctx, S.seed ? 'CASTLE SEED ' + S.seed : 'THE CLASSIC CASTLE', W / 2, 170, { align: 'center', color: DIM });
-    } else if (this.mode === 'options') { panel(ctx, 70, 48, W - 140, 130); drawText(ctx, 'OPTIONS', W / 2, 55, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 94, 76, 14, 'left'); }
+    } else if (this.mode === 'options') { panel(ctx, 70, 40, W - 140, 150); drawText(ctx, 'OPTIONS', W / 2, 47, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 94, 68, 14, 'left'); }
     else controlsScreen(ctx);
   }
 }
@@ -343,7 +355,7 @@ export class MapScreen {
       const id = this.stones[this.sel], r = id && ROOMS[id];
       if (this.stones.length < 2) drawText(ctx, 'NO OTHER WAYSTONE IS ATTUNED YET', W / 2, H - 38, { align: 'center', color: PALE });
       else if (r) { drawText(ctx, (ZONES[r.zone].name + ' - ' + r.name).toUpperCase(), W / 2, H - 40, { align: 'center', color: '#bff4ff', scale: 1.2 }); drawText(ctx, id === this.here ? 'YOU ARE HERE' : (this.sel + 1) + ' / ' + this.stones.length, W / 2, H - 28, { align: 'center', color: DIM }); }
-      drawText(ctx, 'LEFT / RIGHT CHOOSE     ENTER TRAVEL     ESC CANCEL', W / 2, H - 12, { align: 'center', color: PALE });
+      drawText(ctx, Input.touchOn ? 'PAD LEFT / RIGHT CHOOSE     JUMP = TRAVEL     HIT = CANCEL' : 'LEFT / RIGHT CHOOSE     ENTER TRAVEL     ESC CANCEL', W / 2, H - 12, { align: 'center', color: PALE });
       return;
     }
     { const here = ROOMS[g.room.id]; if (here) drawText(ctx, 'YOU ARE IN:  ' + (ZONES[here.zone].name + ' - ' + here.name).toUpperCase(), W / 2, H - 47, { align: 'center', color: '#ffffff', scale: 1.1 }); }          // where the hero is
@@ -373,7 +385,7 @@ export class IntroCrawl {
     ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(0, 0, W, H); const l = INTRO[Math.min(this.i, INTRO.length - 1)];
     const SC = 1.3, rows = wrapText(l, 330, SC, 'body'), y0 = H / 2 - rows.length * 8;
     rows.reduce((y, row, k, arr) => { const n = Math.max(0, Math.floor(this.chars) - arr.slice(0, k).join(' ').length - (k ? 1 : 0)); drawText(ctx, row.slice(0, n), W / 2 - textWidth(row, SC, 'body') / 2, y, { color: PALE, outline: '#000', scale: SC, font: 'body' }); return y + 16; }, y0);
-    drawText(ctx, 'ENTER TO CONTINUE   ESC TO SKIP', W / 2, H - 12, { align: 'center', color: '#5a4a6a' });
+    drawText(ctx, Input.touchOn ? 'TAP TO CONTINUE   II TO SKIP' : 'ENTER TO CONTINUE   ESC TO SKIP', W / 2, H - 12, { align: 'center', color: '#5a4a6a' });
   }
 }
 

@@ -148,7 +148,7 @@ function buildRecolors() {
 // ---------- the hero's hair ----------
 // The Gothic Hero's baked hair is a pompadour in the two cream tones ffd9b9 / af9785: one small patch on top of his head (the sword's slash arcs use the same tones, but they are big
 // or far from the head, so only a patch of 25-70 pixels no wider than 11 counts).  For every frame the whole patch is taken out of the sprite, and new hair is painted on a sheet of
-// its own, <sheet>_hair: loose strands (see hairPixels) that sweep over the forehead and FALL around the face - behind the head, past the shoulder blades, and in a lock beside the cheek.  It is placed by the
+// its own, <sheet>_hair: a short scalp and a FEW loose strands (see hairPixels) that fall around the face - behind the head, past the shoulder blades, and in a lock beside the cheek.  It is placed by the
 // frame's FACE (the skin pixels beside the old patch), so it sits right however the head is turned or bobbing.  hair.js draws that picture as a bendable mesh (or, with 3D Hair off, plain).
 // HAIR_BOX[sheet][frame] = { bx, by, bw, bh }: where the painted hair is in the sheet frame (null if the frame has none).
 const HAIR_TONES = new Set([0xffd9b9, 0xaf9785]), SKIN_TONES = new Set([0xe1924d, 0xffc98b]), HAIR_BOX = {};
@@ -156,18 +156,24 @@ export const hairBox = id => HAIR_BOX[id];
 // five tones, bright to dark: a highlight, the cream of his old hair, a mid tone, his old shade, and a dark for the underlayer and the tips
 const HAIR_TONE = [[0xff, 0xf2, 0xe2], [0xff, 0xd9, 0xb9], [0xd8, 0xbc, 0xa4], [0xaf, 0x97, 0x85], [0x76, 0x66, 0x66]];
 // the hair of one frame as single pixels [x, row, tone] (x relative to the face's left edge, facing right; W = the face's width; rows from the top of the head).
-// It is LOOSE STRANDS, not a block: a close, darker scalp, a few bright strands swept over it, and behind the head a curtain of separate 1-pixel strands - different lengths, leaning back a
-// little as they fall, with gaps between them, dark where they thin out to ragged tips - and a couple of stray wisps.  (All of it from a hash of the position, so every frame agrees.)
+// It is a FEW STRANDS, not a sheet: a small close-cropped scalp (it has to be there - it is the top of his head), two bright strands swept back over it, a strand or two over the forehead, a lock
+// beside the cheek and, behind the head, just three separate strands - one a thick lock that thins out, the others single pixels - that sway as they fall, with clear gaps between them, thinning to a
+// dark ragged tip, and a flyaway or two.  (All of it from fixed numbers, so every frame agrees.)
 function hairPixels(W) {
   const out = new Map(), hs = (a, b) => { const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return s - Math.floor(s); };
   const put = (x, r, t) => { if (r >= 0 && r < 17) out.set(x + ',' + r, [x, r, t]); };
-  const strand = (x, r, len, lean, tone, hi) => { for (let i = 0; i < len; i++) put(x - Math.floor(i * lean), r + i, i >= len - 1 ? 4 : i >= len - 3 ? 3 : hi && i % 4 === 1 ? 0 : tone); };
-  for (const [r, x0, x1] of [[0, 2, W - 2], [1, 0, W], [2, -2, W + 1], [3, -3, W - 1]]) for (let x = x0; x <= x1; x++) put(x, r, r === 0 || hs(x, r) > 0.72 ? 3 : 2);             // the scalp: close and darker than the strands lying on it
-  for (const [x0, r0, len, slope, tone] of [[W, 1, W + 2, 0.34, 1], [W - 2, 0, W, 0.44, 0], [W - 4, 0, W - 1, 0.5, 1]]) for (let k = 0; k < len; k++) put(x0 - k, r0 + Math.floor(k * slope), tone);   // three bright strands swept back over it
-  strand(W, 1, 4, 0, 1, false); strand(W + 1, 2, 3, 0, 2, false);                                                                  // the fringe: two strands over the forehead (the eye shows between them and the crown)
-  // the curtain behind the head: [column, first row, length, lean (columns drifted back per row), tone, highlighted?] - gaps between them, all different lengths
-  for (const [c, r, len, lean, tone, hi] of [[1, 4, 5, 0.18, 2, false], [0, 4, 8, 0.2, 1, true], [-1, 3, 13, 0.1, 2, true], [-2, 5, 8, 0.14, 3, false], [-3, 3, 15, 0.09, 1, true], [-4, 6, 6, 0.12, 3, false], [-5, 3, 12, 0.15, 2, false], [-6, 7, 6, 0.1, 4, false]]) strand(c, r, len, lean, tone, hi);
-  put(-7, 11, 4); put(-4, 14, 4); put(-6, 15, 3); if (W > 5) put(W + 2, 3, 3);                                                         // stray wisps
+  // a strand from (x, r) down for `len` rows: it drifts back by `lean` per row and sways by +-`sway` (phase `ph`); `thick` rows at the top are two pixels wide
+  const strand = (x, r, len, lean, tone, hi, sway = 0, ph = 0, thick = 0) => {
+    for (let i = 0; i < len; i++) { const xx = x - Math.floor(i * lean + Math.sin(i * 0.55 + ph) * sway + 0.5), t = i >= len - 1 ? 4 : i >= len - 3 ? 3 : hi && i % 4 === 1 ? 0 : tone; put(xx, r + i, t); if (i < thick) put(xx - 1, r + i, tone === 1 ? 2 : 3); }
+  };
+  for (const [r, x0, x1] of [[0, 2, W - 2], [1, 0, W - 1], [2, -2, W], [3, -3, -1], [4, -3, -2]]) for (let x = x0; x <= x1; x++) put(x, r, r === 0 || hs(x, r) > 0.7 ? 3 : 2);        // the scalp
+  for (const [x0, r0, len, slope, tone] of [[W - 1, 0, W - 1, 0.45, 0], [W - 3, 1, W - 3, 0.3, 1]]) for (let k = 0; k < len; k++) put(x0 - k, r0 + Math.floor(k * slope), tone);     // two bright strands swept back over it
+  strand(W, 1, 5, 0, 1, false); strand(W - 2, 1, 3, 0, 2, false);                                                                  // the fringe: a strand over the forehead and a shorter one (the eye shows between them and the crown)
+  strand(1, 4, 6, 0.17, 1, true);                                                                                                   // a lock beside the cheek, down to the jaw
+  strand(-2, 4, 12, 0.1, 1, true, 0.8, 0, 2);                                                                                       // behind the head: a thick lock that thins out,
+  strand(-5, 3, 14, 0.12, 2, false, 1, 2);                                                                                          // a long single strand,
+  strand(-7, 5, 8, 0.1, 3, false, 0.7, 4);                                                                                          // and a short one further back, with clear gaps between them
+  put(-9, 12, 4); put(-6, 17 - 2, 3);                                                                                               // flyaways
   return [...out.values()];
 }
 function buildHair() {

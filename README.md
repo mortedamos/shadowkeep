@@ -47,6 +47,8 @@ The published repository holds only what the game needs to run. `.gitignore` kee
 
 A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the selection, Start pause, Back map).
 
+**Phones and tablets:** on-screen controls appear by themselves on a touch screen (and go away when a key is pressed). A round **D-pad** at the bottom left: slide a thumb round it to run, duck, or go up a door (up is also USE). **JUMP** and **HIT** are the big buttons on the right (they are also OK and BACK in the menus); **DASH**, **ITEM** (uses the selected spell or item) and the two small arrows that change the selection sit above them, and **MAP**, **II** (pause) and a full-screen square run along the top. Tap a menu item to pick it, tap the item box in the corner to change the selection, tap to advance a dialogue. Turn the phone sideways for a bigger picture. Add `?touch=1` to the address to force the pad on (or `?touch=0` to keep it off); Options > TOUCH PAD switches it by hand. On the iPhone, "Add to Home Screen" runs the game full screen.
+
 ## The game
 
 * **7 zones, 38 main rooms (plus up to eight small rooms behind doors) - one look per zone.** A level never mixes tilesets; each look gets its own level instead:
@@ -69,7 +71,7 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
 * **Will-o'-the-wisps** drift through the Weeping Swamp: cold blue lights that float in and out of the background, shed real light and thin the mist wherever they go. You can never get near one - it bolts away into the background, and winks out if you keep coming.
 * **Portraits** hang on the walls of the halls, chapels and the throne room - painted faces (fifteen people, five moods each, pixelated to 26x33 by `tools/pixelate-portraits.ps1`) in gilt, oak, silver, bronze or ebony frames. **Some are haunted.** They begin with a hopeful face, but as you walk up to one the picture turns - happy, neutral, sad, furious - and then it wakes and fights: some **spit fire from their eyes** (the eyes burn first), some release **wisps of blue fire that follow you** (cut them down with the sword), some **tear off the wall and fly at you**, and some fly *and* shoot. Until one wakes it cannot be hurt, and it cannot hurt you.
 * **Waterfalls** pour through the tall rooms of the Weeping Swamp - from the sky, through the holes in the upper floor, down to the lower one - with spray where they land.
-* **3D hair:** the hero's hair is loose strands that fall behind his head and beside his face, drawn as a little textured mesh that is simulated like his cloak: it streams back when he runs, lifts when he falls, is pressed flat when he rises (Options > 3D Hair, or `?hair=0`).
+* **3D hair:** the hero's hair is a short scalp and just a few loose strands that fall behind his head and beside his face, drawn as a little textured mesh that is simulated like his cloak: it streams back when he runs, lifts when he falls, is pressed flat when he rises (Options > 3D Hair, or `?hair=0`).
 * **Hazards are always seen:** spikes are drawn again above the fog and the dark, and live only at the bottom of pits. Nothing stands in front of a door.
 * **Candelabras** are scenery now (indoors only - never in the graveyard or the mire): they flank doors and waystones, stand beside tablets and at the foot of walls and steps, and are spaced along the floor - never on top of loot.
 * **21 monster types:** bats, rising zombies, bone-throwing skeletons, phasing ghosts, orb-casting wraiths, charging fire skulls, hell hounds,
@@ -152,6 +154,7 @@ src/
   fx.js             three.js effects: particles, flame shaders, lightning, rings, magic circles, light/darkness
   procart.js        code-drawn pixel art: bat, icons, props
   audio.js          music manager + synthesized sound effects      ui.js   HUD, menus, map, story screens
+  touch.js          the on-screen controls for phones and tablets (HTML buttons that hold the same actions as the keys)
   font.js           gothic text: Pirata One + Almendra (+ Blackletter for the title) drawn as vector text on the hi-res canvas (bitmap fallback if the fonts are missing)
   assets.js input.js util.js decor.js viewer.js     decor.js also draws the bookcases and barred windows in code, and animates the torches
 assets/             sprites + environment art (+ sprites.json frame manifest, original licenses), fonts/ (the two gothic TTFs)

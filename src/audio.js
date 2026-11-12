@@ -36,7 +36,7 @@ export const Audio_ = {
     for (const src of local ? ['__music', 'music/files.json'] : ['music/files.json']) {
       try { const r = await fetch(src, { cache: 'no-cache' }); if (!r.ok) continue; const names = await r.json(); if (Array.isArray(names)) { this.available = new Map(names.map(s => [s.toLowerCase(), s])); break; } } catch {}
     }
-    addEventListener('pointerdown', () => this.unlock()); addEventListener('keydown', () => this.unlock());
+    for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, () => this.unlock());          // (phones only let a touch RELEASE start the sound)
   },
   save() { try { localStorage.setItem('shadowkeep.audio', JSON.stringify(this.settings)); } catch {} },
 

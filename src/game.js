@@ -2,6 +2,7 @@
 import { W, H, T, clamp, lerp, rand, overlap, dist } from './util.js';
 import { FX, COLORS } from './fx.js';
 import { Input } from './input.js';
+import { Touch } from './touch.js';
 import { loadFonts } from './font.js';
 import { Audio_ as A } from './audio.js';
 import { ZONES } from './rooms.js';
@@ -43,7 +44,7 @@ class Game {
     // sprites are snapped to the logical grid so pixel art looks exactly as before.
     for (const c of [this.ctx, this.top]) { const di = c.drawImage; c.drawImage = function (img, ...a) { if (a.length === 2 || a.length === 4) { a[0] = Math.round(a[0]); a[1] = Math.round(a[1]); } else if (a.length === 8) { a[4] = Math.round(a[4]); a[5] = Math.round(a[5]); } return di.call(this, img, ...a); }; }
     this.fx = new FX(document.getElementById('fx')); this.fx.onThunder = p => A.sfx('thunder', { power: p });
-    Input.init(); await A.init(); if (new URLSearchParams(location.search).get('cloak') === '0') A.settings.cloak = false; if (new URLSearchParams(location.search).get('hair') === '0') A.settings.hair = false; await loadFonts(); this.resize(); addEventListener('resize', () => this.resize());
+    Input.init(); Touch.init(this); await A.init(); if (new URLSearchParams(location.search).get('cloak') === '0') A.settings.cloak = false; if (new URLSearchParams(location.search).get('hair') === '0') A.settings.hair = false; await loadFonts(); this.resize(); addEventListener('resize', () => this.resize());
     // Losing focus (clicking another window, switching tabs/apps) mutes all sound and pauses a running game; sound returns when focus does.
     // (`?nopause` in the URL turns this off - handy for automated testing in a background tab.)
     const lose = () => { if (this.noAutoPause) return; A.focusLost(); if (this.state === 'play') this.pause(); };
@@ -61,7 +62,7 @@ class Game {
   resize() {
     let s = Math.min(innerWidth / W, innerHeight / H); const fl = Math.floor(s); if (fl >= 1 && s - fl < 0.4) s = fl;
     const st = document.getElementById('stage'); st.style.width = Math.floor(W * s) + 'px'; st.style.height = Math.floor(H * s) + 'px';
-    const devW = Math.floor(W * s) * (window.devicePixelRatio || 1), K = clamp(Math.ceil(devW / W - 0.02), 2, 5);
+    const devW = Math.floor(W * s) * (window.devicePixelRatio || 1), K = clamp(Math.ceil(devW / W - 0.02), 2, Input.touchOn ? 3 : 5);                // (a phone gets at most 3x: the sharper canvas is not worth the heat)
     if (K !== this.K || this.canvas.width !== W * K) { this.K = K; this.canvas.width = W * K; this.canvas.height = H * K; }
     if (this.topCanvas.width !== W * K) { this.topCanvas.width = W * K; this.topCanvas.height = H * K; }
     this.canvas.style.imageRendering = Math.abs(devW - W * K) < 1.5 ? 'pixelated' : 'auto';
@@ -279,7 +280,7 @@ class Game {
     const S = this.save, a = ABILITIES[kind]; S.abilities[kind] = true; S.flags['got_' + kind] = true; this.cutscene = { t: 0, kind, x, y }; this.playerFrozen = true; this.player.invT = 999;
     A.sfx('ability'); A.sting('sting_ability'); A.play(ZONES[this.room.zone].music, { fade: 0.2 });
     this.fx.flash(a.color, 0.9); this.fx.ring(x, y, 150, a.color, 60, 0.1); this.fx.quad({ kind: 'rays', x, y, w: 300, h: 300, color: a.color, life: 150, spin: 0.02, p: [0, 10], a0: 0.8, a1: 0 }); this.fx.sparks(x, y, 40, [[1, 1, 0.9], a.color], 5, { gy: -0.02 });
-    this.banner(a.name, a.desc, 330, { y: 70, color: '#ffe9a0' });
+    this.banner(a.name, Input.hint(a.desc), 330, { y: 70, color: '#ffe9a0' });
     if (kind === 'ember' || kind === 'thunder') { this.player.spell = kind; }
   }
   updateCutscene() {
@@ -290,7 +291,7 @@ class Game {
 
   // -------------------------------------------------------------------------------- logic step
   step() {
-    this.frame++; Input.poll(); A.update(1);
+    this.frame++; Input.poll(); Touch.sync(this); A.update(1);
     if (Input.pressed.mute) A.toggleMute();
     for (let i = this.delayed.length - 1; i >= 0; i--) { const d = this.delayed[i]; if (--d.t <= 0) { this.delayed.splice(i, 1); d.fn(); } }
     switch (this.state) {

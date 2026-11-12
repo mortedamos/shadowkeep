@@ -20,6 +20,14 @@ export const Input = {
   pressed: Object.fromEntries(actions.map(a => [a, false])),
   released: Object.fromEntries(actions.map(a => [a, false])),
   _keys: new Set(), _pend: new Set(), _pendRel: new Set(), _padHeld: {}, anyKey: false, _anyPend: false, gamepad: false, typed: [],
+  // on-screen touch controls (touch.js): a touch button holds the same named actions a key would (a count per action, since two fingers may hold one); taps = where a finger touched a menu screen, in 384x216 game pixels
+  _touch: {}, touchOn: false, taps: [], _taps: [],
+  touchHold(a) { this._touch[a] = (this._touch[a] || 0) + 1; this._pend.add(a); this._anyPend = true; },
+  touchRelease(a) { if (!this._touch[a]) return; this._touch[a]--; this._pendRel.add(a); },
+  releaseTouch() { for (const a in this._touch) { if (this._touch[a] > 0) this._pendRel.add(a); this._touch[a] = 0; } },
+  tap(x, y) { this._taps.push({ x, y }); this._anyPend = true; },
+  // a hint written for the keyboard, reworded for the on-screen buttons when they are showing
+  hint(s) { return !this.touchOn ? s : s.replace('PRESS SHIFT TO DASH', 'TAP THE DASH BUTTON TO DASH').replace('PRESS C TO', 'TAP THE ITEM BUTTON TO').replace('Q / V CHANGE WHAT C USES', 'THE ARROWS BESIDE IT CHANGE WHAT IT USES'); },
 
   init() {
     const block = new Set(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab']);
@@ -51,7 +59,7 @@ export const Input = {
       if (ay < -0.55) { padNow.up = true; padNow.interact = true; } if (ay > 0.55) padNow.down = true;
     }
     for (const a of actions) {
-      const keyHeld = KEYMAP[a].some(c => this._keys.has(c));
+      const keyHeld = KEYMAP[a].some(c => this._keys.has(c)) || (this._touch[a] || 0) > 0;          // (an on-screen button counts as a key)
       const padHeld = !!padNow[a];
       const was = this.held[a];
       const now = keyHeld || padHeld;
@@ -62,7 +70,7 @@ export const Input = {
     }
     this.anyKey = this._anyPend || Object.values(padNow).some(Boolean) && !this._padAny;
     this._padAny = Object.values(padNow).some(Boolean);
-    this._anyPend = false;
+    this._anyPend = false; this.taps = this._taps; this._taps = [];
     this._pend.clear(); this._pendRel.clear();
   },
   get horiz() { return (this.held.right ? 1 : 0) - (this.held.left ? 1 : 0); },
