@@ -148,22 +148,27 @@ function buildRecolors() {
 // ---------- the hero's hair ----------
 // The Gothic Hero's baked hair is a pompadour in the two cream tones ffd9b9 / af9785: one small patch on top of his head (the sword's slash arcs use the same tones, but they are big
 // or far from the head, so only a patch of 25-70 pixels no wider than 11 counts).  For every frame the whole patch is taken out of the sprite, and new hair is painted on a sheet of
-// its own, <sheet>_hair: it sweeps over the forehead and FALLS around the face - behind the head, past the shoulder blades, and in a lock beside the cheek.  It is placed by the
+// its own, <sheet>_hair: loose strands (see hairPixels) that sweep over the forehead and FALL around the face - behind the head, past the shoulder blades, and in a lock beside the cheek.  It is placed by the
 // frame's FACE (the skin pixels beside the old patch), so it sits right however the head is turned or bobbing.  hair.js draws that picture as a bendable mesh (or, with 3D Hair off, plain).
 // HAIR_BOX[sheet][frame] = { bx, by, bw, bh }: where the painted hair is in the sheet frame (null if the frame has none).
 const HAIR_TONES = new Set([0xffd9b9, 0xaf9785]), SKIN_TONES = new Set([0xe1924d, 0xffc98b]), HAIR_BOX = {};
 export const hairBox = id => HAIR_BOX[id];
-const HAIR_LIGHT = [0xff, 0xd9, 0xb9], HAIR_SHADE = [0xaf, 0x97, 0x85];
-// the hair of one frame as spans per row (x relative to the face's left edge, facing right; W = the face's width): [row, x0, x1, shade?]
-function hairSpans(W) {
-  const out = [], R = 16;                                             // rows from the top of the head
-  const add = (r, x0, x1) => { if (x1 >= x0) out.push([r, x0, x1]); };
-  add(0, 2, W - 1); add(1, 0, W); add(2, -2, W + 1); add(3, -3, W + 1);                       // the crown, and a fringe swept forward over the forehead
-  add(4, -3, 3); add(4, W - 1, W + 1);                                                          // a gap where the brow and the eye show, the fringe's tip in front
-  for (let r = 5; r < R; r++) {                                                                 // the curtain behind the head, and a lock beside the cheek
-    const left = r <= 13 ? -3 : -2, right = r <= 8 ? 1 : r <= 11 ? -1 : r <= 13 ? -2 : -1; add(r, left, right);                 // (a lock beside the cheek down to the jaw, then the hair hangs strictly behind the head)
-  }
-  return out;
+// five tones, bright to dark: a highlight, the cream of his old hair, a mid tone, his old shade, and a dark for the underlayer and the tips
+const HAIR_TONE = [[0xff, 0xf2, 0xe2], [0xff, 0xd9, 0xb9], [0xd8, 0xbc, 0xa4], [0xaf, 0x97, 0x85], [0x76, 0x66, 0x66]];
+// the hair of one frame as single pixels [x, row, tone] (x relative to the face's left edge, facing right; W = the face's width; rows from the top of the head).
+// It is LOOSE STRANDS, not a block: a close, darker scalp, a few bright strands swept over it, and behind the head a curtain of separate 1-pixel strands - different lengths, leaning back a
+// little as they fall, with gaps between them, dark where they thin out to ragged tips - and a couple of stray wisps.  (All of it from a hash of the position, so every frame agrees.)
+function hairPixels(W) {
+  const out = new Map(), hs = (a, b) => { const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return s - Math.floor(s); };
+  const put = (x, r, t) => { if (r >= 0 && r < 17) out.set(x + ',' + r, [x, r, t]); };
+  const strand = (x, r, len, lean, tone, hi) => { for (let i = 0; i < len; i++) put(x - Math.floor(i * lean), r + i, i >= len - 1 ? 4 : i >= len - 3 ? 3 : hi && i % 4 === 1 ? 0 : tone); };
+  for (const [r, x0, x1] of [[0, 2, W - 2], [1, 0, W], [2, -2, W + 1], [3, -3, W - 1]]) for (let x = x0; x <= x1; x++) put(x, r, r === 0 || hs(x, r) > 0.72 ? 3 : 2);             // the scalp: close and darker than the strands lying on it
+  for (const [x0, r0, len, slope, tone] of [[W, 1, W + 2, 0.34, 1], [W - 2, 0, W, 0.44, 0], [W - 4, 0, W - 1, 0.5, 1]]) for (let k = 0; k < len; k++) put(x0 - k, r0 + Math.floor(k * slope), tone);   // three bright strands swept back over it
+  strand(W, 1, 4, 0, 1, false); strand(W + 1, 2, 3, 0, 2, false);                                                                  // the fringe: two strands over the forehead (the eye shows between them and the crown)
+  // the curtain behind the head: [column, first row, length, lean (columns drifted back per row), tone, highlighted?] - gaps between them, all different lengths
+  for (const [c, r, len, lean, tone, hi] of [[1, 4, 5, 0.18, 2, false], [0, 4, 8, 0.2, 1, true], [-1, 3, 13, 0.1, 2, true], [-2, 5, 8, 0.14, 3, false], [-3, 3, 15, 0.09, 1, true], [-4, 6, 6, 0.12, 3, false], [-5, 3, 12, 0.15, 2, false], [-6, 7, 6, 0.1, 4, false]]) strand(c, r, len, lean, tone, hi);
+  put(-7, 11, 4); put(-4, 14, 4); put(-6, 15, 3); if (W > 5) put(W + 2, 3, 3);                                                         // stray wisps
+  return [...out.values()];
 }
 function buildHair() {
   for (const id of HERO_SHEETS) {
@@ -186,10 +191,9 @@ function buildHair() {
         let fx0 = 1e9, fx1 = -1, fy0 = 1e9; for (const kk of fs) { const fx = kk % s.w, fy = Math.floor(kk / s.w); fx0 = Math.min(fx0, fx); fx1 = Math.max(fx1, fx); fy0 = Math.min(fy0, fy); }
         if (fx1 < 0) { fx0 = a0 + 1; fx1 = a1 - 2; fy0 = b1 - 3; }                                                      // (no face found: guess from the patch)
         const FW = Math.max(5, Math.min(8, fx1 - fx0)), top = fy0 - 4; let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
-        for (const [r, sx0, sx1] of hairSpans(FW)) for (let xx = sx0; xx <= sx1; xx++) {
+        for (const [xx, r, tone] of hairPixels(FW)) {
           const px = fx0 + xx, py = top + r; if (px < 0 || py < 0 || px >= s.w || py >= s.h) continue;
-          const edge = xx === sx0, strand = r > 4 && ((xx - sx0 + (r >> 2)) % 3 === 1) && r % 2 === 0, shade = edge || r === 4 || r >= 14 || (xx === sx1 && r >= 9) || strand;       // shadow along the back edge, in streaks like strands, under the crown, at the tips
-          const c = shade ? HAIR_SHADE : HAIR_LIGHT, i = at(px, py); layer[i] = c[0]; layer[i + 1] = c[1]; layer[i + 2] = c[2]; layer[i + 3] = 255;
+          const c = HAIR_TONE[tone], i = at(px, py); layer[i] = c[0]; layer[i + 1] = c[1]; layer[i + 2] = c[2]; layer[i + 3] = 255;
           x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
         }
         if (x1 >= 0) box = { bx: x0, by: y0, bw: x1 - x0 + 1, bh: y1 - y0 + 1 };
@@ -207,7 +211,8 @@ function buildHair() {
 // the pale skin, hair and sword-arcs ghostly silver.  The twin is drawn with these; its eyes burn red in the effects layer.
 const EVIL = new Map([[0xed053e, [74, 20, 104]], [0x810936, [50, 12, 76]], [0x800735, [40, 10, 62]], [0x983e1d, [96, 48, 120]], [0x671915, [32, 16, 44]], [0x691a17, [32, 16, 44]], [0x130a1b, [8, 5, 14]],
   [0xbc6c17, [84, 92, 138]], [0xffcc61, [176, 184, 222]], [0xe1924d, [132, 126, 150]], [0xffd9b9, [226, 226, 244]], [0xffdbb9, [226, 226, 244]], [0xaf9785, [108, 106, 140]], [0xc69985, [128, 120, 156]],
-  [0xffc98b, [196, 192, 214]], [0x573b60, [50, 28, 82]], [0x966495, [112, 76, 150]]]);
+  [0xffc98b, [196, 192, 214]], [0x573b60, [50, 28, 82]], [0x966495, [112, 76, 150]],
+  [0xfff2e2, [246, 246, 255]], [0xd8bca4, [154, 150, 184]], [0x766666, [72, 64, 104]]]);          // (the three extra tones of his new hair)
 function buildEvil() {
   for (const id of HERO_SHEETS) {
     const s = SHEET[id]; if (!s) continue;
