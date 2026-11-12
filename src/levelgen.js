@@ -107,9 +107,9 @@ const SPEC = {
   s2: { kind: 'sanctuary', zone: 2, name: 'Hall Sanctuary', parent: 'h1' },
   ha: { kind: 'interior', zone: 2, name: "Servants' Quarters", parent: 'h1', look: 'study', theme: 'hall', npc: { kind: 'woman', title: 'LAST SERVANT', text: 'THE LORD DISMISSED US ALL AT DUSK, BUT THE PICTURES WOULD NOT STOP WATCHING. I HID. I AM VERY GOOD AT HIDING. HERE - IT IS NOT MUCH, BUT IT IS HONEST.', again: 'THERE IS A MIRROR BEHIND THE OTHER DOOR UPSTAIRS. I DO NOT LOOK AT IT. NEITHER SHOULD YOU.', gifts: ['it_bandage', 'heart', 'it_dagger'], sells: { item: 'bandage', price: 70 } } },
 
-  // another OPTIONAL boss: a second door on the upper floor of the Entrance Hall opens on a room with a great mirror set into its end wall.  Walk up to it and it cracks - your reflection steps out, in silver and
-  // violet, and fights with a sword and the very items you carry (the fight is sealed in until it falls; it leaves a mana container)
-  mr: { kind: 'arena', lair: true, mirror: true, zone: 2, name: 'The Mirror Room', parent: 'h1', w: [44, 48], boss: 'mirror', reward: 'mpup', plats: 2, rise: 3, candles: [2, 2], decor: 'torch',
+  // another OPTIONAL boss: a second door on the upper floor of the Entrance Hall opens on a room with a great mirror on the back wall.  Walk in front of it and meet your reflection in the middle: the glass cracks and
+  // your reflection crashes out, in silver and violet, and fights with a sword and the very items you carry (the fight is sealed in until it falls; it leaves a mana container)
+  mr: { kind: 'arena', lair: true, mirror: true, zone: 2, name: 'The Mirror Room', parent: 'h1', w: [42, 46], boss: 'mirror', reward: 'mpup', plats: 2, rise: 3, candles: [2, 2], decor: 'torch',
     opts: { ...LOOK[2], ambient: 0.26, tint: [0.02, 0, 0.08], vig: 0.62, boss: 'mirror', music: 'boss' } },
 
   // ======== ZONE 3 - THE MOONLIT CHAPEL
@@ -388,17 +388,16 @@ function genArena(id, spec, r) {
   const outdoor = !!spec.outdoor, H = spec.h || 14, BASE = H - 2, W = r.i(spec.w[0], spec.w[1]), rise = spec.rise || 3;
   const b = new B(id, spec.name, spec.zone, W, H, { ...spec.opts, theme: spec.theme });
   b.floor(0, W, BASE); if (!outdoor) b.ceil(0, W, 2);
-  const mirror = !!spec.mirror, MW = mirror ? 14 : 0, mx0 = W - MW;                              // the mirror room: its last 14 columns are a solid wall with the great mirror set into it
-  const L = r.i(5, 9), len1 = r.i(4, 5), Rr = mirror ? mx0 - r.i(5, 7) - len1 : W - r.i(9, 13) - len1;
+  const mirror = !!spec.mirror, mc = W - 12;                                                       // the mirror room: a great mirror 12 tiles wide hangs on the back wall, its middle at column mc, and stands on the floor
+  const L = r.i(5, 9), len1 = r.i(4, 5), Rr = W - r.i(9, 13) - len1;
   b.plat(L, len1, BASE - rise); b.plat(Rr, len1, BASE - rise);
   if (mirror) {
-    b.rect(mx0, 2, MW, BASE - 2);
-    const band = 7, fx = mx0 * 16 + 3, fx1 = W * 16 - 13, fy = 36, gy1 = BASE * 16;               // the frame, the glass inside it (its left edge is the mirror's plane: the reflection stands where you would, seen from the other side) and the floor it stands on
-    b.def.mirror = { fx, fy, fw: fx1 - fx, fh: gy1 + band - fy, band, plane: fx + band, x1: fx1 - band, y0: fy + band, y1: gy1, wall: mx0 * 16 };
+    const band = 7, fx = (mc - 6) * 16, fx1 = (mc + 6) * 16, fy = 36, gy1 = BASE * 16;            // the frame (its foot is hidden by the floor), the glass inside it, and the middle line the reflection is mirrored across
+    b.def.mirror = { fx, fy, fw: fx1 - fx, fh: gy1 + band - fy, band, x0: fx + band, x1: fx1 - band, y0: fy + band, y1: gy1, axis: (fx + fx1) / 2 };
   }
   const must = [{ tx: L + 1, gy: BASE - rise, name: 'left platform' }, { tx: Rr + 1, gy: BASE - rise, name: 'right platform' }];
   if (spec.plats >= 3) { const ml = r.i(5, 7), mx = Math.round(W / 2 - ml / 2) + r.i(-2, 2), mr = BASE - rise - 2; b.plat(mx, ml, mr); must.push({ tx: mx + 2, gy: mr, name: 'middle platform' }); }
-  const bossX = mirror ? mx0 - 3 : Math.round(W * 0.7) + r.i(-3, 2), flying = FLYING_BOSS.has(spec.boss), brow = flying ? BASE - (spec.flyRow || 6) : BASE;
+  const bossX = mirror ? mc : Math.round(W * 0.7) + r.i(-3, 2), flying = FLYING_BOSS.has(spec.boss), brow = flying ? BASE - (spec.flyRow || 6) : BASE;
   b.e(BOSS_TYPE[spec.boss], bossX, brow, { reward: spec.reward });
   const lair = !!spec.lair;                                                                       // a lair is entered by a door (at x=3), has no other way out, and needs no seals
   const seals = lair ? [] : [{ x: 0, y0: BASE - 3, y1: BASE - 1 }];
@@ -409,14 +408,14 @@ function genArena(id, spec, r) {
   const g = new Array(W).fill(BASE), meta = { abilities: spec.abilities || [], back: BACK[spec.zone], entry: { L: { tx: 1, gy: BASE }, R: spec.seal === 'left' || lair ? null : { tx: spec.exitGate ? W - 4 : W - 2, gy: BASE } }, must, items: [], start: { tx: 3, gy: BASE } };
   b.def.meta = meta; b.def.entries = { L: meta.entry.L, R: spec.seal === 'left' || lair ? null : { tx: W - 2, gy: BASE } };
   if (spec.candles) { const n = spec.candles[0];                                                                          // (a boss room has candelabras only: no treasure statues)
-    const span = (mirror ? mx0 - 6 : W - 8) - 8; for (let k = 0; k < n; k++) { const cx = Math.round(8 + span * (k + 0.5) / n) + r.i(-2, 2); b.candle(cx, BASE); } }
+    const span = (mirror ? mc - 9 : W - 8) - 8; for (let k = 0; k < n; k++) { const cx = Math.round(8 + span * (k + 0.5) / n) + r.i(-2, 2); b.candle(cx, BASE); } }
   const v = validateRoom(b.def); if (!v.ok) return { ok: false, errs: v.errs, def: b.def };
   // decor
   const flat = []; for (let cx = 3; cx < W - 3; cx++) flat.push(cx);
   const th = ZONES[spec.zone].theme;
   if (th === 'graveyard') { b.d('brazier', 4, BASE).d('brazier', W - 5, BASE).d('img', Math.round(W / 2), BASE, { img: 'cemetery_statue', back: true }); for (const k of ['cemetery_stone-4', 'cemetery_stone-1']) b.d('img', r.i(8, W - 9), BASE, { img: k }); }
   else if (th === 'village' || th === 'swamp') { decorate(b, W, spec, r, g, 0, flat); b.d('brazier', 4, BASE).d('brazier', W - 5, BASE); }
-  else { const lim = mirror ? mx0 - 2 : W - 2; b.torches([4, 12, Math.round(W / 2), W - 13, W - 5, mx0 - 2].filter(cx => cx > 2 && cx < lim), 6); if (spec.decor === 'column') { b.d('column', 4, BASE).d('column', W - 5, BASE); b.d('cdl', r.i(10, 16), BASE).d('cdl', W - r.i(12, 18), BASE); } else if (spec.decor === 'brazier') { b.d('brazier', 4, BASE).d('brazier', W - 5, BASE); } else if (spec.decor === 'banner') { b.d('column', 4, BASE).d('column', W - 5, BASE).d('brazier', 11, BASE).d('brazier', W - 12, BASE); for (const bx of [8, 14, W - 15, W - 9]) b.d('banner', bx, 2, { len: 8, color: '#6a1020' }); } else for (const bx of mirror ? [10, mx0 - 9] : [10, W - 11]) b.d('banner', bx, 2, { len: 6, color: mirror ? '#3a1a5a' : '#7a1e2a' }); }
+  else { b.torches([4, 12, Math.round(W / 2), W - 13, W - 5].concat(mirror ? [mc - 8, mc + 8] : []).filter(cx => cx > 2 && cx < W - 2 && !(mirror && Math.abs(cx - mc) <= 7)), 6); if (spec.decor === 'column') { b.d('column', 4, BASE).d('column', W - 5, BASE); b.d('cdl', r.i(10, 16), BASE).d('cdl', W - r.i(12, 18), BASE); } else if (spec.decor === 'brazier') { b.d('brazier', 4, BASE).d('brazier', W - 5, BASE); } else if (spec.decor === 'banner') { b.d('column', 4, BASE).d('column', W - 5, BASE).d('brazier', 11, BASE).d('brazier', W - 12, BASE); for (const bx of [8, 14, W - 15, W - 9]) b.d('banner', bx, 2, { len: 8, color: '#6a1020' }); } else for (const bx of mirror ? [10, mc - 10] : [10, W - 11]) b.d('banner', bx, 2, { len: 6, color: mirror ? '#3a1a5a' : '#7a1e2a' }); }
   const sp = checkSpawns(b.def); if (sp.length) return { ok: false, errs: sp, def: b.def };
   return { ok: true, def: b.def };
 }

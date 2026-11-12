@@ -1,8 +1,8 @@
-// The Mirror Room.  A great gilt mirror is set into the end wall; the glass shows the stranger, mirrored, doing whatever he does.  Walk up to it and it cracks - and the reflection
-// steps out as THE REFLECTION (BossMirror in bosses.js), his own sheets recoloured silver and violet (assets.js buildEvil), with his sword and the same items he carries.
+// The Mirror Room.  A great gilt mirror hangs on the back wall, behind everything: you walk in front of it, and the glass shows the stranger mirrored across its middle line, doing whatever
+// he does.  Meet your reflection in the middle and the glass cracks - and the reflection crashes out of it as THE REFLECTION (BossMirror in bosses.js), his own sheets recoloured silver and violet (assets.js buildEvil), with his sword and the same items he carries.
 //   MirrorView   - the frame, the glass (whole / cracking / shattered) and the cracks; the reflection itself is drawn by the boss, clipped to the glass
 //   Twin*        - the items the twin throws (they hurt YOU; the sword can cut daggers and arrows out of the air)
-// def.mirror (from levelgen genArena): { fx, fy, fw, fh, band (the frame), plane (the glass's left edge: the mirror's plane), x1, y0, y1 (the glass), wall }
+// def.mirror (from levelgen genArena): { fx, fy, fw, fh, band (the frame), x0, x1, y0, y1 (the glass), axis (its vertical middle line: the reflection of x is 2 * axis - x) }
 import { drawSheet } from './assets.js';
 import { drawFrameRect } from './portraitart.js';
 import { Audio_ as A } from './audio.js';
@@ -22,43 +22,43 @@ export class MirrorView {
   constructor(m, broken) {
     this.m = m; this.broken = !!broken; this.cr = 0; this.lines = []; this.t = 0;
     let s = (m.fx * 31 + m.fy * 7) >>> 0; const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
-    const W = m.x1 - m.plane, H = m.y1 - m.y0, teeth = []; this.teeth = teeth;                       // the jagged teeth of glass left in the frame once it is shattered
-    for (let i = 0; i < 9; i++) { const x = m.plane + (i + rnd() * 0.5) * W / 9; teeth.push([[x, m.y0], [x + 10 + rnd() * 20, m.y0], [x + rnd() * 12, m.y0 + 8 + rnd() * 26]]); }
-    for (let i = 0; i < 5; i++) { const y = m.y0 + (i + rnd() * 0.5) * H / 5; teeth.push([[m.plane, y], [m.plane, y + 10 + rnd() * 18], [m.plane + 6 + rnd() * 16, y + rnd() * 12]]); teeth.push([[m.x1, y + 6], [m.x1, y + 16 + rnd() * 16], [m.x1 - 6 - rnd() * 16, y + 8 + rnd() * 10]]); }
-    for (let i = 0; i < 6; i++) { const x = m.plane + (i + rnd() * 0.6) * W / 6; teeth.push([[x, m.y1], [x + 12 + rnd() * 18, m.y1], [x + 4 + rnd() * 10, m.y1 - 6 - rnd() * 18]]); }
+    const W = m.x1 - m.x0, H = m.y1 - m.y0, teeth = []; this.teeth = teeth;                       // the jagged teeth of glass left in the frame once it is shattered
+    for (let i = 0; i < 9; i++) { const x = m.x0 + (i + rnd() * 0.5) * W / 9; teeth.push([[x, m.y0], [x + 10 + rnd() * 20, m.y0], [x + rnd() * 12, m.y0 + 8 + rnd() * 26]]); }
+    for (let i = 0; i < 5; i++) { const y = m.y0 + (i + rnd() * 0.5) * H / 5; teeth.push([[m.x0, y], [m.x0, y + 10 + rnd() * 18], [m.x0 + 6 + rnd() * 16, y + rnd() * 12]]); teeth.push([[m.x1, y + 6], [m.x1, y + 16 + rnd() * 16], [m.x1 - 6 - rnd() * 16, y + 8 + rnd() * 10]]); }
+    for (let i = 0; i < 6; i++) { const x = m.x0 + (i + rnd() * 0.6) * W / 6; teeth.push([[x, m.y1], [x + 12 + rnd() * 18, m.y1], [x + 4 + rnd() * 10, m.y1 - 6 - rnd() * 18]]); }
   }
-  get mid() { const m = this.m; return [(m.plane + m.x1) / 2, (m.y0 + m.y1) / 2]; }
-  clip(ctx, cx, cy) { const m = this.m; ctx.save(); ctx.beginPath(); ctx.rect(Math.round(m.plane - cx), Math.round(m.y0 - cy), m.x1 - m.plane, m.y1 - m.y0); ctx.clip(); }       // (the caller restores)
+  get mid() { const m = this.m; return [(m.x0 + m.x1) / 2, (m.y0 + m.y1) / 2]; }
+  clip(ctx, cx, cy) { const m = this.m; ctx.save(); ctx.beginPath(); ctx.rect(Math.round(m.x0 - cx), Math.round(m.y0 - cy), m.x1 - m.x0, m.y1 - m.y0); ctx.clip(); }       // (the caller restores)
   update(g) {
-    this.t++; const m = this.m, [mx, my] = this.mid, cam = g.camera; if (m.x1 < cam.x - 120 || m.plane > cam.x + 384 + 120) return;
-    if (this.broken) { g.fx.light(mx, my, 110, 0.38, [0.6, 0.3, 1]); if (this.t % 12 === 0) g.fx.emit({ x: rand(m.plane, m.x1), y: rand(m.y0 + 20, m.y1), vx: rand(-0.1, 0.1), vy: -rand(0.1, 0.4), life: rand(40, 80), s0: 7, s1: 1, c0: [0.7, 0.4, 1], c1: [0.3, 0.1, 0.6], a0: 0.7, a1: 0, kind: 6 }); }
+    this.t++; const m = this.m, [mx, my] = this.mid, cam = g.camera; if (m.x1 < cam.x - 120 || m.x0 > cam.x + 384 + 120) return;
+    if (this.broken) { g.fx.light(mx, my, 110, 0.38, [0.6, 0.3, 1]); if (this.t % 12 === 0) g.fx.emit({ x: rand(m.x0, m.x1), y: rand(m.y0 + 20, m.y1), vx: rand(-0.1, 0.1), vy: -rand(0.1, 0.4), life: rand(40, 80), s0: 7, s1: 1, c0: [0.7, 0.4, 1], c1: [0.3, 0.1, 0.6], a0: 0.7, a1: 0, kind: 6 }); }
     else g.fx.light(mx, my, 130, 0.5 + 0.1 * this.cr, [0.5, 0.62, 1]);
   }
-  // cracks spread from where the reflection's hand would meet yours: a fan of jagged lines (each branch waits for the line it grows from)
-  startCrack(oy) {
-    const m = this.m, ox = m.plane + 1; let s = (Math.round(oy) * 977 + 13) >>> 0; const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+  // cracks spread from where the reflection stands, all round it: jagged lines (each branch waits for the line it grows from)
+  startCrack(ox, oy) {
+    const m = this.m; let s = (Math.round(ox + oy * 7) * 977 + 13) >>> 0; const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
     this.lines = []; this.cr = 0;
     const grow = (x, y, a, len, start, depth) => {
       const pts = [[x, y]]; let L = 0; const me = { pts, len: 1, start }; this.lines.push(me);
       while (L < len) {
         const seg = 8 + rnd() * 13; a += (rnd() - 0.5) * 0.75; x += Math.cos(a) * seg; y += Math.sin(a) * seg; pts.push([x, y]); L += seg;
         if (depth < 2 && rnd() < 0.24) grow(x, y, a + (rnd() < 0.5 ? -1 : 1) * (0.5 + rnd() * 0.6), len * 0.38, start + (1 - start) * (L / len) * 0.9, depth + 1);
-        if (x > m.x1 + 2 || y < m.y0 - 2 || y > m.y1 + 2) break;
+        if (x < m.x0 - 2 || x > m.x1 + 2 || y < m.y0 - 2 || y > m.y1 + 2) break;
       }
       me.len = L;
     };
-    for (let i = 0; i < 11; i++) grow(ox, oy, -1.35 + i * 0.27 + (rnd() - 0.5) * 0.25, 70 + rnd() * 150, 0, 0);
+    for (let i = 0; i < 13; i++) grow(ox, oy, i * (Math.PI * 2 / 13) + (rnd() - 0.5) * 0.3, 45 + rnd() * 115, 0, 0);
   }
   // the glass bursts: a spray of shards at the hero, a flash, and what is left is a dark window with teeth of glass in the frame
-  shatter(g) {
+  shatter(g, ox, oy) {
     const m = this.m, fx = g.fx; this.broken = true; this.cr = 1;
-    for (let i = 0; i < 16; i++) fx.sparks(rand(m.plane + 6, m.x1 - 6), rand(m.y0 + 8, m.y1 - 8), 7, [[1, 1, 1], [0.7, 0.85, 1]], rand(2.4, 4.6), { dir: Math.PI, spread: 1.5, gy: 0.2 });
-    fx.flash([0.75, 0.8, 1], 0.7); fx.ring(m.plane, (m.y0 + m.y1) / 2, 90, [0.7, 0.8, 1], 28, 0.14); A.sfx('break'); A.sfx('boom'); g.shake(5, 22);
+    for (let i = 0; i < 20; i++) fx.sparks(rand(m.x0 + 6, m.x1 - 6), rand(m.y0 + 8, m.y1 - 8), 7, [[1, 1, 1], [0.7, 0.85, 1]], rand(2.4, 4.8), { dir: rand(0, Math.PI * 2), spread: Math.PI, gy: 0.2 });
+    fx.burst(ox, oy, 26, [[0.85, 0.9, 1], [0.35, 0.3, 0.55]], { speed: 3.4, s0: 16 }); fx.flash([0.75, 0.8, 1], 0.7); fx.ring(ox, oy, 100, [0.7, 0.8, 1], 28, 0.14); A.sfx('break'); A.sfx('boom'); g.shake(7, 28);
   }
   draw(ctx, cx, cy) {
     const m = this.m; if (m.fx + m.fw < cx - 4 || m.fx > cx + 392) return;
     drawFrameRect(ctx, Math.round(m.fx - cx), Math.round(m.fy - cy), m.fw, m.fh, 0, m.band);
-    const gx = Math.round(m.plane - cx), gy = Math.round(m.y0 - cy), gw = m.x1 - m.plane, gh = m.y1 - m.y0;
+    const gx = Math.round(m.x0 - cx), gy = Math.round(m.y0 - cy), gw = m.x1 - m.x0, gh = m.y1 - m.y0;
     const gr = ctx.createLinearGradient(0, gy, 0, gy + gh);
     if (!this.broken) { gr.addColorStop(0, '#3a4c78'); gr.addColorStop(0.55, '#212c4e'); gr.addColorStop(1, '#101734'); } else { gr.addColorStop(0, '#0a0514'); gr.addColorStop(0.6, '#180a2c'); gr.addColorStop(1, '#2a1048'); }
     ctx.fillStyle = gr; ctx.fillRect(gx, gy, gw, gh);
@@ -70,7 +70,7 @@ export class MirrorView {
   }
   // drawn over the reflection: the slow sheen of the glass, and the cracks
   over(ctx, cx, cy) {
-    if (this.broken) return; const m = this.m, t = this.t, gx = m.plane - cx, gy = m.y0 - cy, gw = m.x1 - m.plane, gh = m.y1 - m.y0;
+    if (this.broken) return; const m = this.m, t = this.t, gx = m.x0 - cx, gy = m.y0 - cy, gw = m.x1 - m.x0, gh = m.y1 - m.y0;
     this.clip(ctx, cx, cy);
     const sl = gh * 0.55; ctx.fillStyle = 'rgba(210,225,255,0.07)';
     for (const [off, w] of [[0, 22], [58, 8]]) { const x = ((t * 0.22 + off) % (gw + 120)) - 60; ctx.beginPath(); ctx.moveTo(gx + x, gy + gh); ctx.lineTo(gx + x + w, gy + gh); ctx.lineTo(gx + x + w + sl, gy); ctx.lineTo(gx + x + sl, gy); ctx.closePath(); ctx.fill(); }

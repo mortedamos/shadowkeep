@@ -370,8 +370,8 @@ class Game {
     drawBackground(ctx, r, cx, cy, t);
     for (const d of r.decos) if (isBack(d) && d.t !== 'waterfall') drawDeco(ctx, d, cx, cy, t, r);
     if (this.falls) for (const d of this.falls) drawDeco(ctx, d, cx, cy, t, r);                    // waterfalls: in front of the far trees, behind the ground and the hero
+    if (this.mirrorView) this.mirrorView.draw(ctx, cx, cy);                                          // the mirror hangs on the back wall: frame and glass, behind the ground and the hero (the reflection is the boss's, drawn over the glass)
     r.drawTiles(ctx, cx, cy, t);
-    if (this.mirrorView) this.mirrorView.draw(ctx, cx, cy);                                          // the mirror is set into the wall: frame and glass (the reflection is the boss's, drawn on top)
     for (const d of r.decos) if (!isBack(d)) drawDeco(ctx, d, cx, cy, t, r);
     drawFlames2D(ctx, this.flames, cx, cy, t);                       // braziers, burning windows, candelabra flames: in the scene, behind the hero
     for (const o of this.props) o.draw(ctx, cx, cy);
