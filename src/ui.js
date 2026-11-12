@@ -131,12 +131,12 @@ export class Dialog {
 // ---------------------------------------------------------------------------------------------- logo
 let LOGO = null;
 function logo() {
-  if (LOGO) return LOGO; const sc = 5, text = 'SHADOWKEEP', w = Math.ceil(textWidth(text, sc, 'display')) + 20, h = 7 * sc + 24, K = (window.game && window.game.K) || 3;
+  if (LOGO) return LOGO; const sc = 6.5, text = 'Shadowkeep', w = Math.ceil(textWidth(text, sc, 'title')) + 20, h = 7 * sc + 24, K = (window.game && window.game.K) || 3;
   const mk = () => { const c = document.createElement('canvas'); c.width = w * K; c.height = h * K; c.lw = w; c.lh = h; const g = c.getContext('2d'); g.setTransform(K, 0, 0, K, 0, 0); return [c, g]; };
   const [c, g] = mk(), [t, tg] = mk(), [o, og] = mk();
-  drawText(tg, text, w / 2, 10, { align: 'center', scale: sc, color: '#fff', font: 'display' });                // letter shapes
+  drawText(tg, text, w / 2, 10, { align: 'center', scale: sc, color: '#fff', font: 'title' });                  // letter shapes
   tg.globalCompositeOperation = 'source-in'; const gr = tg.createLinearGradient(0, 8, 0, 8 + 7 * sc + 6); gr.addColorStop(0, '#fff3b0'); gr.addColorStop(0.45, '#f0b43a'); gr.addColorStop(1, '#9a2a14'); tg.fillStyle = gr; tg.fillRect(0, 0, w, h);
-  drawText(og, text, w / 2, 10, { align: 'center', scale: sc, color: '#2a0a0e', font: 'display' });             // dark outline source
+  drawText(og, text, w / 2, 10, { align: 'center', scale: sc, color: '#2a0a0e', font: 'title' });               // dark outline source
   for (const [dx, dy] of [[-2, 0], [2, 0], [0, -2], [0, 2], [-2, -2], [2, 2], [-2, 2], [2, -2], [3, 3], [4, 4]]) g.drawImage(o, dx, dy, w, h);   // outline + drop shadow
   g.drawImage(t, 0, 0, w, h); LOGO = c; return c;
 }

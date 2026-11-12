@@ -12,7 +12,7 @@ export const STAINS = {
 export const STAIN_KEYS = Object.keys(STAINS);
 export const RAIN_WASH = 1 / (14 * 60), POOL_WASH = 1 / (2.5 * 60);     // per frame
 
-const BY_NAME = { fireskull: 'soot', ghoul: 'soot', emberwyrm: 'soot', zombie: 'mud', swampthing: 'mud', swampspider: 'mud', skeleton: 'mud', hound: 'blood', bat: 'blood', wyrm: 'blood', frostwyrm: 'blood', gnuknight: 'blood', armor: 'blood', automaton: 'soot' };
+const BY_NAME = { fireskull: 'soot', ghoul: 'soot', emberwyrm: 'soot', zombie: 'mud', swampthing: 'mud', swampspider: 'mud', skeleton: 'mud', hound: 'blood', bat: 'blood', wyrm: 'blood', frostwyrm: 'blood', gnuknight: 'blood', armor: 'blood', sorcerer: 'soot' };
 const BY_PROJ = { fire: 'soot', ember: 'soot', bone: 'mud', gear: 'soot' };
 const BOSS = { BossBeast: s => (s === 'breath' || s === 'pillars' ? 'soot' : 'blood'), BossNightmare: () => 'soot', BossColossus: () => 'soot', BossShadow: () => 'soot' };
 

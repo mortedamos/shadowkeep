@@ -14,6 +14,7 @@ const KINDS = {
   fire: { sheet: 'fireball', n: 3, w: 12, h: 12, grav: 0, glow: [1, 0.5, 0.15], hitFx: COLORS.fire, dmg: 10, flipDir: true, orb: true },
   skull: { sheet: 'fireskull', n: 8, w: 14, h: 14, grav: 0, glow: [0.4, 0.9, 1], hitFx: COLORS.blue, dmg: 12, scale: 0.38, fxTrail: COLORS.blue, spinFrames: true },
   spore: { sheet: 'orb_dark', n: 2, w: 10, h: 10, grav: 0, glow: [0.4, 1, 0.4], hitFx: COLORS.green, dmg: 9, scale: 1.5, fxTrail: COLORS.green },
+  blood: { sheet: 'orb_dark', n: 2, w: 9, h: 9, grav: 0, glow: [1, 0.1, 0.2], hitFx: COLORS.red, dmg: 9, scale: 1.3, fxTrail: COLORS.red },
   ember: { sheet: 'fireball', n: 3, w: 8, h: 8, grav: 0.04, glow: [1, 0.4, 0.1], hitFx: COLORS.fire, dmg: 7, scale: 0.6, orb: true },          // (orb: burning light + flame particles in the effects layer, not the fireball sprite)
 };
 

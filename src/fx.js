@@ -76,6 +76,7 @@ const BFRAG = `precision highp float; varying float vSide; uniform vec3 uColor; 
 void main(){ float f=1.0-abs(vSide); float a=pow(max(f,0.0),uPow); gl_FragColor=vec4(uColor*a*uAlpha,0.0); }`;
 
 // ---------------------------------------------------------------- darkness / lights / hurt overlay
+const DARK_FLOOR = 0.46, DARK_SLOPE = 0.38;      // darkness of a room = floor + its ambient * slope  (ambient 0.1 -> 0.50, 0.35 -> 0.59, 0.58 -> 0.68)
 const DFRAG = /* glsl */`
 precision highp float; varying vec2 vUv;
 uniform vec4 uLights[24]; uniform vec3 uLightCol[24]; uniform int uCount;
@@ -345,20 +346,24 @@ export class FX {
   setFog(density, base, color = [0.64, 0.7, 0.8], height = 105) { const u = this.fogU; u.uDensity.value = density || 0; u.uBase.value = base; u.uColor.value.set(color[0], color[1], color[2]); u.uHeight.value = height; }
 
   // ---- lights / darkness ---------------------------------------
-  setAmbient(amount, tint = [0.015, 0.01, 0.05], vig = 0.5) { this.darkU.uAmbient.value = amount; this.darkU.uTint.value.set(...tint); this.darkU.uVig.value = vig; }
+  // A room's `ambient` (0..~0.6, how gloomy it is relative to the others) is lifted onto a floor of darkness: even the lightest room is dim enough that a torch, a candle, a brazier or a lightning flash
+  // visibly lights what is around it (before this, a 0.1-0.35 veil made the lights almost invisible).  Lightning and other big flashes pull the veil back for a moment (render()).
+  setAmbient(amount, tint = [0.015, 0.01, 0.05], vig = 0.5) { this.ambBase = DARK_FLOOR + (amount || 0) * DARK_SLOPE; this.darkU.uAmbient.value = this.ambBase; this.darkU.uTint.value.set(...tint); this.darkU.uVig.value = vig; }
   clearLights() { this.lights.length = 0; }
   light(x, y, r, intensity = 1) { if (this.lights.length < 24) this.lights.push([x, y, r, intensity]); }   // world coords; made screen-relative at render time
 
   // ---- ambient weather ------------------------------------------
   setAmbientFx(type) { this.ambient = type; }
   weather(dt) {
-    const t = this.ambient; if (!t) return; const cx = this.camX, cy = this.camY;
-    if (t === 'rain') for (let i = 0; i < 3; i++) this.emit({ x: cx + rand(-60, W + 100), y: cy - 10, vx: -1.6, vy: rand(7, 9.5), life: 40, s0: 9, s1: 9, c0: [0.55, 0.65, 0.9], a0: 0.45, a1: 0.35, kind: 4, rot: Math.atan2(9, -1.6) });
-    else if (t === 'mist') { if (Math.random() < 0.12) this.emit({ layer: 'alpha', x: cx + rand(-30, W + 30), y: cy + rand(H * 0.6, H), vx: rand(0.1, 0.35), vy: rand(-0.04, 0.02), life: 260, s0: 90, s1: 130, c0: [0.28, 0.32, 0.4], a0: 0.0, a1: 0.0, kind: 5 }); }
-    else if (t === 'dust') { if (Math.random() < 0.25) this.emit({ x: cx + rand(0, W), y: cy + rand(0, H), vx: rand(-0.1, 0.1), vy: rand(-0.08, 0.05), life: rand(120, 240), s0: 2.5, s1: 1.5, c0: [1, 0.85, 0.55], a0: 0.0, a1: 0.0, kind: 6 }); }
-    else if (t === 'embers') { if (Math.random() < 0.3) this.emit({ x: cx + rand(0, W), y: cy + H + 4, vx: rand(-0.3, 0.3), vy: -rand(0.3, 0.9), life: rand(120, 240), s0: 2.5, s1: 1, c0: [1, 0.55, 0.2], c1: [0.7, 0.1, 0.05], a0: 0.9, a1: 0, kind: 1 }); }
-    else if (t === 'wisps') { if (Math.random() < 0.06) this.emit({ x: cx + rand(0, W), y: cy + rand(H * 0.3, H), vx: rand(-0.15, 0.15), vy: -rand(0.1, 0.35), life: rand(160, 300), s0: 9, s1: 3, c0: [0.5, 0.75, 1], c1: [0.4, 0.3, 0.9], a0: 0.8, a1: 0, kind: 6 }); }
-    else if (t === 'sparks') { if (Math.random() < 0.12) this.emit({ x: cx + rand(0, W), y: cy + rand(0, H * 0.5), vx: rand(-0.6, 0.6), vy: rand(0, 0.5), gy: 0.05, life: rand(30, 60), s0: 2.5, s1: 1, c0: [1, 0.85, 0.4], c1: [1, 0.4, 0.1], a0: 1, a1: 0, kind: 1 }); }
+    const t = this.ambient; if (!t || !(dt > 0)) return;                          // (dt 0 = the world is held, e.g. behind a dialogue box: nothing may fall, or it would all come down at once afterwards)
+    const cx = this.camX, cy = this.camY; let n = 0;
+    if (t === 'rain') { this.rainAcc = (this.rainAcc || 0) + 3 * dt; n = Math.floor(this.rainAcc); this.rainAcc -= n; }          // 3 drops per full step, scaled by the step length (slow-motion and hit-stop run at half steps)
+    if (t === 'rain') for (let i = 0; i < n; i++) this.emit({ x: cx + rand(-60, W + 100), y: cy - 10, vx: -1.6, vy: rand(7, 9.5), life: 40, s0: 9, s1: 9, c0: [0.55, 0.65, 0.9], a0: 0.45, a1: 0.35, kind: 4, rot: Math.atan2(9, -1.6) });
+    else if (t === 'mist') { if (Math.random() < 0.12 * dt) this.emit({ layer: 'alpha', x: cx + rand(-30, W + 30), y: cy + rand(H * 0.6, H), vx: rand(0.1, 0.35), vy: rand(-0.04, 0.02), life: 260, s0: 90, s1: 130, c0: [0.28, 0.32, 0.4], a0: 0.0, a1: 0.0, kind: 5 }); }
+    else if (t === 'dust') { if (Math.random() < 0.25 * dt) this.emit({ x: cx + rand(0, W), y: cy + rand(0, H), vx: rand(-0.1, 0.1), vy: rand(-0.08, 0.05), life: rand(120, 240), s0: 2.5, s1: 1.5, c0: [1, 0.85, 0.55], a0: 0.0, a1: 0.0, kind: 6 }); }
+    else if (t === 'embers') { if (Math.random() < 0.3 * dt) this.emit({ x: cx + rand(0, W), y: cy + H + 4, vx: rand(-0.3, 0.3), vy: -rand(0.3, 0.9), life: rand(120, 240), s0: 2.5, s1: 1, c0: [1, 0.55, 0.2], c1: [0.7, 0.1, 0.05], a0: 0.9, a1: 0, kind: 1 }); }
+    else if (t === 'wisps') { if (Math.random() < 0.06 * dt) this.emit({ x: cx + rand(0, W), y: cy + rand(H * 0.3, H), vx: rand(-0.15, 0.15), vy: -rand(0.1, 0.35), life: rand(160, 300), s0: 9, s1: 3, c0: [0.5, 0.75, 1], c1: [0.4, 0.3, 0.9], a0: 0.8, a1: 0, kind: 6 }); }
+    else if (t === 'sparks') { if (Math.random() < 0.12 * dt) this.emit({ x: cx + rand(0, W), y: cy + rand(0, H * 0.5), vx: rand(-0.6, 0.6), vy: rand(0, 0.5), gy: 0.05, life: rand(30, 60), s0: 2.5, s1: 1, c0: [1, 0.85, 0.4], c1: [1, 0.4, 0.1], a0: 1, a1: 0, kind: 1 }); }
   }
 
   // ------------------------------------------------------------ per-step update
@@ -392,7 +397,7 @@ export class FX {
   render() {
     const u = this.darkU; u.uCount.value = this.lights.length;
     for (let i = 0; i < this.lights.length; i++) { const l = this.lights[i]; u.uLights.value[i].set(l[0] - this.camX, l[1] - this.camY, l[2], l[3]); }
-    u.uHurt.value = this.hurt;
+    u.uHurt.value = this.hurt; u.uAmbient.value = (this.ambBase === undefined ? u.uAmbient.value : this.ambBase) * (1 - Math.min(0.85, this.flashA * 1.15));        // a flash (lightning...) lights the whole scene while it lasts
     { const F = this.fogU; this.fogMesh.visible = F.uDensity.value > 0.01;
       if (this.fogMesh.visible) { F.uCam.value.set(this.camX + this.shakeX, this.camY + this.shakeY); F.uTime.value = this.time;
         for (let i = 0; i < 6; i++) { const g = this.gusts[i]; if (g) { F.uG.value[i].set(g.x, g.y, g.vx, g.vy); F.uGP.value[i].set(g.r, g.k); } else { F.uG.value[i].set(0, 0, 0, 0); F.uGP.value[i].set(1, 0); } } } }

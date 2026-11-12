@@ -4,7 +4,7 @@ import { extra } from './world.js';
 import { T } from './util.js';
 
 const BACK_KINDS = new Set(['column']);
-export const isBack = d => BACK_KINDS.has(d.t) || (d.t === 'img' && d.back);
+export const isBack = d => BACK_KINDS.has(d.t) || (d.back && (d.t === 'img' || d.t === 'bookcase' || d.t === 'barwin'));
 
 export function drawDeco(g, d, cx, cy, t, room) {
   const x = Math.round(d.x - cx), y = Math.round(d.y - cy);
@@ -13,9 +13,29 @@ export function drawDeco(g, d, cx, cy, t, room) {
     case 'img': { const im = IMG[d.img], sc = d.scale || 1, w = Math.round(im.width * sc), h = Math.round(im.height * sc); g.drawImage(im, Math.round(x - w / 2), y - h + (d.sink || 0), w, h); break; }
     case 'hang': { const im = IMG[d.img], sc = d.scale || 1, w = Math.round(im.width * sc), h = Math.round(im.height * sc); g.drawImage(im, Math.round(x - w / 2), y, w, h); break; }       // hangs from the top edge (banners, a caged skeleton)
     case 'dgtorch': drawSheet(g, 'dg_torch', Math.floor(t / 6 + d.x) % 4, x, y); break;
-    case 'bust': {            // a haunted bust: the eyes flare now and then, and burn steadily when you come close
-      const near = room.playerX !== undefined && Math.abs(room.playerX - d.x) < 90 && !d.noWatch, ph = (t + d.x * 7) % 420;
-      drawSheet(g, 'haunted_bust', d.red || near ? 3 + (Math.floor(t / 14) % 2) : ph < 60 ? Math.floor(ph / 10) : 0, x, y, { scale: d.scale || 1 }); break;
+    case 'bookcase': {         // a tall bookcase drawn in code: oak frame, three shelves of books in a dozen colours (the same books every time for the same place)
+      const W = 30, H = 46, x0 = x - 15, y0 = y - H, hh = n => { const s = Math.sin(d.x * 12.9898 + n * 78.233) * 43758.5453; return s - Math.floor(s); };
+      const cols = ['#7a1e2a', '#2c4a6e', '#3c6a40', '#8a6a2a', '#5a2c6c', '#a8884a', '#2a2a3c', '#6a3a1a'];
+      g.fillStyle = '#17100c'; g.fillRect(x0, y0, W, H);
+      for (let s = 0; s < 3; s++) {
+        const floor = y0 + 15 + s * 14; let bx = x0 + 2, k = 0;
+        while (bx < x0 + W - 3) {
+          const bw = 2 + Math.floor(hh(s * 40 + k) * 3), bh = 7 + Math.floor(hh(s * 40 + k + 100) * 5); k++;
+          if (hh(s * 40 + k + 200) < 0.08) { bx += 3; continue; }                                           // a gap on the shelf
+          g.fillStyle = cols[Math.floor(hh(s * 40 + k + 300) * cols.length)]; g.fillRect(bx, floor - bh, bw, bh); g.fillStyle = 'rgba(255,255,255,0.13)'; g.fillRect(bx, floor - bh, 1, bh); bx += bw;
+        }
+        g.fillStyle = '#5a3a22'; g.fillRect(x0 + 1, floor, W - 2, 2); g.fillStyle = '#7a5230'; g.fillRect(x0 + 1, floor, W - 2, 1);        // the shelf board
+      }
+      g.fillStyle = '#3a2418'; g.fillRect(x0, y0, 2, H); g.fillRect(x0 + W - 2, y0, 2, H); g.fillRect(x0 - 1, y0 - 2, W + 2, 3); g.fillStyle = '#7a5230'; g.fillRect(x0 - 1, y0 - 2, W + 2, 1);       // frame and cornice
+      g.fillStyle = '#2a1a10'; g.fillRect(x0 - 1, y - 2, W + 2, 2); break;                                  // plinth
+    }
+    case 'barwin': {           // a barred window: dark glass with a streak of moonlight behind iron bars, in a stone arch
+      const w = 20, h = 30, x0 = x - w / 2, top = y - h;
+      g.fillStyle = '#4a4458'; g.beginPath(); g.moveTo(x0 - 2, y + 1); g.lineTo(x0 - 2, top + 8); g.arc(x, top + 8, w / 2 + 2, Math.PI, 0); g.lineTo(x0 + w + 2, y + 1); g.closePath(); g.fill();
+      g.fillStyle = '#10141f'; g.beginPath(); g.moveTo(x0, y); g.lineTo(x0, top + 8); g.arc(x, top + 8, w / 2, Math.PI, 0); g.lineTo(x0 + w, y); g.closePath(); g.fill();
+      g.fillStyle = 'rgba(120,150,200,0.2)'; g.fillRect(x0 + 2, top + 5, 5, h - 7);
+      g.fillStyle = '#2c2c3a'; for (let i = 0; i < 4; i++) g.fillRect(x0 + 2 + i * 5, top + 2, 2, h - 2);
+      g.fillStyle = '#3a3a4c'; g.fillRect(x0, top + 14, w, 2); g.fillStyle = '#6a647a'; g.fillRect(x0 - 3, y, w + 6, 2); break;
     }
     case 'column': { const im = room.theme === 'throne' ? extra().throne_col : IMG.church_column; g.drawImage(im, Math.round(x - im.width / 2), y - im.height + 6); break; }
     case 'pool': {            // a shallow pool lying on the floor: standing in it washes the cloak
@@ -33,7 +53,6 @@ export function drawDeco(g, d, cx, cy, t, room) {
       g.fillStyle = '#c9a14a'; g.fillRect(x - w / 2 - 1, top, w + 2, 3); g.fillRect(x - 1, top + 12, 2, 10); g.fillRect(x - 4, top + 15, 8, 2); g.fillRect(x - 3, top + 24, 6, 1); break;
     }
     case 'door': {
-      if (d.kind === 'shelf') { const open = room.nearDoor && Math.abs(room.nearDoor.x * 16 + 8 - d.x) < 2; d._o = Math.max(0, Math.min(7, (d._o || 0) + (open ? 0.45 : -0.45))); drawSheet(g, 'cell_door', Math.floor(d._o), x, y, { scale: 0.5 }); break; }    // the Hall's bookcase doors swing open as you step up to them
       const sprite = d.kind === 'crypt' ? IMG.dg_arch : IMG.dg_door; if (sprite) { const w = Math.round(sprite.width * 0.5), h = Math.round(sprite.height * 0.5); g.drawImage(sprite, Math.round(x - w / 2), y - h, w, h); break; }
       const wood = d.kind === 'wood', w = 30, h = 44;
       g.fillStyle = '#0a0612'; g.fillRect(x - w / 2, y - h, w, h); g.beginPath(); g.arc(x, y - h, w / 2, Math.PI, 0); g.fill();

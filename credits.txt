@@ -37,7 +37,7 @@ Cropped and rearranged for use in the game.
 
 ## Balmer, with Redshrike - CC BY 3.0
 Bosses and Monsters Spritesheets (Ars Notoria)
-The acolyte, the archmage, the gnu knight, the Cinder Warden and the Mire Mother.
+The acolyte, the archmage, the brass sorcerer, the gnu knight, the Cinder Warden, the Brazen Hierophant and the Mire Mother.
 Cropped and rearranged for use in the game.
 
 ## Emcee Flesher - OGA-BY 3.0
@@ -47,6 +47,11 @@ Sliced and re-assembled in code.
 
 ## Anokolisa
 The moonlit graveyard set.
+
+## xxg
+xxg_4_free
+The Crimson Count, the vampire lord.
+; (the download came without a licence file: confirm its terms with the author before a public release, and credit them properly here)
 
 ## Szadi art - public domain
 Pixel Platformer Set 1
@@ -64,6 +69,10 @@ Some sprites are recoloured while the game loads.
 ## SIL Open Font Licence 1.1
 Pirata One - Rodrigo Fuenzalida and Nicolas Massi
 Almendra Bold - Ana Sanfelippo
+
+## Typographer Mediengestaltung
+Blackletter ExtraBold - the title
+; (the font came without a licence file and its copyright notice says all rights reserved: confirm that it may be shipped before a public release)
 
 ---
 

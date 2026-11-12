@@ -17,8 +17,7 @@ const ENV = [
   'dusk_sky', 'dusk_far', 'dusk_mountains', 'dusk_trees', 'dusk_fore', 'forest_tree_1', 'forest_tree_2', 'forest_tree_3', 'forest_tree_4',
   'swamp_background', 'swamp_mid01', 'swamp_mid02', 'swamp_props', 'swamp_tileset', 'swamp_trees',
   // Anokolisa 'Final' (moonlit graveyard), The Sidescroller's Dungeon tiles (32px art)
-  'moon_sky', 'moon_tombs', 'moon_foliage1', 'moon_foliage2', 'prop_window', 'prop_skeleton', 'prop_cauldrons', 'prop_shelf_1', 'prop_shelf_2', 'prop_shelf_3', 'prop_shelf_4', 'prop_shelf_5', 'prop_shelf_6',
-  'dg_pillar_1', 'dg_pillar_2', 'dg_pillar_3', 'dg_pillar_4', 'dg_arch', 'dg_door', 'dg_crates', 'dg_urn_1', 'dg_urn_2', 'dg_urn_3', 'dg_banner_1', 'dg_banner_2', 'dg_banner_3', 'dg_banner_4', 'dg_banner_5', 'dg_banner_6',
+  'moon_sky', 'moon_tombs', 'moon_foliage1', 'moon_foliage2', 'dg_pillar_1', 'dg_pillar_2', 'dg_pillar_3', 'dg_pillar_4', 'dg_arch', 'dg_door', 'dg_crates', 'dg_urn_1', 'dg_urn_2', 'dg_urn_3', 'dg_banner_1', 'dg_banner_2', 'dg_banner_3', 'dg_banner_4', 'dg_banner_5', 'dg_banner_6',
   'town_sky', 'town_mid', 'town_house_1', 'town_house_2', 'town_house_3', 'town_barrel', 'town_crates', 'town_crate', 'town_lamp', 'town_cart', 'town_well', 'town_sign', 'crypt_tilemap',
 ];
 
@@ -37,9 +36,13 @@ const META = {
   fireball: { ay: 0.5 }, death_small: {}, death_big: {},
   reaper_idle: { face: -1 }, reaper_run: { face: -1 }, reaper_attack: { face: -1 }, reaper_dead: { face: -1 },       // Szadi's sickle fighter is drawn facing left
 };
+// the Crimson Count (xxg_4_free): his feet are on row 130 of each 144px cell
+Object.assign(META, { vampire_idle: { ay: 0.9 }, vampire_run: { ay: 0.9 }, vampire_atk: { ay: 0.9 }, vampire_jump: { ay: 0.9 }, vampire_hurt: { ay: 0.9 }, vampire_dead: { ay: 0.9 } });
 // Some Ars Notoria cells leave empty rows under the feet (the gnu 7-9, the archmage 7); `dy` pushes them down (those rows + 2: enemies are drawn 1px high, and the feet should dip 1px into the floor) so the creature stands ON the ground instead of hovering over it.
 // (an entry here replaces the "Ars sheets face left" default, so each says face: -1 itself)
 Object.assign(META, { ars_gnu_r0: { face: -1, dy: 11 }, ars_gnu_r1: { face: -1, dy: 11 }, ars_gnu_r2: { face: -1, dy: 10 }, ars_gnu_r3: { face: -1, dy: 9 }, ars_mage2_r0: { face: -1, dy: 9 }, ars_mage2_r1: { face: -1, dy: 9 } });
+// the bronze-robed, silver-masked mage (mage 1) fills its whole 85x94 cell: the hem of the robe is the bottom row
+Object.assign(META, { ars_mage1_r0: { face: -1, dy: 2 }, ars_mage1_r1: { face: -1, dy: 2 } });
 // the Gothic Hero (Ansimuz): feet on the bottom row of each cell, faces right.  hero_attack's body sits a little left of the cell centre.
 Object.assign(META, { hero_idle: { ax: 0.5 }, hero_run: { ax: 0.5 }, hero_attack: { ax: 0.47 }, hero_jump: { ay: 1 }, hero_jump_attack: {}, hero_crouch: {}, hero_hurt: {} });
 
@@ -71,7 +74,7 @@ export async function loadAll(progress = () => {}) {
   buildCyberTooth(cyberImg);              // the skull-headed serpent: one big grid sliced into strips
   buildRecolors();
   buildWhiteCape();                       // the hero's baked red cape -> white (used while the White Cloak option is on)
-  drawProcedural(addSheet, SHEET, IMG);   // custom pixel art: bat, armor, automaton, icons, props
+  drawProcedural(addSheet, SHEET, IMG);   // custom pixel art: bat, armor, icons, props
   buildEnchants();                        // enchanted sword variants (needs the hero sheets)
 }
 

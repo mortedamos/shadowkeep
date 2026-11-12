@@ -219,32 +219,6 @@ class Wraith extends Enemy {
   draw(ctx, cx, cy) { this.spr(ctx, 'wraith', Math.floor(this.t / 10) % 4, cx, cy + Math.sin(this.t * 0.1) * 1.5, { alpha: 0.95 }); }
 }
 
-// ------------------------------------------------------------------------------------------------ CLOCKWORK AUTOMATON
-class Automaton extends Enemy {
-  constructor(g, x, y, o) { super(g, x, y, 18, 42, o); this.hp = this.maxHp = 44; this.dmg = 16; this.xp = 26; this.kbRes = 0.7; this.state = 'walk'; this.st = 0; this.cool = 30; this.gcool = 150 + rand(80); this.name = 'automaton'; this.deathFx = COLORS.gold; this.heavy = true; }
-  onDeath() { const g = this.g; g.fx.sparks(this.x, this.cy, 30, COLORS.gold, 4, { gy: 0.18 }); g.fx.ring(this.x, this.cy, 36, [1, 0.8, 0.3], 22); for (let i = 0; i < 4; i++) g.fx.emit({ x: this.x, y: this.cy, vx: rand(-2, 2), vy: -rand(1, 3.5), gy: 0.15, drag: 0.99, life: 50, s0: 7, s1: 5, c0: [0.9, 0.7, 0.3], a0: 1, a1: 0.6, kind: 1 }); A.sfx('boom'); }
-  ai(g) {
-    const p = g.player, d = Math.abs(this.dx()); this.st++; if (this.cool > 0) this.cool--; if (this.gcool > 0) this.gcool--;
-    if (this.state === 'walk') {
-      this.face(); if (d > 34 && groundAhead(this, g.room, 6) && !wallAhead(this, g.room, 3) && d < 260) this.vx = approach(this.vx, this.dir * 0.48, 0.05); else this.vx = approach(this.vx, 0, 0.1);
-      if (this.t % 26 === 0 && Math.abs(this.vx) > 0.2) A.sfx('gear');
-      if (d < 44 && this.cool === 0 && Math.abs(p.y - this.y) < 40) { this.state = 'wind'; this.st = 0; this.vx = 0; A.sfx('steam'); }
-      else if (d > 70 && d < 180 && this.gcool === 0 && Math.abs(p.y - this.y) < 60) { this.gcool = 220; A.sfx('gear'); g.addProjectile(new Projectile(this.x + this.dir * 14, this.y - 22, this.dir * 1.9, -2.2, 'gear', { dmg: 12, life: 420 })); }
-    } else if (this.state === 'wind') { this.vx = 0; if (this.st % 6 === 0) g.fx.smoke(this.x - this.dir * 6, this.y - 36, 1, { s0: 6, s1: 14, c0: [0.75, 0.78, 0.85], c1: [0.4, 0.42, 0.5], a: 0.35 }); if (this.st > 26) { this.state = 'strike'; this.st = 0; A.sfx('boom'); } }
-    else if (this.state === 'strike') {
-      if (this.st === 2) { const hb = { x: this.dir > 0 ? this.x + 4 : this.x - 52, y: this.y - 40, w: 48, h: 40 }; g.fx.sparks(this.x + this.dir * 36, this.y - 12, 10, COLORS.gold, 3); g.shake(2, 6); if (overlap(hb, p.hurtbox)) p.hurt(this.dmg, this.x); }
-      if (this.st > 12) { this.state = 'rec'; this.st = 0; }
-    } else if (this.state === 'rec') { this.vx = 0; if (this.st > 26) { this.state = 'walk'; this.cool = 50; } }
-  }
-  draw(ctx, cx, cy) {
-    let id = 'autom_idle', f = Math.floor(this.t / 10) % 4;
-    if (this.state === 'walk') { if (Math.abs(this.vx) > 0.1) { id = 'autom_walk'; f = Math.floor(this.t / 8) % 6; } }
-    else if (this.state === 'wind') { id = 'autom_attack'; f = this.st < 13 ? 0 : 1; } else if (this.state === 'strike') { id = 'autom_attack'; f = this.st < 6 ? 2 : 3; } else if (this.state === 'rec') { id = 'autom_attack'; f = 4; }
-    if (this.hurtT > 5) { id = 'autom_hurt'; f = 0; }
-    this.spr(ctx, id, f, cx, cy); this.g.fx.glow(this.x + this.dir * 4, this.y - 47, 8, [1, 0.8, 0.3], 0.5);
-  }
-}
-
 // ------------------------------------------------------------------------------------------------ FIRE SKULL
 class FireSkull extends Enemy {
   constructor(g, x, y, o) { super(g, x, y + 10, 18, 20, o); this.hp = this.maxHp = 6; this.dmg = 10; this.xp = 8; this.gravity = false; this.state = 'float'; this.st = 0; this.ox = x; this.oy = y; this.phase = rand(TAU); this.scale = 0.5; this.name = 'fireskull'; this.deathFx = COLORS.fire; this.kbRes = 0.2; }
@@ -439,4 +413,4 @@ Object.assign(FrostWyrm.prototype, { key: 'frostwyrm', variant: 'frost', fx: COL
 class EmberWyrm extends Wyrm {}
 Object.assign(EmberWyrm.prototype, { key: 'emberwyrm', variant: 'ember', fx: COLORS.fire, glowC: [1, 0.5, 0.2], spits: true });
 
-export const ENEMY_TYPES = { bat: Bat, zombie: Zombie, skeleton: Skeleton, armor: Armor, ghost: Ghost, wraith: Wraith, auto: Automaton, fireskull: FireSkull, hound: Hound, ghoul: Ghoul, wizard: Wizard, wyrm: Wyrm, frostwyrm: FrostWyrm, emberwyrm: EmberWyrm };
+export const ENEMY_TYPES = { bat: Bat, zombie: Zombie, skeleton: Skeleton, armor: Armor, ghost: Ghost, wraith: Wraith, fireskull: FireSkull, hound: Hound, ghoul: Ghoul, wizard: Wizard, wyrm: Wyrm, frostwyrm: FrostWyrm, emberwyrm: EmberWyrm };

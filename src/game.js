@@ -13,7 +13,7 @@ import { BEAST_TYPES } from './beasts.js';
 import { randomItemId } from './itemdata.js';
 import { BOSS_TYPES, Column } from './bosses.js';
 import { Projectile, Shockwave, FirePatch } from './projectiles.js';
-import { Statue, Pot, Altar, Waystone, Tablet, Chest, Upgrade, Relic, Pickup, ABILITIES, UPGRADES } from './props.js';
+import { Statue, Barrel, Altar, Waystone, Tablet, Chest, Upgrade, Relic, Pickup, ABILITIES, UPGRADES } from './props.js';
 import { drawDeco, isBack, roomFlames, drawFlames2D } from './decor.js';
 import { drawIce } from './enchant.js';
 import { drawSheet } from './assets.js';
@@ -137,7 +137,7 @@ class Game {
       const s = def.spawns[si], o = s.o || {}, x = s.x * 16 + 8, y = s.y * 16;
       if (s.type === 'statue') this.props.push(new Statue(x, y, o));
       else if (s.type === 'altar') this.props.push(new Altar(x, y));
-      else if (s.type === 'pot') this.props.push(new Pot(x, y, o));
+      else if (s.type === 'barrel') this.props.push(new Barrel(x, y, o));
       else if (s.type === 'waystone') this.props.push(new Waystone(x, y, { id: 'tp_' + id }));
       else if (s.type === 'itemspawn') { if (!S.flags[o.id]) { const pk = new Pickup('it_' + o.item, x, y - 6, 0, 0); pk.qty = o.qty || pk.qty; pk.flagId = o.id; pk.life = 1e9; this.pickups.push(pk); } }
       else if (s.type === 'tablet') this.props.push(new Tablet(x, y, o));
@@ -183,7 +183,7 @@ class Game {
   nearInteractable() {
     const p = this.player, pb = { x: p.x - 14, y: p.y - 40, w: 28, h: 44 };
     for (const o of this.props) if (o.interact && !o.dead && overlap(pb, o.box) && !(o.open === true)) return { kind: 'prop', o, x: o.x, y: o.y - (o.box.h + 8) };
-    for (const d of this.room.doors) if (Math.abs(p.x - (d.x * 16 + 8)) < 14 && Math.abs(p.y - d.gy * 16) < 10) return { kind: 'door', d, x: d.x * 16 + 8, y: d.gy * 16 - 54 };
+    if (!(this.boss && this.boss.active && !this.boss.dying)) for (const d of this.room.doors) if (Math.abs(p.x - (d.x * 16 + 8)) < 14 && Math.abs(p.y - d.gy * 16) < 10) return { kind: 'door', d, x: d.x * 16 + 8, y: d.gy * 16 - 54 };
     for (const e of this.enemies) if (e.talk && !e.dead && Math.abs(p.x - e.x) < 26 && Math.abs(p.y - e.y) < 24) return { kind: 'npc', e, x: e.x, y: e.y - 58 };            // people you can talk to
     return null;
   }
@@ -354,7 +354,7 @@ class Game {
     const r = this.room, p = this.player;
     let sx = 0, sy = 0; if (this.shakeT > 0) { const a = this.shakeA * Math.min(1, this.shakeT / 6); sx = (Math.random() * 2 - 1) * a; sy = (Math.random() * 2 - 1) * a; }
     const cx = Math.round(this.camera.x + sx), cy = Math.round(this.camera.y + sy);
-    { const n = this.state === 'play' ? this.nearInteractable() : null; r.nearDoor = n && n.kind === 'door' ? n.d : null; r.playerX = p.x; }          // scenery reacts: bookcase doors open, haunted busts watch
+    { const n = this.state === 'play' ? this.nearInteractable() : null; r.nearDoor = n && n.kind === 'door' ? n.d : null; r.playerX = p.x; }          // (room.nearDoor / room.playerX: scenery can react to the player)
     drawBackground(ctx, r, cx, cy, t);
     for (const d of r.decos) if (isBack(d)) drawDeco(ctx, d, cx, cy, t, r);
     r.drawTiles(ctx, cx, cy, t);

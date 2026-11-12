@@ -97,10 +97,10 @@ const add = b => { ROOMS[b.def.id] = b.def; return b; };
 // ---------------------------------------------------------------------------------------------------------------------------------------------------
 // Candelabras are scenery: lit, and nothing to break.  Wherever a room's builder dropped them loosely ("loose" ones, as the breakable candles used to be placed), they are lifted
 // and set again the way a castle's steward would: in pairs flanking the doors and the waystone, one beside each tablet, at the foot of walls and steps, and - with what is left -
-// spaced evenly along the floor.  Never on top of statues, pots, loot or doors.  The result is the same every time (a hash of the room's id, not the generator's random numbers).
+// spaced evenly along the floor.  Never on top of statues, barrels, loot or doors.  The result is the same every time (a hash of the room's id, not the generator's random numbers).
 // (A candelabra placed with { keep: true } is deliberate - the pair beside an altar - and stays where it is.)
-const STATIC_SPAWNS = new Set(['statue', 'pot', 'tablet', 'altar', 'chest', 'waystone', 'itemspawn', 'upgrade']);
-const BLOCK_DECOS = new Set(['brazier', 'column', 'pool', 'door', 'bust', 'gate']);
+const STATIC_SPAWNS = new Set(['statue', 'barrel', 'tablet', 'altar', 'chest', 'waystone', 'itemspawn', 'upgrade']);
+const BLOCK_DECOS = new Set(['brazier', 'column', 'pool', 'door', 'gate']);
 export function arrangeCandelabras(def) {
   if (def.cdlDone) return; def.cdlDone = true;                                                          // (hand-built rooms are shared between worlds: do it once)
   const loose = def.decos.filter(d => d.t === 'cdl' && !d.keep); if (!loose.length && !def.spawns.some(s => s.type === 'waystone')) return;
@@ -148,7 +148,8 @@ export function arrangeCandelabras(def) {
   for (const [tx, img, burn, sign, enter] of [[12, 'town_house_1', [0, 1, 2], false, 'hv1'], [30, 'town_house_3', [0, 2]], [50, 'town_house_2', [0, 1, 3], true, 'hv2'], [68, 'town_house_1', [0, 2], true, 'hv3'], [83, 'town_house_3', [1, 2]]]) {
     b.house(tx, 12, img, burn, !!sign, enter);          // three of the houses can be entered (UP at the door)
   }
-  b.d('img', 22, 12, { img: 'town_lamp' }).d('img', 40, 12, { img: 'town_lamp' }).d('img', 59, 12, { img: 'town_lamp' }).d('img', 3, 12, { img: 'town_cart' }).d('img', 36, 12, { img: 'town_well' }).d('img', 57, 12, { img: 'town_crates' }).d('img', 61, 12, { img: 'town_barrel' });
+  b.d('img', 22, 12, { img: 'town_lamp' }).d('img', 40, 12, { img: 'town_lamp' }).d('img', 59, 12, { img: 'town_lamp' }).d('img', 3, 12, { img: 'town_cart' }).d('img', 36, 12, { img: 'town_well' }).d('img', 57, 12, { img: 'town_crates' });
+  b.e('barrel', 61, 12, { drop: 'coin' });                                  // (a breakable one: barrels and crates you can smash look like this, and nothing else does)
   b.d('brazier', 28, 12).d('brazier', 46, 12).d('brazier', 65, 12);          // (the first one used to stand at 26, hidden behind the stone block at 24-26)
   b.d('pool', 17, 12, { w: 80 });                                             // a puddle in the street (water washes the white cloak)
   b.tablet(6, 12, 'THE BELLS RANG AT DUSK. THEN THE THINGS CAME DOWN FROM THE HILL, AND THE FIRES BEGAN. THE KEEP IS BEYOND THE GATE.', 'tab0');
@@ -214,7 +215,7 @@ saveRoom('s1', "Gravekeeper's Crypt", 1, 'g2', 37, 12, 1, 2);
   b.floor(0, 60, 12).ceil(0, 60, 2).plat(12, 5, 8).plat(36, 6, 8).block(22, 9, 3, 3).block(48, 10, 4, 2);
   b.torches([6, 17, 28, 40, 52], 6).d('banner', 14, 2, { len: 6, color: '#7a1e2a' }).d('banner', 30, 2, { len: 6, color: '#7a1e2a' }).d('banner', 46, 2, { len: 6, color: '#7a1e2a' });
   b.d('cdl', 9, 12).d('cdl', 33, 12).d('cdl', 55, 12);
-  b.door(57, 12, 's2', 3, 12, 'shelf');
+  b.door(57, 12, 's2', 3, 12, 'wood');
   b.candle(14, 12, 'heart').e('statue', 26, 12, { drop: 'mana' }).candle(38, 8, 'potion').candle(44, 12, 'coin').e('statue', 18, 12, { drop: 'coin' });
   b.many('bat', [14, 30, 42], 2).many('armor', [26, 40], 12).e('ghost', 50, 7);
   b.tablet(4, 12, 'THE GREAT HALL ONCE RANG WITH FEASTING. NOW THE ARMOR ITSELF STALKS THE FLOOR.', 'tab3');
@@ -307,7 +308,7 @@ saveRoom('s3', 'Chapel Sanctuary', 3, 'c1', 33, 12, 7, 0);
   b.torches([8, 20, 34, 48, 62], 6).d('brazier', 14, 12).d('brazier', 40, 12).d('brazier', 66, 12);
   b.door(31, 12, 's5', 3, 12, 'wood');
   b.e('statue', 10, 12, { drop: 'heart' }).candle(42, 12, 'mana').candle(60, 12, 'potion');
-  b.many('auto', [16, 34, 48, 60], 12).e('fireskull', 40, 6).e('hound', 54, 12).e('bat', 18, 4).e('bat', 66, 5).e('emberwyrm', 44, 4);
+  b.many('knight', [16, 48], 12).many('sorcerer', [34, 60], 12).e('fireskull', 40, 6).e('hound', 54, 12).e('bat', 18, 4).e('bat', 66, 5).e('emberwyrm', 44, 4);
   b.tablet(6, 12, 'THE LORD BUILT HIS SERVANTS OF BRASS AND SPRING SO THEY WOULD NEVER TIRE, NEVER PRAY, NEVER FLEE.', 'tab7');
   b.exit('L', 9, 11, 'c3', 40, 14).exit('R', 9, 11, 'u2', 1, 36);
   add(b);
@@ -317,7 +318,7 @@ saveRoom('s3', 'Chapel Sanctuary', 3, 'c1', 33, 12, 7, 0);
   b.floor(0, 30, 36).ceil(0, 30, 2);
   b.plat(4, 6, 33).plat(12, 6, 30).plat(20, 6, 27).plat(12, 6, 24).plat(4, 6, 21).plat(12, 6, 18).plat(20, 6, 15).plat(12, 6, 12).ledge(18, 12, 10);
   b.torches([2, 27], 32).torches([2, 27], 24).torches([2, 27], 16).d('brazier', 26, 36).d('brazier', 4, 36);
-  b.e('auto', 22, 10).e('auto', 14, 12).e('auto', 22, 27).e('fireskull', 12, 28).e('fireskull', 20, 18).e('bat', 8, 20).e('bat', 24, 22).e('fireskull', 6, 14).e('emberwyrm', 16, 23);
+  b.e('knight', 22, 10).e('sorcerer', 14, 12).e('knight', 22, 27).e('fireskull', 12, 28).e('fireskull', 20, 18).e('bat', 8, 20).e('bat', 24, 22).e('fireskull', 6, 14).e('emberwyrm', 16, 23);
   b.e('statue', 7, 33, { drop: 'heart' }).candle(23, 27, 'mana').candle(7, 21, 'potion').e('statue', 22, 10, { drop: 'heart' });
   b.e('upgrade', 28, 10, { kind: 'atkup', id: 'u2_atk' });
   b.exit('L', 33, 35, 'u1', 74, 12).exit('R', 7, 9, 'u3', 1, 14);
@@ -345,7 +346,7 @@ saveRoom('s5', 'Furnace Sanctuary', 4, 'u1', 31, 12, 10, 0);
   b.torches([14, 24, 40, 54, 68], 6).d('banner', 16, 2, { len: 7, color: '#6a1020' }).d('banner', 32, 2, { len: 7, color: '#6a1020' }).d('banner', 50, 2, { len: 7, color: '#6a1020' }).d('banner', 66, 2, { len: 7, color: '#6a1020' });
   b.door(57, 12, 's4', 3, 12, 'wood');
   b.candle(22, 12, 'heart').candle(44, 12, 'mana').e('statue', 62, 10, { drop: 'potion' });
-  b.many('armor', [22, 34, 52], 12).many('wraith', [24, 40, 56], 7).many('bat', [12, 28, 48, 64], 2).e('ghost', 20, 6).e('ghost', 46, 5).e('auto', 67, 12).e('fireskull', 30, 6).e('fireskull', 58, 5).e('wyrm', 38, 4);
+  b.many('armor', [22, 34, 52], 12).many('wraith', [24, 40, 56], 7).many('bat', [12, 28, 48, 64], 2).e('ghost', 20, 6).e('ghost', 46, 5).e('sorcerer', 67, 12).e('fireskull', 30, 6).e('fireskull', 58, 5).e('wyrm', 38, 4);
   b.tablet(3, 12, 'HE WAITS ABOVE. THE ONE WHO TOOK THE SUN. TURN BACK, STRANGER - OR BRING THE DAWN.', 'tab8');
   b.exit('L', 9, 11, 'u3', 44, 14).exit('R', 9, 11, 't2', 1, 14);
   add(b);

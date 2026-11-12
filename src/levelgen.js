@@ -49,7 +49,7 @@ const SPEC = {
   tv: { kind: 'teleport', zone: 6, name: 'Waystone Square', outdoor: true, opts: LOOK[6] },
   v2: { kind: 'corridor', zone: 6, name: 'Smouldering Lane', w: [72, 86], outdoor: true, opts: LOOK[6],
     mods: [{ t: 'door', to: 'sv', kind: 'wood' }, { t: 'door', to: 'hv4', kind: 'house' }, { t: 'djLedge', kind: 'atkup', id: 'v2_atk' }, { t: 'tablet', id: 'tab9', near: 'start', text: 'THE BELLS WERE THE FIRST TO FALL SILENT. THE PRIEST BARRED THE CHAPEL DOOR AND PRAYED. IT DID NOT HELP.' }],
-    candles: [3, 5], pots: [1, 2], mix: { zombie: [2, 3], skeleton: [1, 2], hound: [1, 1], bat: [1, 2], fireskull: [1, 1], villager: [2, 3] } },
+    candles: [3, 5], barrels: [1, 2], mix: { zombie: [2, 3], skeleton: [1, 2], hound: [1, 1], bat: [1, 2], fireskull: [1, 1], villager: [2, 3] } },
   v3: { kind: 'tower', zone: 6, name: 'The Bell Tower', w: [28, 32], h: [34, 38], top: [8, 10], opts: { ...LOOK[6], ambient: 0.4 },
     mods: [{ t: 'tablet', id: 'tab10', text: 'HE CALLS IT MERCY, TO BURN WHAT HE CANNOT PROTECT. THE WARDEN WAITS IN THE SQUARE BELOW THE HILL ROAD.' }], topItem: { kind: 'mpup', id: 'v3_mp' }, candles: [3, 4], mix: { bat: [2, 3], fireskull: [2, 3], zombie: [1, 2] } },
   vb: { kind: 'arena', zone: 6, name: 'The Burning Square', w: [40, 46], outdoor: true, boss: 'cinder', reward: 'hpup', plats: 2, rise: 3, seal: 'both', candles: [3, 3], decor: 'village',
@@ -80,13 +80,13 @@ const SPEC = {
   tw: { kind: 'teleport', zone: 7, name: 'Waystone Boardwalk', outdoor: true, abilities: ['djump'], opts: LOOK[7] },
   w1: { kind: 'corridor', zone: 7, name: 'Mire Edge', w: [72, 86], outdoor: true, abilities: ['djump'], opts: { ...LOOK[7], fog: 0.75 },
     mods: [{ t: 'djLedge', kind: 'hpup', id: 'w1_hp' }, { t: 'tablet', id: 'tab12', near: 'start', text: 'THE MIRE TAKES WHAT THE GRAVE REFUSES. DO NOT STAND STILL.' }],
-    candles: [3, 5], pots: [2, 3], mix: { zombie: [1, 2], skeleton: [1, 2], bat: [1, 2], swampspider: [2, 3], swampthing: [1, 1] } },
+    candles: [3, 5], barrels: [2, 3], mix: { zombie: [1, 2], skeleton: [1, 2], bat: [1, 2], swampspider: [2, 3], swampthing: [1, 1] } },
   w2: { kind: 'corridor', zone: 7, name: 'Weeping Hollow', w: [80, 94], outdoor: true, abilities: ['djump'], deck: true, opts: { ...LOOK[7], fog: 0.9 },
     mods: [{ t: 'door', to: 'sw', kind: 'wood' }, { t: 'cell', gate: 'crystal', kind: 'mpup', id: 'w2_mp' }],
-    candles: [4, 6], pots: [2, 3], mix: { swampspider: [2, 3], swampthing: [2, 2], hound: [1, 2], bat: [2, 2], skeleton: [1, 2] } },
+    candles: [4, 6], barrels: [2, 3], mix: { swampspider: [2, 3], swampthing: [2, 2], hound: [1, 2], bat: [2, 2], skeleton: [1, 2] } },
   w3: { kind: 'corridor', zone: 7, name: 'Drowned Boardwalk', w: [80, 94], outdoor: true, abilities: ['djump'], deck: true, opts: { ...LOOK[7], fog: 0.8 },
     mods: [{ t: 'cell', gate: 'crack', kind: 'atkup', id: 'w3_atk' }, { t: 'deckDoor', to: 'wa', kind: 'wood' }, { t: 'tablet', id: 'tab13', text: 'SOMETHING SINGS BENEATH THE WATER. IT KNOWS YOUR NAME.' }],
-    candles: [4, 5], pots: [2, 3], mix: { swampthing: [2, 3], swampspider: [2, 3], zombie: [1, 2], bat: [2, 2], wyrm: [1, 1] } },
+    candles: [4, 5], barrels: [2, 3], mix: { swampthing: [2, 3], swampspider: [2, 3], zombie: [1, 2], bat: [2, 2], wyrm: [1, 1] } },
   wb: { kind: 'arena', zone: 7, name: "The Mother's Hollow", w: [40, 46], outdoor: true, abilities: ['djump'], boss: 'bramble', reward: 'mpup', plats: 3, rise: 3, seal: 'both', flyRow: 6, candles: [3, 3], decor: 'swamp',
     opts: { ...LOOK[7], boss: 'bramble', music: 'boss', fog: 0.45 } },
   sw: { kind: 'sanctuary', zone: 7, name: 'Boardwalk Chapel', parent: 'w2' },
@@ -95,37 +95,40 @@ const SPEC = {
   // ======== ZONE 2 - THE GREAT HALL
   th: { kind: 'teleport', zone: 2, name: 'Waystone Vestibule', opts: LOOK[2] },
   h1: { kind: 'corridor', zone: 2, name: 'Entrance Hall', w: [66, 76], deck: true, opts: { ...LOOK[2], ambient: 0.34 },
-    mods: [{ t: 'door', to: 's2', kind: 'shelf' }, { t: 'deckDoor', to: 'ha', kind: 'wood' }, { t: 'tablet', id: 'tab3', near: 'start', text: 'THE GREAT HALL ONCE RANG WITH FEASTING. NOW THE ARMOR ITSELF STALKS THE FLOOR.' }],
-    candles: [4, 6], pots: [2, 4], mix: { bat: [3, 3], armor: [2, 3], ghost: [1, 1], zealot: [1, 2] } },
+    mods: [{ t: 'door', to: 's2', kind: 'wood' }, { t: 'deckDoor', to: 'ha', kind: 'wood' }, { t: 'tablet', id: 'tab3', near: 'start', text: 'THE GREAT HALL ONCE RANG WITH FEASTING. NOW THE ARMOR ITSELF STALKS THE FLOOR.' }],
+    candles: [4, 6], barrels: [2, 4], mix: { bat: [3, 3], armor: [2, 3], ghost: [1, 1], zealot: [1, 2] } },
   h2: { kind: 'corridor', zone: 2, name: 'Hall of Armor', w: [84, 98], opts: { ...LOOK[2], ambient: 0.36 },
     mods: [{ t: 'djLedge', kind: 'mpup', id: 'h2_mp' }, { t: 'cell', gate: 'crystal', kind: 'hpup', id: 'h2_hp' }],
-    candles: [5, 6], pots: [2, 4], mix: { armor: [3, 3], knight: [1, 1], ghost: [2, 2], fireskull: [2, 2], bat: [3, 3], wyrm: [1, 1], zealot: [2, 2] } },
+    candles: [5, 6], barrels: [2, 4], mix: { armor: [3, 3], knight: [1, 1], ghost: [2, 2], fireskull: [2, 2], bat: [3, 3], wyrm: [1, 1], zealot: [2, 2] } },
   h4: { kind: 'arena', zone: 2, name: 'Phantom Stable', w: [40, 46], boss: 'nightmare', reward: 'dash', plats: 2, rise: 3, seal: 'both', abilities: ['djump'], decor: 'torch',
     opts: { weather: 'embers', ambient: 0.3, horizon: 12, boss: 'nightmare', music: 'boss' } },
   h3: { kind: 'tower', zone: 2, name: 'Belfry Stairs', w: [28, 32], h: [34, 40], top: [8, 10], opts: { ...LOOK[2], ambient: 0.4 },
-    mods: [{ t: 'tablet', id: 'tab4', text: 'THE BELFRY STAIRS CLIMB TO THE CHAPEL. THE BELLS HAVE NOT RUNG SINCE THE LORD DESCENDED.' }], candles: [3, 4], pots: [1, 2], mix: { bat: [3, 3], armor: [2, 2], ghost: [1, 1], fireskull: [2, 2], zealot: [1, 1] } },
+    mods: [{ t: 'tablet', id: 'tab4', text: 'THE BELFRY STAIRS CLIMB TO THE CHAPEL. THE BELLS HAVE NOT RUNG SINCE THE LORD DESCENDED.' }], candles: [3, 4], barrels: [1, 2], mix: { bat: [3, 3], armor: [2, 2], ghost: [1, 1], fireskull: [2, 2], zealot: [1, 1] } },
   s2: { kind: 'sanctuary', zone: 2, name: 'Hall Sanctuary', parent: 'h1' },
   ha: { kind: 'interior', zone: 2, name: "Servants' Quarters", parent: 'h1', look: 'study', theme: 'hall', npc: { kind: 'woman', title: 'LAST SERVANT', text: 'THE LORD DISMISSED US ALL AT DUSK, AND THE ARMOUR WOULD NOT LEAVE. I HID. I AM VERY GOOD AT HIDING. HERE - IT IS NOT MUCH, BUT IT IS HONEST.', again: 'THE ARMOUR WATCHES THE DOORS. NOT THE CEILING. REMEMBER THAT.', gifts: ['it_bandage', 'heart', 'it_dagger'], sells: { item: 'bandage', price: 70 } } },
 
   // ======== ZONE 3 - THE MOONLIT CHAPEL
   tc: { kind: 'teleport', zone: 3, name: 'Waystone Chancel', opts: LOOK[3] },
   c1: { kind: 'corridor', zone: 3, name: 'The Nave', w: [76, 88], deck: true, opts: { ...LOOK[3], ambient: 0.32, fog: 0.45 },
-    mods: [{ t: 'door', to: 's3', kind: 'wood' }, { t: 'cell', gate: 'crack', chest: true, kind: 'hpup', id: 'c1_chest' }, { t: 'tablet', id: 'tab5', near: 'start', text: 'HERE THE FAITHFUL PRAYED. HERE THEY WERE FIRST TAKEN.' }],
-    candles: [4, 5], pots: [1, 2], mix: { ghost: [2, 2], ghoul: [2, 3], wizard: [1, 1], acolyte: [1, 1], bat: [1, 1], frostwyrm: [1, 1], zealot: [1, 1] } },
+    mods: [{ t: 'door', to: 's3', kind: 'wood' }, { t: 'deckDoor', to: 'cv', kind: 'crypt' }, { t: 'cell', gate: 'crack', chest: true, kind: 'hpup', id: 'c1_chest' }, { t: 'tablet', id: 'tab5', near: 'start', text: 'HERE THE FAITHFUL PRAYED. HERE THEY WERE FIRST TAKEN.' }],
+    candles: [4, 5], barrels: [1, 2], mix: { ghost: [2, 2], ghoul: [2, 3], wizard: [1, 1], acolyte: [1, 1], bat: [1, 1], frostwyrm: [1, 1], zealot: [1, 1] } },
   c2: { kind: 'corridor', zone: 3, name: 'Bell Gallery', w: [72, 84], abilities: ['djump', 'dash'], opts: LOOK[3],
     mods: [{ t: 'gap' }, { t: 'tablet', id: 'tab6', near: 'gap', text: 'THE GULF IS TOO WIDE FOR ANY LEAP. ONLY ONE WHO STEPS THROUGH SHADOW MAY CROSS.' }],
     candles: [3, 4], mix: { wraith: [2, 2], ghost: [1, 1], wizard: [1, 1], acolyte: [1, 1], archmage: [1, 1], ghoul: [1, 2], bat: [2, 2], frostwyrm: [1, 1] } },
   c3: { kind: 'arena', zone: 3, name: 'Sanctum of the Seraph', w: [40, 46], h: 16, boss: 'angel', reward: 'ember', plats: 3, rise: 4, seal: 'both', exitGate: 'barricade', abilities: ['djump'], decor: 'column', flyRow: 6,
     opts: { weather: 'wisps', ambient: 0.28, horizon: 14, boss: 'angel', music: 'boss' } },
   s3: { kind: 'sanctuary', zone: 3, name: 'Chapel Sanctuary', parent: 'c1' },
+  // an OPTIONAL boss: a door on the upper floor of the Nave leads down into the Count's crypt (the fight is sealed in until he falls; he leaves a heart container)
+  cv: { kind: 'arena', lair: true, zone: 3, name: 'The Crimson Crypt', parent: 'c1', w: [40, 44], boss: 'vampire', reward: 'hpup', plats: 2, rise: 3, candles: [2, 2], decor: 'torch',
+    opts: { ...LOOK[3], ambient: 0.22, tint: [0.07, 0, 0.04], vig: 0.6, boss: 'vampire', music: 'boss' } },
 
   // ======== ZONE 4 - THE UNDERWORKS
   tu: { kind: 'teleport', zone: 4, name: 'Waystone Boilerhouse', opts: LOOK[4] },
   u1: { kind: 'corridor', zone: 4, name: 'Boiler Corridor', w: [70, 82], opts: LOOK[4],
     mods: [{ t: 'door', to: 's5', kind: 'wood' }, { t: 'djLedge', kind: 'hpup', id: 'u1_hp' }, { t: 'tablet', id: 'tab7', near: 'start', text: 'THE LORD BUILT HIS SERVANTS OF BRASS AND SPRING SO THEY WOULD NEVER TIRE, NEVER PRAY, NEVER FLEE.' }],
-    candles: [3, 4], pots: [2, 3], mix: { auto: [3, 4], fireskull: [1, 1], hound: [1, 1], bat: [2, 2], emberwyrm: [1, 1], zealot: [1, 2] } },
+    candles: [3, 4], barrels: [2, 3], mix: { knight: [2, 2], sorcerer: [1, 2], fireskull: [1, 1], hound: [1, 1], bat: [2, 2], emberwyrm: [1, 1], zealot: [1, 2] } },
   u2: { kind: 'tower', zone: 4, name: 'Gear Shaft', w: [28, 32], h: [36, 42], top: [9, 11], opts: { ...LOOK[4], ambient: 0.45 },
-    topItem: { kind: 'atkup', id: 'u2_atk' }, candles: [3, 4], pots: [1, 2], mix: { auto: [3, 3], fireskull: [3, 3], bat: [2, 2], emberwyrm: [1, 1], zealot: [1, 1] } },
+    topItem: { kind: 'atkup', id: 'u2_atk' }, candles: [3, 4], barrels: [1, 2], mix: { knight: [2, 2], sorcerer: [1, 1], fireskull: [3, 3], bat: [2, 2], emberwyrm: [1, 1], zealot: [1, 1] } },
   u3: { kind: 'arena', zone: 4, name: 'The Foundry', w: [44, 50], h: 16, boss: 'colossus', reward: 'thunder', plats: 2, rise: 3, seal: 'both', exitGate: 'crystal', abilities: ['djump'], decor: 'brazier',
     opts: { weather: 'sparks', ambient: 0.35, horizon: 14, boss: 'colossus', music: 'boss' } },
   s5: { kind: 'sanctuary', zone: 4, name: 'Furnace Sanctuary', parent: 'u1' },
@@ -134,22 +137,22 @@ const SPEC = {
   tt: { kind: 'teleport', zone: 5, name: 'Waystone Antechamber', opts: LOOK[5] },
   t1: { kind: 'corridor', zone: 5, name: 'Hall of Shadows', w: [80, 92], deck: true, opts: { ...LOOK[5], fog: 0.55 },
     mods: [{ t: 'door', to: 's4', kind: 'wood' }, { t: 'deckDoor', to: 'ta', kind: 'wood' }, { t: 'cell', gate: 'crystal', kind: 'mpup', id: 't1_mp' }, { t: 'tablet', id: 'tab8', near: 'start', text: 'HE WAITS ABOVE. THE ONE WHO TOOK THE SUN. TURN BACK, STRANGER - OR BRING THE DAWN.' }],
-    candles: [3, 3], pots: [2, 3], mix: { armor: [2, 2], knight: [1, 1], wraith: [2, 2], archmage: [1, 1], bat: [4, 4], ghost: [2, 2], auto: [1, 1], fireskull: [2, 2], wyrm: [1, 2], zealot: [2, 2] } },
+    candles: [3, 3], barrels: [2, 3], mix: { armor: [2, 2], knight: [1, 1], wraith: [2, 2], archmage: [1, 1], bat: [4, 4], ghost: [2, 2], sorcerer: [1, 1], fireskull: [2, 2], wyrm: [1, 2], zealot: [2, 2] } },
   t2: { kind: 'arena', zone: 5, name: 'Throne of Shadows', w: [44, 50], h: 16, boss: 'shadow', reward: 'dawn', plats: 3, rise: 3, seal: 'left', abilities: ['djump'], decor: 'banner', flyRow: 5,
     opts: { ...LOOK[5], ambient: 0.5, weather: 'embers', vig: 0.75, boss: 'shadow', music: 'boss_final' } },
   s4: { kind: 'sanctuary', zone: 5, name: 'Last Sanctuary', parent: 't1' },
   ta: { kind: 'interior', zone: 5, name: 'The Hidden Study', parent: 't1', look: 'study', theme: 'hall', ambient: 0.5, tint: [0.03, 0.0, 0.05], npc: { kind: 'oldman', title: 'THE LORD\'S SCRIBE', text: 'I WROTE DOWN EVERYTHING HE DID, AND NEVER ONCE LOOKED UP. NOW I CANNOT STOP LOOKING. HE IS ABOVE US. TAKE THIS, STRANGER - AND WHEN YOU MEET HIM, DO NOT LET HIM SPEAK.', again: 'I HAVE NO MORE PAGES. ONLY THE ONES I CANNOT BURN.', gifts: ['it_holy', 'it_holy', 'heart'], sells: { item: 'holy', price: 50 } } },
 };
-const ORDER = ['v1', 'tv', 'v2', 'v3', 'vb', 'sv', 'tg', 'g1', 'g2', 'g4', 'g3', 's1', 'tw', 'w1', 'w2', 'w3', 'wb', 'sw', 'th', 'h1', 'h2', 'h4', 'h3', 's2', 'tc', 'c1', 'c2', 'c3', 's3', 'tu', 'u1', 'u2', 'u3', 's5', 'tt', 't1', 't2', 's4', 'hv1', 'hv2', 'hv3', 'hv4', 'ga', 'wa', 'ha', 'ta'];
+const ORDER = ['v1', 'tv', 'v2', 'v3', 'vb', 'sv', 'tg', 'g1', 'g2', 'g4', 'g3', 's1', 'tw', 'w1', 'w2', 'w3', 'wb', 'sw', 'th', 'h1', 'h2', 'h4', 'h3', 's2', 'tc', 'c1', 'c2', 'c3', 's3', 'tu', 'u1', 'u2', 'u3', 's5', 'tt', 't1', 't2', 's4', 'hv1', 'hv2', 'hv3', 'hv4', 'ga', 'wa', 'ha', 'ta', 'cv'];
 // the main road: each room's right door leads into the next room's left door
 const CHAIN = ['v1', 'tv', 'v2', 'v3', 'vb', 'tg', 'g1', 'g2', 'g4', 'g3', 'tw', 'w1', 'w2', 'w3', 'wb', 'th', 'h1', 'h2', 'h4', 'h3', 'tc', 'c1', 'c2', 'c3', 'tu', 'u1', 'u2', 'u3', 'tt', 't1', 't2'];
 const LINKS = CHAIN.slice(1).map((id, i) => [CHAIN[i], 'R', id, 'L']);
 // some neighbouring areas are joined by a DOOR at each end (UP) instead of an open edge: 'a>b' = a's far-right door leads to b's far-left door.  (Only when both are generated rooms: the hand-built classic ones keep their open edges.)
-const DOOR_LINK = { 'v2>v3': 'wood', 'g1>g2': 'crypt', 'w1>w2': 'wood', 'h1>h2': 'shelf', 'c1>c2': 'wood', 'u1>u2': 'wood' };
+const DOOR_LINK = { 'v2>v3': 'wood', 'g1>g2': 'crypt', 'w1>w2': 'wood', 'h1>h2': 'wood', 'c1>c2': 'wood', 'u1>u2': 'wood' };
 // abilities the player owns when coming BACK through a zone (they've beaten that zone's boss by then)
 const BACK = { 6: [], 1: ['djump'], 7: ['djump'], 2: ['djump', 'dash'], 3: ['djump', 'dash', 'ember'], 4: ['djump', 'dash', 'ember', 'thunder'], 5: ['djump', 'dash', 'ember', 'thunder', 'dawn'] };
 const GATE = { barricade: TILE.BARRICADE, crystal: TILE.CRYSTAL, crack: TILE.CRACK };
-const BOSS_TYPE = { beast: 'boss_beast', nightmare: 'boss_nightmare', angel: 'boss_angel', colossus: 'boss_colossus', shadow: 'boss_shadow', cinder: 'boss_cinder', bramble: 'boss_bramble' };
+const BOSS_TYPE = { vampire: 'boss_vampire', beast: 'boss_beast', nightmare: 'boss_nightmare', angel: 'boss_angel', colossus: 'boss_colossus', shadow: 'boss_shadow', cinder: 'boss_cinder', bramble: 'boss_bramble' };
 const FLYERS = new Set(['bat', 'ghost', 'wraith', 'fireskull', 'wyrm', 'frostwyrm', 'emberwyrm']);
 const FLYING_BOSS = new Set(['angel', 'shadow', 'bramble']);
 
@@ -169,10 +172,10 @@ function populate(b, W, H, spec, r, S, seen, g, hasCeiling, pads) {
         const c = pickGround(1) || null; if (!c) continue;
         if (hasCeiling) b.e('bat', c.x, 3); else b.e('bat', c.x, Math.max(3, c.sf.ty - r.i(5, 7)));
       } else if (FLYERS.has(type)) { const c = pickGround(1); if (!c) continue; b.e(type, c.x, Math.max(hasCeiling ? 4 : 3, c.sf.ty - r.i(4, 6))); }
-      else { const c = pickGround(type === 'hound' ? 6 : type === 'auto' || type === 'armor' || type === 'knight' ? 5 : 3); if (!c) continue; b.e(type, c.x, c.sf.ty); }
+      else { const c = pickGround(type === 'hound' ? 6 : type === 'armor' || type === 'knight' ? 5 : 3); if (!c) continue; b.e(type, c.x, c.sf.ty); }
     }
   }
-  for (let i = 0, n = spec.pots ? Math.round(r.i(spec.pots[0], spec.pots[1]) * 0.6) : 0; i < n; i++) { const c = pickGround(2, 2); if (c) b.e('pot', c.x, c.sf.ty, { drop: r.pick(['coin', 'coin', 'heart', 'mana', 'coin', 'heart']) }); }          // clay pots: one hit, one small treat
+  for (let i = 0, n = spec.barrels ? Math.round(r.i(spec.barrels[0], spec.barrels[1]) * 0.6) : 0; i < n; i++) { const c = pickGround(2, 2); if (c) b.e('barrel', c.x, c.sf.ty, { drop: r.pick(['coin', 'coin', 'heart', 'mana', 'coin', 'heart']) }); }          // clay pots: one hit, one small treat
   const nCandle = spec.candles ? r.i(spec.candles[0], spec.candles[1]) : 0, drops = ['heart', 'mana', 'coin', 'coin', 'potion', 'heart'];
   for (let i = 0; i < nCandle; i++) { const c = pickGround(3); if (c) b.candle(c.x, c.sf.ty); }                                   // lit candelabras: ambiance only, nothing to break
   const ns = nCandle / 2.5, nStatue = Math.floor(ns) + (r.chance(ns - Math.floor(ns)) ? 1 : 0);                                  // statues: breakable (2-3 hits), rich, and 2.5x rarer
@@ -199,7 +202,7 @@ function decorate(b, W, spec, r, g, ceilRows, flatCols) {
     const homes = [];                                                                               // houses whose door is a real door (UP) are set first, so the door lines up with the house's own painted one
     for (const d of b.def.doors) if (d.house) { const img = r.pick(Object.keys(HOUSES)), hx = d.x - Math.round(DOORS[img][0] / 16); homes.push(hx); b.house(hx, d.gy, img, r.shuffle(HOUSES[img].map((_, k) => k)).slice(0, r.i(1, 2)), true); }
     for (let i = 0; i < Math.round(W / 14) && flatCols.length; i++) { const x = r.pick(flatCols); if (homes.some(h => Math.abs(h - x) < 15)) continue; homes.push(x); const img = r.pick(Object.keys(HOUSES)); b.house(x, g[x], img, r.shuffle(HOUSES[img].map((_, k) => k)).slice(0, r.i(1, 2))); }
-    let last = -9; for (let i = 0; i < Math.round(W / 5) && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 5) continue; last = x; b.d('img', x, g[x], { img: r.pick(['town_lamp', 'town_barrel', 'town_crates', 'town_crate', 'town_cart', 'town_well', 'town_lamp', 'town_barrel', 'town_crates']) }); }      // (the shop sign hangs above house doors - see B.house - never on the street)
+    let last = -9; for (let i = 0; i < Math.round(W / 5) && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 5) continue; last = x; b.d('img', x, g[x], { img: r.pick(['town_lamp', 'town_lamp', 'town_crates', 'town_crates', 'town_cart', 'town_well', 'town_lamp', 'town_cart', 'town_crates']) }); }      // (the shop sign hangs above house doors - see B.house - never on the street)
     for (let i = 0, n = r.i(1, 3); i < n && flatCols.length; i++) { const x = r.pick(flatCols); b.d('brazier', x, g[x]); }
     return;
   }
@@ -221,16 +224,14 @@ function decorate(b, W, spec, r, g, ceilRows, flatCols) {
   if (th === 'hall' || th === 'chapel' || th === 'throne') place('cdl', r.i(2, 4));
   if (th === 'chapel' || th === 'throne') place('column', r.i(2, 4));
   if (th === 'underworks') place('brazier', r.i(2, 3));
-  // set dressing from the newest art packs: the Hall is a library of bookcases between teal Sidescroller's pillars; the Chapel and the Throne are watched by haunted busts;
-  // the Underworks is crates, urns, cages and barred windows
+  // set dressing: the Hall is a library of bookcases (drawn in code) between teal Sidescroller's pillars; the Chapel and the Throne keep to their columns, banners and candelabras;
+  // the Underworks is crates, urns and barred windows
   if (th === 'hall') {
-    spread(r.i(1, 2), 16, x => b.d('img', x, g[x], { img: 'prop_shelf_' + r.i(1, 4), back: true })); spread(r.i(1, 2), 14, x => b.d('img', x, g[x], { img: 'dg_pillar_' + r.i(1, 4), back: true }));
+    spread(r.i(1, 2), 16, x => b.d('bookcase', x, g[x], { back: true })); spread(r.i(1, 2), 14, x => b.d('img', x, g[x], { img: 'dg_pillar_' + r.i(1, 4), back: true }));
     spread(r.i(1, 2), 12, x => b.d('img', x, g[x], { img: 'dg_urn_' + r.i(1, 3) })); spread(1, 12, x => b.d('hang', x, 2, { img: 'dg_banner_' + r.i(1, 6) }));
-  } else if (th === 'chapel') spread(r.i(1, 2), 16, x => b.d('bust', x, g[x], { scale: 0.85 }));
-  else if (th === 'throne') { spread(r.i(2, 3), 16, x => b.d('bust', x, g[x], { scale: 0.85, red: true })); spread(1, 12, x => b.d('hang', x, 2, { img: 'dg_banner_' + r.pick([1, 4]) })); }
+  } else if (th === 'throne') spread(1, 12, x => b.d('hang', x, 2, { img: 'dg_banner_' + r.pick([1, 4]) }));
   else if (th === 'underworks') {
-    spread(r.i(1, 2), 14, x => b.d('img', x, g[x], { img: 'dg_crates' })); spread(1, 14, x => b.d('img', x, g[x], { img: 'dg_urn_' + r.i(1, 3) })); spread(r.i(1, 2), 16, x => b.d('img', x, 8, { img: 'prop_window', back: true }));
-    spread(1, 16, x => b.d('hang', x, 2, { img: 'prop_skeleton' })); spread(1, 16, x => b.d('img', x, g[x], { img: 'prop_cauldrons', scale: 0.7 }));
+    spread(r.i(1, 2), 14, x => b.d('img', x, g[x], { img: 'dg_crates' })); spread(1, 14, x => b.d('img', x, g[x], { img: 'dg_urn_' + r.i(1, 3) })); spread(r.i(1, 2), 16, x => b.d('barwin', x, 8, { back: true }));
   }
 }
 
@@ -371,12 +372,14 @@ function genArena(id, spec, r) {
   if (spec.plats >= 3) { const ml = r.i(5, 7), mx = Math.round(W / 2 - ml / 2) + r.i(-2, 2), mr = BASE - rise - 2; b.plat(mx, ml, mr); must.push({ tx: mx + 2, gy: mr, name: 'middle platform' }); }
   const bossX = Math.round(W * 0.7) + r.i(-3, 2), flying = FLYING_BOSS.has(spec.boss), brow = flying ? BASE - (spec.flyRow || 6) : BASE;
   b.e(BOSS_TYPE[spec.boss], bossX, brow, { reward: spec.reward });
-  const seals = [{ x: 0, y0: BASE - 3, y1: BASE - 1 }];
-  if (spec.seal === 'both') seals.push({ x: spec.exitGate ? W - 2 : W - 1, y0: BASE - 3, y1: BASE - 1 });
+  const lair = !!spec.lair;                                                                       // a lair is entered by a door (at x=3), has no other way out, and needs no seals
+  const seals = lair ? [] : [{ x: 0, y0: BASE - 3, y1: BASE - 1 }];
+  if (!lair && spec.seal === 'both') seals.push({ x: spec.exitGate ? W - 2 : W - 1, y0: BASE - 3, y1: BASE - 1 });
   b.bossSeals(...seals);
+  if (lair) b.door(3, BASE, spec.parent, 0, BASE, 'crypt');
   if (spec.exitGate) b.rect(W - 1, BASE - 3, 1, 3, GATE[spec.exitGate]);
-  const g = new Array(W).fill(BASE), meta = { abilities: spec.abilities || [], back: BACK[spec.zone], entry: { L: { tx: 1, gy: BASE }, R: spec.seal === 'left' ? null : { tx: spec.exitGate ? W - 4 : W - 2, gy: BASE } }, must, items: [], start: { tx: 3, gy: BASE } };
-  b.def.meta = meta; b.def.entries = { L: meta.entry.L, R: spec.seal === 'left' ? null : { tx: W - 2, gy: BASE } };
+  const g = new Array(W).fill(BASE), meta = { abilities: spec.abilities || [], back: BACK[spec.zone], entry: { L: { tx: 1, gy: BASE }, R: spec.seal === 'left' || lair ? null : { tx: spec.exitGate ? W - 4 : W - 2, gy: BASE } }, must, items: [], start: { tx: 3, gy: BASE } };
+  b.def.meta = meta; b.def.entries = { L: meta.entry.L, R: spec.seal === 'left' || lair ? null : { tx: W - 2, gy: BASE } };
   if (spec.candles) { const n = spec.candles[0], ns = Math.max(1, Math.round(n / 2.5)), st = new Set(Array.from({ length: ns }, (_, j) => Math.floor((j + 0.5) * n / ns)));
     for (let k = 0; k < n; k++) { const cx = Math.round(8 + (W - 16) * (k + 0.5) / n) + r.i(-2, 2); if (st.has(k)) b.e('statue', cx, BASE, { drop: ['heart', 'heart', 'mana'][k % 3] }); else b.candle(cx, BASE); } }
   const v = validateRoom(b.def); if (!v.ok) return { ok: false, errs: v.errs, def: b.def };
@@ -418,20 +421,20 @@ function genTeleport(id, spec, r) {
 }
 
 // ------------------------------------------------------------------------------------------------ INTERIOR (a house, a hut, a crypt: one calm room behind a door)
-// People stand about or amble slowly; each gives you something for listening (UP).  A few pots, a thing on the floor, and the room is furnished from the same props the castle uses.
+// People stand about or amble slowly; each gives you something for listening (UP).  A few barrels, a thing on the floor, and the room is furnished from the same props the castle uses.
 function genInterior(id, spec, r) {
   const W = r.i(spec.w ? spec.w[0] : 22, spec.w ? spec.w[1] : 28), H = 14, look = spec.look || 'cottage';
   const b = new B(id, spec.name, spec.zone, W, H, { theme: spec.theme || 'hall', ambient: spec.ambient === undefined ? 0.4 : spec.ambient, tint: spec.tint || [0.14, 0.06, 0.01], vig: 0.6, horizon: 12, weather: spec.weather || null });
   b.floor(0, W, 12).ceil(0, W, 2).door(3, 12, spec.parent, 0, 12, 'wood').torches([7, W - 5], 6);
   const slots = r.shuffle(Array.from({ length: Math.floor((W - 13) / 3) + 1 }, (_, i) => 8 + i * 3)), take = () => slots.pop();
   const furnish = {
-    cottage: [['img', 'prop_shelf_' + r.i(1, 4), true], ['img', 'prop_shelf_' + r.i(1, 4), true], ['img', 'town_barrel'], ['img', 'dg_crates'], ['img', 'dg_urn_' + r.i(1, 3)], ['img', 'prop_cauldrons', false, 0.7]],
-    hut: [['img', 'prop_cauldrons', false, 0.7], ['img', 'town_barrel'], ['img', 'dg_crates'], ['img', 'town_crates'], ['img', 'dg_urn_' + r.i(1, 3)]],
-    crypt: [['img', 'dg_urn_' + r.i(1, 3)], ['bust'], ['img', 'dg_urn_' + r.i(1, 3)], ['bust'], ['img', 'dg_crates']],
-    study: [['img', 'prop_shelf_' + r.i(1, 4), true], ['img', 'prop_shelf_' + r.i(1, 4), true], ['img', 'prop_shelf_' + r.i(1, 4), true], ['bust'], ['img', 'dg_urn_' + r.i(1, 3)]],
+    cottage: [['bookcase', null, true], ['bookcase', null, true], ['img', 'town_crates'], ['img', 'dg_crates'], ['img', 'dg_urn_' + r.i(1, 3)], ['img', 'dg_urn_' + r.i(1, 3)]],
+    hut: [['img', 'dg_crates'], ['img', 'town_crates'], ['img', 'dg_urn_' + r.i(1, 3)], ['img', 'dg_urn_' + r.i(1, 3)]],
+    crypt: [['img', 'dg_urn_' + r.i(1, 3)], ['column', null, true], ['img', 'dg_urn_' + r.i(1, 3)], ['column', null, true], ['img', 'dg_crates']],
+    study: [['bookcase', null, true], ['bookcase', null, true], ['bookcase', null, true], ['column', null, true], ['img', 'dg_urn_' + r.i(1, 3)]],
   }[look] || [];
-  for (const [t, img, back, scale] of furnish) { const x = take(); if (x === undefined) break; if (t === 'bust') b.d('bust', x, 12, { scale: 0.85 }); else b.d('img', x, 12, { img, back: !!back, ...(scale ? { scale } : {}) }); }
-  for (const x of [Math.floor(W * 0.35), Math.floor(W * 0.7)]) if (r.chance(0.8)) b.d('img', x, 8, { img: 'prop_window', back: true });
+  for (const [t, img, back, scale] of furnish) { const x = take(); if (x === undefined) break; if (t === 'img') b.d('img', x, 12, { img, back: !!back, ...(scale ? { scale } : {}) }); else b.d(t, x, 12, { back: !!back }); }
+  for (const x of [Math.floor(W * 0.35), Math.floor(W * 0.7)]) if (r.chance(0.8)) b.d('barwin', x, 8, { back: true });
   for (let i = 0; i < 3; i++) b.candle(8, 12);                                                      // (set properly by arrangeCandelabras: beside the door and about the room)
   const used = [];
   const spot = () => { for (let k = 0; k < 40; k++) { const x = r.i(7, W - 4); if (used.every(u => Math.abs(u - x) >= 3)) { used.push(x); return x; } } return null; };
@@ -440,7 +443,7 @@ function genInterior(id, spec, r) {
     const n = r.i(spec.npcs ? spec.npcs[0] : 1, spec.npcs ? spec.npcs[1] : 2), kinds = r.shuffle(['woman', 'bearded', 'hatman', 'oldman']), shops = r.shuffle(Array.from({ length: n }, (_, i) => i)).slice(0, spec.sellers === undefined ? (r.chance(0.55) ? 1 : 0) : spec.sellers);       // some of them sell
     for (let i = 0; i < n; i++) { const x = spot(); if (x !== null) b.e('villager', x, 12, { kind: kinds[i % 4], calm: true, stand: r.chance(0.4), ...(shops.includes(i) ? { sells: offerOf(r.wpick(ITEM_ORDER.map(k => [k, ITEMS[k].weight + 1]))) } : {}) }); }
   }
-  for (let i = 0, n = r.i(1, 2); i < n; i++) { const x = spot(); if (x !== null) b.e('pot', x, 12, { drop: r.pick(['coin', 'coin', 'heart', 'mana', 'heart']) }); }
+  for (let i = 0, n = r.i(1, 2); i < n; i++) { const x = spot(); if (x !== null) b.e('barrel', x, 12, { drop: r.pick(['coin', 'coin', 'heart', 'mana', 'heart']) }); }
   if (r.chance(0.5)) { const x = spot(); if (x !== null) { const item = r.wpick(ITEM_ORDER.map(k => [k, ITEMS[k].weight])); b.e('itemspawn', x, 12, { item, qty: ITEMS[item].pack, id: 'ip_' + id + '_' + x }); } }
   b.def.meta = { abilities: [], entry: {}, start: { tx: 3, gy: 12 }, must: [], items: [] }; b.def.entries = {};
   const v = validateRoom(b.def); if (!v.ok) return { ok: false, errs: v.errs, def: b.def };
@@ -468,7 +471,7 @@ function link(rooms, linked = new Set()) {
     A.exits.push({ side: sa, from: da.from, to: da.to, room: b, tx: eb.tx, gy: eb.gy });
     Bd.exits.push({ side: sb, from: db.from, to: db.to, room: a, tx: ea.tx, gy: ea.gy });
   }
-  for (const id of ORDER) if (rooms[id] && (SPEC[id].kind === 'sanctuary' || SPEC[id].kind === 'interior')) {
+  for (const id of ORDER) if (rooms[id] && (SPEC[id].kind === 'sanctuary' || SPEC[id].kind === 'interior' || SPEC[id].lair)) {
     const S = rooms[id], P = rooms[SPEC[id].parent], pd = P.doors.find(d => d.room === id) || P.doors[0];
     pd.room = id; pd.tx = 3; pd.tgy = 12; S.doors = [{ x: 3, gy: 12, room: P.id, tx: pd.x, tgy: pd.gy }];
   }
@@ -511,7 +514,7 @@ export function buildWorld(seed, opts = {}) {
   for (const [k, kind] of Object.entries(DOOR_LINK)) { const [a, b2] = k.split('>'); if (!isHand(a) && !isHand(b2)) { (ends[a] ||= {}).doorR = { to: b2, kind }; (ends[b2] ||= {}).doorL = { to: a, kind }; } }
   for (const id of ORDER) {
     let def = null; const spec = { ...SPEC[id], ...(ends[id] || {}) }, hand = !!AUTHORED[id];
-    if (spec.kind === 'interior' && !(rooms[spec.parent] && rooms[spec.parent].doors.some(d => d.room === id))) continue;          // no door leads here in this world (a hand-built parent): no room
+    if ((spec.kind === 'interior' || spec.lair) && !(rooms[spec.parent] && rooms[spec.parent].doors.some(d => d.room === id))) continue;          // no door leads here in this world (a hand-built parent): no room
     // seed 0 is the classic castle: every hand-built room as authored (the rooms that were added later have no hand-built version, so they use seed 1)
     const useHand = isHand(id), tries = hand ? MAX_TRY : MAX_TRY * 6;
     if (!useHand) for (let a = 0; a < tries && !def; a++) {

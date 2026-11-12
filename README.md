@@ -2,8 +2,8 @@
 
 A gothic-fantasy, side-scrolling action-adventure for the browser, in the spirit of *Castlevania* and *Bloodstained*.
 You are a nameless cloaked stranger with a sword, exploring a haunted castle: platforming, secrets, power-ups,
-seven zones, seven bosses, throwable items, waystone travel, and a three.js effects layer (fire, flickering candles, lightning, auras, mist). Text is set in two
-free gothic typefaces (Pirata One and Almendra) rather than a pixel font. The hero is Ansimuz's Gothic Hero (the hooded-warrior set is archived in `assets/archive/`), draped in an
+seven zones, eight bosses (one of them optional), throwable items, waystone travel, and a three.js effects layer (fire, flickering candles, lightning, auras, mist). Text is set in two
+free gothic typefaces (Pirata One and Almendra, with Blackletter ExtraBold for the title) rather than a pixel font. The hero is Ansimuz's Gothic Hero (the hooded-warrior set is archived in `assets/archive/`), draped in an
 experimental animated **white cloak** (a cloth hung from both shoulders that drapes behind him; Options > White Cloak turns it off, or start with `?cloak=0`).
 
 ## Play it
@@ -52,28 +52,28 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
 * **7 zones, 38 main rooms (plus up to eight small rooms behind doors) - one look per zone.** A level never mixes tilesets; each look gets its own level instead:
   the **Burning Village** (a town under attack, houses ablaze, monsters in the street, villagers running about in a panic - they can't be hurt,
   and they cheer when you cut something down near them) -> the **Graveyard Approach** (a moonlit cemetery) -> the **Weeping Swamp** ->
-  the **Great Hall** (a library of bookcases, teal pillars and haunted busts) -> the **Moonlit Chapel** -> the **Underworks** -> the **Shadow Throne**.
+  the **Great Hall** (a library of bookcases and teal pillars) -> the **Moonlit Chapel** -> the **Underworks** -> the **Shadow Throne**.
   Open room edges (marked by a small arrow on the screen edge), **doors** (UP) and fade transitions connect them; the zone name appears when you cross into a new one. In a generated castle several neighbouring areas are joined by a door at each end instead of an open edge (the village lane and the bell tower, the Iron Gate and Grave Hollow, the boardwalks, the hall, the nave, the boiler corridor and the gear shaft), and the map draws a line between every pair of joined rooms - with a little door mark where the way is a door.
 * **Two floors.** Seven of the generated areas (Iron Gate, the Mourning Fields, Weeping Hollow, the Drowned Boardwalk, the Entrance Hall, the Nave, the Hall of Shadows) are tall rooms with a lower floor and an upper floor: a staircase of one-way platforms climbs to the upper floor, which has its own gaps, blocks and loot, and comes down again at the far end. Four of them hide a **door on the upper floor** to a small room of its own (the gravedigger's shed, the fisherman's hut, the servants' quarters, the scribe's study).
 * **Waystones (teleport rooms).** Every zone opens with a *waystone chamber*, a calm room with a glowing stone. Walk up to attune it, then press
   **Up** at any attuned stone to open the map: pick any other waystone you have already found with Left / Right and press Enter to travel there
   (Esc cancels). Waystones are not save points - altars still are. Which ones you have found is part of your save.
 * **Throwable items** (top-right of the screen, beside your spells; **Q / V** move the selection box, **C / I** uses what is selected). They are
-  found lying about, in statues and pots, dropped by enemies and left behind by bosses. Each can be found again and again and adds to your stack, up to its limit:
+  found lying about, in statues and barrels, dropped by enemies and left behind by bosses. Each can be found again and again and adds to your stack, up to its limit:
   **throwing dagger** (fast, weak, up to 30), **throwing axe** (slow heavy arc that cuts through everything, 12), **torch** (sets a foe ablaze for
   damage over time, and burns wooden barricades, 10), **caltrops** (scatter them: foes crossing them are hurt and slowed, 12), **holy water**
   (a pool of light that burns the undead, 6) and **bandages** (heal a third of your life, at most 3 - and not usable at full health).
 * **Houses and people.** Three houses on Market Street and one on the lane can be entered (UP at the door - the shop sign hangs over the ones that matter). Inside, calm villagers stand about or amble slowly. **Talk to anyone with UP** (a little arrow appears over everything you can use): street villagers cry out and press a gift into your hands the first time; the people indoors and in the small rooms give you something too - or **sell** it. A merchant makes an offer; if you can pay, a YES / NO box asks (LEFT / RIGHT or the d-pad to choose, ENTER / A to answer, ESC / B means no); if you cannot, he tells you to come back. Coins (15 each, 50 for a gem) are the money; a merchant has three of a thing to sell and will not sell what you cannot carry.
-* **Pots** shatter in one hit for a small treat; the larger **statues** still take 2-3 hits and pay 2-3 items - they glow softly (gold; rose or blue when a heart or mana is inside) so you can tell a treasure statue from the scenery.
+* **Barrels and crates** shatter in one hit for a small treat; the larger **statues** still take 2-3 hits and pay 2-3 items - they glow softly (gold; rose or blue when a heart or mana is inside) so you can tell a treasure statue from the scenery.
 * **The air moves.** The swish of your sword (and your dash) flings smoke, embers and fog along its path and bends nearby flames away. **Rolling ground fog** lies in the graveyard's hollows, the swamp, the nave and the Hall of Shadows: thick, wispy and translucent, it hides most of what is in it and parts where you cut through it.
 * **Candelabras** are scenery now: they flank doors and waystones, stand beside tablets and at the foot of walls and steps, and are spaced along the floor - never on top of loot.
 * **21 monster types:** bats, rising zombies, bone-throwing skeletons, haunted armor (it guards - hit it from behind or
-  while it winds up), phasing ghosts, orb-casting wraiths, clockwork automatons, charging fire skulls, hell hounds,
+  while it winds up), phasing ghosts, orb-casting wraiths, charging fire skulls, hell hounds,
   burning ghouls and teleporting dark wizards - plus **bone / frost / ember wyrms** (skull-headed serpents whose whole body follows
   the head; they gape and rear back before they strike - a clean hit breaks the attack - and the ember kind spits fire),
-  **swamp spiders** (they squat before they spring), **swamp things**, blue-robed **acolytes**, staff-wielding **archmages** and
+  **swamp spiders** (they squat before they spring), **swamp things**, blue-robed **acolytes**, staff-wielding **archmages**, bronze-robed **brass sorcerers** (fire-hurling casters who slip away when you close in) and
   heavy **gnu knights** (spear raised = a thrust is coming) and red-robed **zealots** (Szadi's sickle fighter: he plants his feet, then lunges through a slash).
-* **7 bosses** with two phases each: the Cinder Warden (the village's keeper - ember volleys, a staff slam, a leap, flame pillars once he is hurt; he leaves a heart container), the Gatekeeper (his fire breath is a tall arch of flame overhead - duck in the pocket right beside him, or stay out of its reach), the Mire Mother (a floating head of tentacles: marked holes in the ground, spore fans, spider summons; she leaves a mana crystal), the Phantom Steed, the Seraph of Ash, the Clockwork Colossus and
+* **8 bosses** with two phases each (the Crimson Count is optional: a door on the upper floor of the Nave leads down to his crypt, and he leaves a heart container): the Cinder Warden (the village's keeper - ember volleys, a staff slam, a leap, flame pillars once he is hurt; he leaves a heart container), the Gatekeeper (his fire breath is a tall arch of flame overhead - duck in the pocket right beside him, or stay out of its reach), the Mire Mother (a floating head of tentacles: marked holes in the ground, spore fans, spider summons; she leaves a mana crystal), the Phantom Steed, the Seraph of Ash, the Brazen Hierophant (master of the Underworks: he rises, then crashes down) and
   the Shadow Lord. Every attack is telegraphed: an **icon and name** appear over the boss about a second before it
   acts, then a coloured aura, a warning sound and a **danger zone** (charge lane, breath sweep, landing marker, slam
   area, lightning/flame columns) show during the windup. The boss is open to counter-attack after each move.
@@ -99,7 +99,7 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
 
 Each new game builds its castle from a **seed**: the zones, boss order, abilities, save sanctuaries and secrets are always
 where they should be, but every room's insides are re-rolled - ground height, pits, bridges, spike runs, steps, ledges,
-the layout of the climbing towers, arena platforms, where the enemies stand and where the statues, pots and scenery go. (The opening Market Street
+the layout of the climbing towers, arena platforms, where the enemies stand and where the statues, barrels and scenery go. (The opening Market Street
   is hand-built and the same every time.)
 
 * New game = a random seed.  **Choose Seed** on the title screen lets you type one (the same seed always builds the same
@@ -134,19 +134,19 @@ src/
   stain.js          cloak stains: what singes / dirties / bloodies the cloak, and how fast they fade or wash off
   player.js         the stranger (movement, ducking, sword, dash, spells)      cloak.js   the white cloak: a hanging cloth drawn behind the sprite
   enemies.js        regular monsters + the wyrms      beasts.js   villagers, swamp creatures, cultists, gnu knight, zealots
-  bosses.js         the seven bosses + telegraphed hazard columns
+  bosses.js         the eight bosses + telegraphed hazard columns
   items.js itemdata.js   throwable items: the data (limits, pack sizes) and the thrown objects / effects
-  projectiles.js    fireballs, bones, shockwaves, fire patches     props.js   pickups, statues, pots, altar, waystones, relics
+  projectiles.js    fireballs, bones, shockwaves, fire patches     props.js   pickups, statues, barrels, altar, waystones, relics
   world.js          tile themes (auto-tiled from the tilesets), parallax backgrounds, collision queries
   rooms.js          the hand-built castle (the builder DSL, zone themes, and the seed-0 / fallback layouts)
   levelgen.js       procedural castle: seeded room generators + the world builder (validation, retries, linking)
   validate.js       reachability prover (jump simulation + search)       physics.js   movement constants shared with the player
   enchant.js        sword enchantment data + effects
   fx.js             three.js effects: particles, flame shaders, lightning, rings, magic circles, light/darkness
-  procart.js        code-drawn pixel art: bat, haunted armor, automaton, icons, props
+  procart.js        code-drawn pixel art: bat, haunted armor, icons, props
   audio.js          music manager + synthesized sound effects      ui.js   HUD, menus, map, story screens
-  font.js           gothic text: Pirata One + Almendra drawn as vector text on the hi-res canvas (bitmap fallback if the fonts are missing)
-  assets.js input.js util.js decor.js viewer.js     decor.js also animates the busts, torches and bookcase doors
+  font.js           gothic text: Pirata One + Almendra (+ Blackletter for the title) drawn as vector text on the hi-res canvas (bitmap fallback if the fonts are missing)
+  assets.js input.js util.js decor.js viewer.js     decor.js also draws the bookcases and barred windows in code, and animates the torches
 assets/             sprites + environment art (+ sprites.json frame manifest, original licenses), fonts/ (the two gothic TTFs)
                     (assets/sprites/source/ holds the art packs as downloaded - keep that folder out of anything you publish, see CREDITS.md)
 lib/three/          three.js r187 (MIT)
@@ -190,5 +190,5 @@ can be designed to require - or not require - a power-up.
 ## Credits
 
 The title screen has a **CREDITS** option. What it shows is the plain text file **[credits.txt](credits.txt)** - edit it freely (the format is explained at the top of the file), save, and reopen the screen. Full details and licence links are in [CREDITS.md](CREDITS.md) (some of the art requires attribution - it is all listed there). Most sprites and tiles are CC0 art by Luis Zuno (Ansimuz) from OpenGameArt; the bat,
-haunted armor, automaton, icons and props are original pixel art drawn in code for this project; sound effects are
+haunted armor, icons and props are original pixel art drawn in code for this project; sound effects are
 synthesized live.

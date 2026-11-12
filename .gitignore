@@ -3,8 +3,8 @@
 # Everything below stays on the author's computer.
 
 # --- the art packs exactly as downloaded, and art that is not used ---------------------------------------------------------------
-# (several of these packs forbid redistributing them, and the Sidescroller's Dungeon download has no licence file.  The game only
-#  uses the pieces cut out of them into assets/env/ and assets/sprites/ - see CREDITS.md.)
+# (Several of these packs forbid redistributing them as packs, and some came without a licence file.  The game only uses the pieces
+#  cut out of them into assets/env/ and assets/sprites/ - see CREDITS.md.)
 assets/sprites/source/
 assets/source/
 assets/archive/

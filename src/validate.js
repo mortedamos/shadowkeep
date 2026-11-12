@@ -106,7 +106,7 @@ export function reach(room, S, starts, abilities) {
 }
 
 // ------------------------------------------------------------------------------------------------ whole-room validation
-const GROUND_SPAWN = new Set(['zombie', 'skeleton', 'armor', 'hound', 'ghoul', 'wizard', 'auto', 'knight', 'acolyte', 'archmage', 'swampspider', 'swampthing', 'villager', 'candle', 'statue', 'itemspawn', 'altar', 'waystone', 'boss_cinder', 'pot', 'zealot', 'tablet', 'chest', 'boss_beast', 'boss_nightmare', 'boss_colossus', 'upgrade']);
+const GROUND_SPAWN = new Set(['zombie', 'skeleton', 'armor', 'hound', 'ghoul', 'wizard', 'sorcerer', 'knight', 'acolyte', 'archmage', 'swampspider', 'swampthing', 'villager', 'candle', 'statue', 'itemspawn', 'altar', 'waystone', 'boss_cinder', 'boss_vampire', 'barrel', 'zealot', 'tablet', 'chest', 'boss_beast', 'boss_nightmare', 'boss_colossus', 'upgrade']);
 // everything spawned in the room must stand on open ground (or float in open air) - never inside a wall
 export function checkSpawns(def) {
   const room = roomOf(def), errs = [];

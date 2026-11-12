@@ -134,16 +134,21 @@ export class Statue {
   }
 }
 
-// ------------------------------------------------------------------------------------------------ pot (a breaking pot): one hit, one small treat
-export class Pot {
-  constructor(x, y, o = {}) { this.x = x; this.y = y; this.drop = o.drop; this.dead = false; this.t = 0; this.v = Math.abs(Math.floor(x / 16)) % 2; this.broken = 0; }
-  get box() { return { x: this.x - 9, y: this.y - 20, w: 18, h: 20 }; }
+// ------------------------------------------------------------------------------------------------ barrel / crate (Gothicvania Town art): one hit, one small treat
+export class Barrel {
+  constructor(x, y, o = {}) { this.x = x; this.y = y; this.drop = o.drop; this.dead = false; this.t = 0; this.crate = Math.abs(Math.floor(x / 16)) % 3 === 0; this.broken = 0; }
+  get box() { return this.crate ? { x: this.x - 11, y: this.y - 20, w: 22, h: 20 } : { x: this.x - 9, y: this.y - 24, w: 18, h: 24 }; }
   hit(g) {
-    if (this.dead || this.broken) return false; this.broken = 1; const stone = [[0.5, 0.55, 0.4], [0.2, 0.25, 0.15]]; A.sfx('break'); g.shake(1, 4);
-    g.fx.burst(this.x, this.y - 10, 9, stone, { speed: 1.6, s0: 9 }); g.fx.sparks(this.x, this.y - 10, 8, stone, 2.4, { gy: 0.2 }); if (Math.random() < 0.7) dropItem(g, this.drop || choice(['coin', 'coin', 'heart', 'mana', 'coin']), this.x, this.y - 12); return true;       // (three pots in ten are empty)
+    if (this.dead || this.broken) return false; this.broken = 1; const wood = [[0.62, 0.42, 0.22], [0.3, 0.18, 0.08]]; A.sfx('break'); g.shake(1, 4);
+    g.fx.burst(this.x, this.y - 11, 10, wood, { speed: 1.7, s0: 8 }); g.fx.sparks(this.x, this.y - 11, 9, wood, 2.6, { gy: 0.22 }); if (Math.random() < 0.7) dropItem(g, this.drop || choice(['coin', 'coin', 'heart', 'mana', 'coin']), this.x, this.y - 12); return true;       // (three in ten are empty)
   }
   update() { this.t++; if (this.broken && ++this.broken > 80) this.dead = true; }
-  draw(ctx, cx, cy) { drawSheet(ctx, 'pot_frames', this.broken ? 2 + this.v : this.v, this.x - cx, this.y - cy, { scale: 0.75, alpha: this.broken > 50 ? Math.max(0, 1 - (this.broken - 50) / 30) : 1 }); }
+  draw(ctx, cx, cy) {
+    const im = IMG[this.crate ? 'town_crate' : 'town_barrel'], sc = this.crate ? 0.6 : 0.82, w = Math.round(im.width * sc), h = Math.round(im.height * sc), X = Math.round(this.x - cx - w / 2), Y = Math.round(this.y - cy - h);
+    if (!this.broken) { ctx.drawImage(im, X, Y, w, h); return; }
+    ctx.save(); ctx.globalAlpha = this.broken > 50 ? Math.max(0, 1 - (this.broken - 50) / 30) : 1;                   // what is left: the bottom third of it, splintered
+    const keep = Math.round(im.height * 0.34), kh = Math.round(h * 0.34); ctx.drawImage(im, 0, im.height - keep, im.width, keep, X, Y + h - kh, w, kh); ctx.restore();
+  }
 }
 
 // ------------------------------------------------------------------------------------------------ save altar

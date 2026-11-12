@@ -461,24 +461,6 @@
   "w": 80,
   "h": 32
  },
- "haunted_bust": {
-  "file": "sprites/haunted_bust.png",
-  "n": 6,
-  "w": 32,
-  "h": 96
- },
- "cell_door": {
-  "file": "sprites/cell_door.png",
-  "n": 16,
-  "w": 64,
-  "h": 96
- },
- "pot_frames": {
-  "file": "sprites/pot_frames.png",
-  "n": 4,
-  "w": 32,
-  "h": 32
- },
  "dg_torch": {
   "file": "sprites/dg_torch.png",
   "n": 4,
@@ -514,5 +496,41 @@
   "n": 4,
   "w": 32,
   "h": 32
+ },
+ "vampire_idle": {
+  "file": "sprites/vampire_idle.png",
+  "n": 6,
+  "w": 144,
+  "h": 144
+ },
+ "vampire_run": {
+  "file": "sprites/vampire_run.png",
+  "n": 5,
+  "w": 144,
+  "h": 144
+ },
+ "vampire_atk": {
+  "file": "sprites/vampire_atk.png",
+  "n": 4,
+  "w": 144,
+  "h": 144
+ },
+ "vampire_jump": {
+  "file": "sprites/vampire_jump.png",
+  "n": 7,
+  "w": 144,
+  "h": 144
+ },
+ "vampire_hurt": {
+  "file": "sprites/vampire_hurt.png",
+  "n": 4,
+  "w": 144,
+  "h": 144
+ },
+ "vampire_dead": {
+  "file": "sprites/vampire_dead.png",
+  "n": 3,
+  "w": 144,
+  "h": 144
  }
 }

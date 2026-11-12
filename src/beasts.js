@@ -145,6 +145,8 @@ class Cultist extends Wizard {
   }
 }
 class Acolyte extends Cultist { constructor(g, x, y, o) { super(g, x, y, o, { name: 'acolyte', idle: 'ars_disciple_r0', cast: null, tip: [13, 47], n: 4, scale: 1, fx: COLORS.blue, glow: [0.2, 0.45, 1], stats: { hp: 16, dmg: 6, xp: 14, shot: 'orb', shotDmg: 8, shotSpd: 1.6 } }); } }
+// brass sorcerer (mage 1, 85x94, drawn at 0.62): the silver-masked caster in bronze robes - the Underworks' answer to the archmage; it hurls fire and slips away when you come close
+class Sorcerer extends Cultist { constructor(g, x, y, o) { super(g, x, y, o, { name: 'sorcerer', idle: 'ars_mage1_r0', cast: 'ars_mage1_r1', tip: [0, 52], n: 4, scale: 0.62, fx: COLORS.gold, glow: [1, 0.72, 0.28], stats: { hp: 34, dmg: 10, xp: 26, shot: 'fire', shotDmg: 12, shotSpd: 1.9 } }); this.h = 46; } }
 class Archmage extends Cultist { constructor(g, x, y, o) { super(g, x, y, o, { name: 'archmage', idle: 'ars_mage2_r0', cast: 'ars_mage2_r1', tip: [-45, 98], n: 4, scale: 0.55, fx: COLORS.purple, glow: [0.7, 0.3, 1], stats: { hp: 30, dmg: 8, xp: 26, shot: 'fire', shotDmg: 12, shotSpd: 2.0 } }); this.h = 40; } }
 
 // ------------------------------------------------------------------------------------------------ GNU KNIGHT (the heavy guard - Armor's shield-and-swing logic, new body)
@@ -187,4 +189,4 @@ class Zealot extends Enemy {
   }
 }
 
-export const BEAST_TYPES = { villager: Villager, swampspider: SwampSpider, swampthing: SwampThing, acolyte: Acolyte, archmage: Archmage, knight: GnuKnight, zealot: Zealot };
+export const BEAST_TYPES = { villager: Villager, swampspider: SwampSpider, swampthing: SwampThing, acolyte: Acolyte, archmage: Archmage, sorcerer: Sorcerer, knight: GnuKnight, zealot: Zealot };

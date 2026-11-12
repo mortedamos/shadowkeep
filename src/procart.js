@@ -1,5 +1,5 @@
 // Original pixel art drawn in code (no anti-aliasing) to fill gaps the downloaded packs don't cover:
-// bat, haunted armor, clockwork automaton, item icons, props, projectiles.
+// bat, haunted armor, item icons, props, projectiles.
 const hex = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 255]; };
 const mulc = (c, k, add = 0) => [Math.min(255, c[0] * k + add), Math.min(255, c[1] * k + add), Math.min(255, c[2] * k + add), c[3]];
 
@@ -109,54 +109,6 @@ function armorPose(kind, k) {
   return { bob: 2, lean: -3, headX: -2, headY: 2, plume: -2, legs: [{ back: true, fx: -3 }, { fx: 3 }], weapon: { a: 1.0, hx: 4, hy: 12 } }; // hurt
 }
 
-// ------------------------------------------------------------------------------------------------
-// CLOCKWORK AUTOMATON  (brass soldier w/ chest gear, piston limbs).  Faces right.
-// ------------------------------------------------------------------------------------------------
-const BRASS = { main: hex('#b9873a'), hi: hex('#f2d27c'), lo: hex('#6f4b1d'), dark: hex('#33220f'), cop: hex('#b2582d'), steel: hex('#8b929e'), glow: hex('#ffb347'), eye: hex('#ffe27a') };
-const IRON = { main: hex('#5a6170'), hi: hex('#a2abbd'), lo: hex('#2f3440'), dark: hex('#15181f'), cop: hex('#7d2b2b'), steel: hex('#737b8b'), glow: hex('#ff4a3a'), eye: hex('#ff6a50') };
-function autoFrame(p, pose, pal) {
-  const cx = 26 + (pose.lean || 0), bob = pose.bob || 0, hipY = 42 + bob;
-  for (const L of pose.legs) {                       // piston legs
-    const hx = cx + (L.back ? -4 : 4), fx = cx + L.fx, fy = AY - (L.lift || 0);
-    const col = L.back ? pal.lo : pal.main;
-    p.line(hx, hipY, fx, fy - 4, col, 5); p.line(hx, hipY + 1, fx, fy - 4, L.back ? pal.dark : pal.hi, 1);
-    p.rect(fx - 4, fy - 4, 11, 4, L.back ? pal.dark : pal.lo); p.rect(fx - 4, fy - 4, 11, 1, pal.steel); p.set(fx, fy - 6, pal.glow);
-  }
-  // barrel torso
-  p.rect(cx - 9, 25 + bob, 19, 18, pal.main); p.rect(cx - 8, 24 + bob, 17, 1, pal.main); p.rect(cx - 8, 43 + bob, 17, 1, pal.lo);
-  p.rect(cx - 9, 28 + bob, 19, 2, pal.cop); p.rect(cx - 9, 39 + bob, 19, 2, pal.cop);
-  for (let i = 0; i < 4; i++) { p.set(cx - 7 + i * 5, 29 + bob, pal.hi); p.set(cx - 7 + i * 5, 40 + bob, pal.hi); }
-  // chest gear window
-  p.disc(cx + 1, 34 + bob, 5.4, pal.dark); const g = (pose.gear || 0) * Math.PI / 4;
-  for (let s = 0; s < 4; s++) { const a = g + s * Math.PI / 2; p.line(cx + 1, 34 + bob, cx + 1 + Math.cos(a) * 4.2, 34 + bob + Math.sin(a) * 4.2, pal.glow, 1); }
-  p.disc(cx + 1, 34 + bob, 1.5, pal.eye);
-  // back winding key
-  const kv = pose.key ? 1 : 0; p.rect(cx - 13, 33 + bob, 4, 2, pal.steel);
-  if (kv) { p.rect(cx - 16, 29 + bob, 3, 10, pal.cop); } else { p.rect(cx - 17, 32 + bob, 8, 4, pal.cop); }
-  // head
-  const hx = cx + 1 + (pose.headX || 0), hy = 17 + bob + (pose.headY || 0);
-  p.rect(hx - 4, hy + 2, 10, 5, pal.lo); p.disc(hx + 1, hy, 6, pal.main); p.rect(hx - 5, hy, 12, 4, pal.main);
-  p.disc(hx + 4, hy - 0, 2.4, pal.dark); p.disc(hx + 4, hy, 1.4, pal.eye); p.set(hx + 4, hy, [255, 255, 255, 255]);
-  for (let i = 0; i < 3; i++) p.rect(hx - 3 + i * 2, hy + 3, 1, 3, pal.dark);
-  p.line(hx - 1, hy - 5, hx - 3 + (pose.ant || 0), hy - 11, pal.steel, 1); p.disc(hx - 3 + (pose.ant || 0), hy - 12, 1.6, pal.glow);
-  // arms: shoulder ball, piston, fist
-  const f = pose.fist;                                   // {x,y} fist center offset from shoulder
-  const sx = cx + 9, sy = 27 + bob;
-  p.disc(sx, sy, 3.4, pal.cop); p.line(sx, sy, sx + f.x * 0.5 + 1, sy + f.y * 0.5 + 3, pal.steel, 3);
-  p.line(sx + f.x * 0.5 + 1, sy + f.y * 0.5 + 3, sx + f.x, sy + f.y, pal.main, 4);
-  p.rect(sx + f.x - 4, sy + f.y - 4, 9, 8, pal.lo); p.rect(sx + f.x - 4, sy + f.y - 4, 9, 2, pal.steel); p.rect(sx + f.x + 2, sy + f.y - 1, 3, 4, pal.dark);
-  if (pose.steam) for (const [x, y] of pose.steam) p.set(cx + x, 20 + bob + y, hex('#d8dde8'));
-  p.shade(); p.outline(OUT);
-  p.set(hx + 4, hy, [255, 255, 255, 255]);
-}
-function autoPose(kind, k) {
-  if (kind === 'idle') return { bob: [0, 1, 1, 0][k], gear: k, key: k % 2, ant: [0, 1, 0, -1][k], legs: [{ back: true, fx: -5 }, { fx: 5 }], fist: { x: 9, y: 11 }, steam: k === 2 ? [[-9, 2], [-10, 0]] : k === 3 ? [[-10, -2]] : null };
-  if (kind === 'walk') { const ph = k / 6 * Math.PI * 2, s = Math.sin(ph), c = Math.cos(ph);
-    return { bob: Math.abs(c) > 0.6 ? 1 : 0, gear: k * 2, key: k % 2, lean: 1, ant: Math.round(s * 2), legs: [{ back: true, fx: -s * 8, lift: Math.max(0, c) * 3 }, { fx: s * 8, lift: Math.max(0, -c) * 3 }], fist: { x: 8 + Math.round(s * 2), y: 11 } }; }
-  if (kind === 'attack') { const F = [{ x: -2, y: -4 }, { x: -5, y: -10 }, { x: 17, y: 6 }, { x: 22, y: 12 }, { x: 12, y: 11 }][k];
-    return { bob: k === 2 ? 1 : 0, lean: [-2, -3, 3, 4, 1][k], gear: 4 + k, headX: k > 1 ? 1 : -1, ant: k > 1 ? -2 : 2, legs: [{ back: true, fx: -7 }, { fx: 7 }], fist: F, steam: k === 3 ? [[-9, 4], [-10, 2], [-9, 0]] : null }; }
-  return { bob: 2, lean: -3, headX: -2, gear: 3, ant: 3, legs: [{ back: true, fx: -3 }, { fx: 3 }], fist: { x: 4, y: 12 } };
-}
 
 // ------------------------------------------------------------------------------------------------
 // BAT
@@ -270,8 +222,6 @@ export function drawProcedural(addSheet) {
   const armorKinds = [['idle', 4], ['walk', 6], ['attack', 5], ['hurt', 1]];
   for (const [kind, n] of armorKinds) {
     addSheet('armor_' + kind, strip(n, AW, AH, (p, k) => armorFrame(p, armorPose(kind, k))), n, AW, AH, { face: 1, ax: 26 / AW, ay: AY / AH });
-    addSheet('autom_' + kind, strip(n, AW, AH, (p, k) => autoFrame(p, autoPose(kind, k), BRASS)), n, AW, AH, { face: 1, ax: 26 / AW, ay: AY / AH });
-    addSheet('colossus_' + kind, strip(n, AW, AH, (p, k) => autoFrame(p, autoPose(kind, k), IRON)), n, AW, AH, { face: 1, ax: 26 / AW, ay: AY / AH });
   }
   addSheet('bat', strip(5, 28, 22, batFrame), 5, 28, 22, { ax: 0.5, ay: 0.5 });
   addSheet('icons', strip(ICON.length, IW, IW, iconFrame), ICON.length, IW, IW, { ax: 0.5, ay: 0.5 });

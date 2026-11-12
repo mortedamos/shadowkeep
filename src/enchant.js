@@ -28,7 +28,7 @@ export const TUNE = {
 };
 
 // enemies tend to drop a fitting element (55% of the time), otherwise any
-export const ENCH_BIAS = { fireskull: 'fire', ghoul: 'fire', hound: 'fire', wizard: 'fire', ghost: 'ice', wraith: 'ice', acolyte: 'ice', archmage: 'fire', gnuknight: 'aegis', swampthing: 'sun', swampspider: 'sun', frostwyrm: 'ice', emberwyrm: 'fire', wyrm: 'sun', armor: 'aegis', automaton: 'aegis', skeleton: 'sun', zombie: 'sun' };
+export const ENCH_BIAS = { fireskull: 'fire', ghoul: 'fire', hound: 'fire', wizard: 'fire', ghost: 'ice', wraith: 'ice', acolyte: 'ice', archmage: 'fire', gnuknight: 'aegis', swampthing: 'sun', swampspider: 'sun', frostwyrm: 'ice', emberwyrm: 'fire', wyrm: 'sun', armor: 'aegis', sorcerer: 'fire', skeleton: 'sun', zombie: 'sun' };
 
 // ------------------------------------------------------------------------------------------ frozen enemy overlay
 export function drawIce(ctx, e, cx, cy, t) {

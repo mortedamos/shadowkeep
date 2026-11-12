@@ -34,6 +34,9 @@ const ATTACKS = {
   embers: { label: 'EMBER VOLLEY', rgb: [255, 130, 50], icon: 'ember' },
   tentacles: { label: 'TENTACLES', rgb: [150, 110, 220], glyph: 'bars' },
   spores: { label: 'SPORE BURST', rgb: [140, 255, 120], icon: 'orb' },
+  lunge: { label: 'BLOOD LUNGE', rgb: [255, 70, 90], glyph: 'chevrons' },
+  bolts: { label: 'BLOOD BOLTS', rgb: [255, 60, 90], icon: 'orb' },
+  mist: { label: 'MIST STEP', rgb: [190, 110, 255], glyph: 'diag' },
 };
 const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
@@ -384,14 +387,15 @@ export class BossAngel extends Boss {
   }
 }
 
-// ============================================================================================== 4. THE CLOCKWORK COLOSSUS
+// ============================================================================================== 4. THE BRAZEN HIEROPHANT  (code id: colossus)
+// The master of the Underworks: a giant of the bronze-robed, silver-masked mage (Ars Notoria mage 1, drawn at 1.15).  He hovers a little above the floor; the quake attack lifts him high (the tell), then drops him.
 export class BossColossus extends Boss {
-  constructor(g, x, y, o) { super(g, x, y, 46, 100, o); this.hp = this.maxHp = 420; this.dmg = 16; this.xp = 260; this.bossName = 'THE CLOCKWORK COLOSSUS'; this.sub = 'IRON HEART OF THE UNDERWORKS'; this.scale = 2; this.dir = -1; this.deathFx = COLORS.gold; this.ice = { w: 76, h: 116 }; }
+  constructor(g, x, y, o) { super(g, x, y, 46, 100, o); this.hp = this.maxHp = 420; this.dmg = 16; this.xp = 260; this.bossName = 'THE BRAZEN HIEROPHANT'; this.sub = 'MASTER OF THE UNDERWORKS'; this.scale = 1.15; this.dir = -1; this.deathFx = COLORS.gold; this.ice = { w: 84, h: 116 }; }
   get spd() { return this.phase === 2 ? 1.25 : 1; }
   intro(g) { if (this.st === 8) { A.sfx('boom'); g.shake(5, 50); g.fx.flash([1, 0.6, 0.3], 0.3); A.sfx('steam'); } if (this.st % 8 === 0) g.fx.smoke(this.x + rand(-20, 20), this.y - 96, 1, { s0: 10, s1: 26, c0: [0.8, 0.82, 0.88], c1: [0.4, 0.42, 0.5], a: 0.4 }); this.faceP(); }
   ai(g) {
     const p = g.player, spd = this.spd, d = Math.abs(this.dx());
-    if (this.t % 4 === 0) g.fx.glow(this.x + this.dir * 8, this.y - 92, 14, [1, 0.3, 0.2], 0.7); g.fx.light(this.x, this.y - 60, 90, 0.6);
+    if (this.t % 4 === 0) g.fx.glow(this.x, this.y - 84, 14, [1, 0.62, 0.2], 0.55); g.fx.light(this.x, this.y - 60, 90, 0.6);
     switch (this.state) {
       case 'idle': this.faceP(); this.vx = approach(this.vx, d > 70 ? this.dir * 0.4 * spd : 0, 0.05); if (this.t % 28 === 0 && Math.abs(this.vx) > 0.2) { A.sfx('boom'); g.shake(1, 6); }
         this.planNext(d < 120 ? ['slam', 'slam', 'vents', 'gears'] : ['vents', 'gears', 'slam'], Math.round(92 / spd)); break;
@@ -414,12 +418,11 @@ export class BossColossus extends Boss {
     }
   }
   draw(ctx, cx, cy) {
-    const T0 = Math.round(54 / this.spd); let id = 'colossus_idle', f = Math.floor(this.t / 10) % 4;
-    if (this.state === 'idle' && Math.abs(this.vx) > 0.15) { id = 'colossus_walk'; f = Math.floor(this.t / 10) % 6; }
-    else if (this.state === 'slam') { id = 'colossus_attack'; f = this.st < T0 * 0.5 ? 0 : this.st < T0 ? 1 : this.st < T0 + 8 ? 2 : this.st < T0 + 16 ? 3 : 4; }
-    else if (this.state === 'gears') { id = 'colossus_attack'; f = this.st < 24 ? 0 : 1; }
-    if (this.hurtT > 5) { id = 'colossus_hurt'; f = 0; }
-    this.spr(ctx, id, f, cx, cy, { flash: this.flashT > 0 });
+    const T0 = Math.round(54 / this.spd); let id = 'ars_mage1_r0', f = Math.floor(this.t / 9) % 4, lift = 6 + Math.sin(this.t * 0.07) * 3;          // hovers a little above the floor
+    if (this.state === 'slam') { id = 'ars_mage1_r1'; f = Math.floor(this.t / 6) % 4; lift = this.st < T0 ? 6 + Math.sin(Math.min(1, this.st / T0) * Math.PI / 2) * 40 : Math.max(0, 6 - (this.st - T0) * 3); }      // rises (the tell), then crashes down on the beat
+    else if (this.state === 'gears') { id = 'ars_mage1_r1'; f = Math.floor(this.t / 6) % 4; lift += this.st < 38 ? Math.min(14, this.st * 0.6) : 4; }
+    else if (this.state === 'vents') { id = 'ars_mage1_r1'; f = Math.floor(this.t / 8) % 4; }
+    this.spr(ctx, id, f, cx, cy + lift, { flash: this.flashT > 0 });
   }
 }
 
@@ -576,4 +579,79 @@ export class BossBramble extends Boss {
   }
 }
 
-export const BOSS_TYPES = { boss_beast: BossBeast, boss_nightmare: BossNightmare, boss_angel: BossAngel, boss_colossus: BossColossus, boss_shadow: BossShadow, boss_cinder: BossCinder, boss_bramble: BossBramble };
+// ============================================================================================== 8. THE CRIMSON COUNT (an optional lair behind a door in the Nave)
+// A vampire lord in crimson armour (sprites: xxg_4_free).  BLOOD LUNGE: he crouches, then dashes through the air where you stand with his blade.  BLOOD BOLTS: a fan of crimson orbs.
+// MIST STEP: he dissolves and returns behind you with a slash (the ring on the floor shows where).  In the second half he also LEAPS onto where you stand, and is quicker.
+export class BossVampire extends Boss {
+  constructor(g, x, y, o) {
+    super(g, x, y, 26, 66, o); this.hp = this.maxHp = 200; this.dmg = 12; this.xp = 120; this.bossName = 'THE CRIMSON COUNT'; this.sub = 'WHO DRINKS THE DARK'; this.dir = -1; this.deathFx = COLORS.red; this.ice = { w: 56, h: 84 };
+    this.live = false; this.hitDone = false; this.tx = x;
+  }
+  get spd() { return this.phase === 2 ? 1.2 : 1; }
+  tele(k) { return Math.round({ lunge: 52, bolts: 50, mist: 46, leap: 54 }[k] / this.spd); }
+  dangerous() { return this.live; }
+  intro(g) {
+    if (this.st === 8) { A.sfx('roar'); g.shake(3, 36); g.fx.flash([0.9, 0.1, 0.2], 0.3); g.fx.ring(this.x, this.cy, 100, [1, 0.2, 0.3], 40, 0.1); g.fx.burst(this.x, this.cy, 24, [[0.8, 0.05, 0.12], [0.15, 0, 0.05]], { speed: 3, s0: 14, up: 0.4 }); }
+    this.faceP();
+  }
+  swordBox(reach = 58) { return { x: this.dir > 0 ? this.x - 4 : this.x - reach + 4, y: this.y - 66, w: reach, h: 58 }; }
+  strike(g, extra = 0) { const p = g.player; if (!this.hitDone && overlap(this.swordBox(), p.hurtbox)) { this.hitDone = true; p.hurt(this.dmg + extra, this.x); } }
+  ai(g) {
+    const p = g.player, spd = this.spd, d = Math.abs(this.dx()); this.live = false;
+    if (this.t % 6 === 0 && this.alpha > 0.5) g.fx.emit({ x: this.x + rand(-12, 12), y: this.y - rand(6, 60), vx: rand(-0.2, 0.2), vy: -rand(0.2, 0.6), life: 30, s0: 6, s1: 1, c0: [0.7, 0.05, 0.12], c1: [0.2, 0, 0.05], a0: 0.7, a1: 0, kind: 6 });     // a faint crimson haze
+    g.fx.light(this.x, this.y - 40, 70, 0.4 * this.alpha);
+    switch (this.state) {
+      case 'idle':
+        this.alpha = 1; this.faceP(); this.vx = approach(this.vx, d > 130 ? this.dir * 1.1 : d < 56 ? -this.dir * 0.8 : 0, 0.06);
+        this.planNext(this.phase === 2 ? ['lunge', 'bolts', 'mist', 'leap'] : ['lunge', 'bolts', 'mist'], Math.round(80 / spd)); break;
+      case 'lunge': {
+        const T0 = this.tele('lunge'), run = 30, sp = this.phase === 2 ? 6.2 : 5.2;
+        if (this.st < T0) { this.vx = 0; if (this.st === 1) { this.faceP(); this.hitDone = false; } this.tell('lunge', this.st / T0, [{ type: 'lane', x0: this.x, x1: this.x + this.dir * sp * run, y: this.y }]); }
+        else if (this.st < T0 + run) { if (this.st === T0) { A.sfx('dash'); g.fx.ring(this.x, this.cy, 40, [1, 0.2, 0.3], 14, 0.2); } this.vx = this.dir * sp; this.live = true; this.strike(g, 3); g.fx.emit({ x: this.x - this.dir * 10, y: this.y - rand(8, 56), vx: -this.dir * 0.6, vy: rand(-0.2, 0.2), life: 14, s0: 10, s1: 2, c0: [0.9, 0.1, 0.2], c1: [0.3, 0, 0.1], a0: 0.8, a1: 0, kind: 0 }); }
+        else { this.vx = approach(this.vx, 0, 0.5); if (this.st > T0 + run + 26) { this.state = 'idle'; this.st = -10; } }
+        break; }
+      case 'bolts': {
+        const T0 = this.tele('bolts'); this.vx = 0; this.faceP();
+        if (this.st < T0) { this.tell('bolts', this.st / T0, [{ type: 'line', x0: this.x, y0: this.y - 46, x1: p.x, y1: p.y - 20 }]); g.fx.glow(this.x + this.dir * 20, this.y - 40, 8 + this.st * 0.35, [1, 0.1, 0.2], 0.5); }
+        else if (this.st === T0 || (this.phase === 2 && this.st === T0 + 18)) {
+          A.sfx('cast'); const n = this.st === T0 ? (this.phase === 2 ? 5 : 3) : 3, base = Math.atan2(p.y - 24 - (this.y - 46), p.x - this.x);
+          for (let i = 0; i < n; i++) { const a = base + (i - (n - 1) / 2) * 0.22, sp = 2.4 + (i % 2) * 0.3; g.addProjectile(new Projectile(this.x + this.dir * 24, this.y - 46, Math.cos(a) * sp, Math.sin(a) * sp, 'blood', { dmg: 8, life: 220 })); }
+          g.fx.ring(this.x + this.dir * 24, this.y - 46, 26, [1, 0.15, 0.25], 14);
+        } else if (this.st > T0 + (this.phase === 2 ? 40 : 26)) { this.state = 'idle'; this.st = -12; }
+        break; }
+      case 'mist': {
+        const T0 = this.tele('mist'), V = 16;                                   // T0: the warning, then V steps as a cloud, then a slash behind you
+        if (this.st === 1) { const side = p.dir > 0 ? -1 : 1; this.tx = clamp(p.x + side * 72, 50, g.room.pw - 50); this.hitDone = false; }
+        if (this.st < T0) { this.vx = 0; this.faceP(); this.tell('mist', this.st / T0, [{ type: 'ring', x: this.tx, y: this.y, r: 34 }]); }
+        else if (this.st < T0 + V) {
+          if (this.st === T0) { A.sfx('flap'); g.fx.burst(this.x, this.cy, 22, [[0.55, 0.05, 0.12], [0.12, 0, 0.06]], { speed: 2.4, s0: 16, up: 0.3 }); this.invuln = true; this.harmless = true; }
+          this.vx = 0; this.alpha = Math.max(0, 1 - (this.st - T0) / 6);
+          if (this.st === T0 + V - 1) { this.x = this.tx; this.dir = p.x >= this.x ? 1 : -1; g.fx.burst(this.x, this.cy, 22, [[0.55, 0.05, 0.12], [0.12, 0, 0.06]], { speed: 2.4, s0: 16, up: 0.3 }); A.sfx('flap'); }
+        } else if (this.st < T0 + V + 18) {
+          this.invuln = false; this.harmless = false; this.faceP(); this.alpha = Math.min(1, (this.st - T0 - V) / 6);
+          if (this.st >= T0 + V + 8) { this.live = true; this.strike(g, 2); if (this.st === T0 + V + 8) { A.sfx('slash'); g.fx.ring(this.x + this.dir * 28, this.y - 36, 30, [1, 0.2, 0.3], 12, 0.2); } }
+        } else { this.alpha = 1; if (this.st > T0 + V + 18 + 22) { this.state = 'idle'; this.st = -10; } }
+        break; }
+      case 'leap': {
+        const T0 = this.tele('leap');
+        if (this.st === 1) { this.tx = clamp(p.x, 60, g.room.pw - 60); this.hitDone = false; }
+        if (this.st < T0) { this.vx = 0; this.dir = this.tx >= this.x ? 1 : -1; this.tell('leap', this.st / T0, [{ type: 'ring', x: this.tx, y: this.y, r: 38 }]); }
+        else if (this.st === T0) { this.vy = -6.2; this.vx = clamp((this.tx - this.x) / 58, -3.8, 3.8); this.onGround = false; A.sfx('jump'); }
+        else if (this.st > T0 + 8 && this.onGround) { this.vx = 0; g.shake(5, 16); A.sfx('boom'); g.fx.ring(this.x, this.y - 4, 70, [1, 0.2, 0.3], 22, 0.15); g.fx.burst(this.x, this.y - 4, 16, [[0.6, 0.05, 0.12], [0.15, 0, 0.06]], { speed: 2.4, s0: 14, up: 0.6 }); if (Math.abs(g.player.x - this.x) < 42 && Math.abs(g.player.y - this.y) < 30) g.player.hurt(this.dmg + 2, this.x); this.state = 'idle'; this.st = -24; }
+        else { this.live = true; this.warns = [{ type: 'ring', x: this.tx, y: this.y, r: 38 }]; }
+        break; }
+    }
+  }
+  draw(ctx, cx, cy) {
+    const T = this.tele(this.state === 'bolts' ? 'bolts' : this.state === 'mist' ? 'mist' : this.state === 'leap' ? 'leap' : 'lunge'); let id = 'vampire_idle', f = Math.floor(this.t / 9) % 6;
+    if (this.dying) { if (this.dying < 54) { id = 'vampire_hurt'; f = Math.min(3, Math.floor(this.dying / 14)); } else { id = 'vampire_dead'; f = Math.min(2, Math.floor((this.dying - 54) / 16)); } }
+    else if (this.state === 'lunge') { id = 'vampire_atk'; f = this.st < T * 0.5 ? 0 : this.st < T ? 1 : this.st < T + 14 ? 2 : 3; }
+    else if (this.state === 'bolts') { id = 'vampire_atk'; f = this.st < T * 0.55 ? 0 : this.st < T ? 1 : 2; }
+    else if (this.state === 'mist') { id = this.st < T + 16 ? 'vampire_idle' : 'vampire_atk'; f = this.st < T + 16 ? 0 : this.st < T + 16 + 8 ? 1 : this.st < T + 16 + 14 ? 2 : 3; }
+    else if (this.state === 'leap') { id = 'vampire_jump'; f = this.st < T * 0.6 ? 0 : this.st < T ? 1 : !this.onGround ? (this.vy < -2.5 ? 2 : this.vy < 0 ? 3 : this.vy < 2 ? 4 : 5) : 6; }
+    else if (Math.abs(this.vx) > 0.2) { id = 'vampire_run'; f = Math.floor(this.t / 6) % 5; }
+    this.spr(ctx, id, f, cx, cy + 1, { dy: 1, flash: this.flashT > 0 });
+  }
+}
+
+export const BOSS_TYPES = { boss_vampire: BossVampire, boss_beast: BossBeast, boss_nightmare: BossNightmare, boss_angel: BossAngel, boss_colossus: BossColossus, boss_shadow: BossShadow, boss_cinder: BossCinder, boss_bramble: BossBramble };

@@ -91,6 +91,7 @@ function bmDraw(ctx, str, x, y, o = {}) {
 // ---------------------------------------------------------------------------------------------- gothic vector text
 let vec = null;                                   // { body, display } once the fonts are loaded
 const FONT_FILES = [['body', 'SK Almendra', '../assets/fonts/Almendra-Bold.ttf', 1.06], ['display', 'SK Pirata', '../assets/fonts/PirataOne-Regular.ttf', 1.12]];
+const TITLE_FONT = ['title', 'SK Blackletter', '../assets/fonts/BLACEB__.TTF', 1.0];       // "Blackletter ExtraBold" (Typographer Mediengestaltung): the game title only
 export async function loadFonts() {
   try {
     const m = document.createElement('canvas').getContext('2d'), spec = {};
@@ -100,23 +101,29 @@ export async function loadFonts() {
       if (!(cap > 0.3 && cap < 1)) throw new Error('bad font metrics for ' + fam);
       spec[key] = { fam, cap, fit };
     }
+    try {                                                    // the title face is optional: if it cannot load, the logo uses the display face
+      const f = new FontFace(TITLE_FONT[1], `url(${new URL(TITLE_FONT[2], import.meta.url).href})`); await f.load(); document.fonts.add(f);
+      m.font = `100px "${TITLE_FONT[1]}"`; const cap = m.measureText('H').actualBoundingBoxAscent / 100;
+      if (cap > 0.3 && cap < 1) spec.title = { fam: TITLE_FONT[1], cap, fit: TITLE_FONT[3] };
+    } catch (e) { console.warn('Title font unavailable - using the display font.', e); }
     vec = spec; widths.clear(); return true;
   } catch (e) { console.warn('Gothic fonts unavailable - using the bitmap font.', e); vec = null; return false; }
 }
 const measureCtx = document.createElement('canvas').getContext('2d'), widths = new Map();
 // Pirata One (display) for big text and anything outlined (HUD, menus, banners, floating text); Almendra (body) for dialogue and descriptive text.
-const pick = (scale, o) => vec[(o && o.font) || (scale >= 2 || (o && o.outline) ? 'display' : 'body')];
+const pick = (scale, o) => vec[(o && o.font) || (scale >= 2 || (o && o.outline) ? 'display' : 'body')] || vec.display;
 const sizeOf = (F, scale) => 7 * scale * F.fit / F.cap;                       // font-size that gives caps ~7*fit px tall
 function vecWidth(str, scale, o) {
   const F = pick(scale, o), size = sizeOf(F, scale), key = F.fam + size + '|' + str; let w = widths.get(key);
   if (w === undefined) { measureCtx.font = `${size}px "${F.fam}"`; w = measureCtx.measureText(str).width; if (widths.size > 4000) widths.clear(); widths.set(key, w); }
   return w;
 }
-export function textWidth(str, scale = 1, font) { str = String(str).toUpperCase(); return vec ? vecWidth(str, scale, typeof font === 'object' ? font : { font }) : bmWidth(str, scale); }
+const casing = (str, font) => font === 'title' ? String(str) : String(str).toUpperCase();      // (the game draws capitals - except the blackletter title, which reads far better in mixed case)
+export function textWidth(str, scale = 1, font) { const f = typeof font === 'object' ? font : { font }; str = casing(str, f.font); return vec ? vecWidth(str, scale, f) : bmWidth(str.toUpperCase(), scale); }
 
 export function drawText(ctx, str, x, y, o = {}) {
   if (!vec) return bmDraw(ctx, str, x, y, o);
-  str = String(str).toUpperCase();
+  str = casing(str, o.font);
   const scale = o.scale || 1, color = o.color || '#e8dcc0', F = pick(scale, o), size = sizeOf(F, scale), w = vecWidth(str, scale, o);
   if (o.align === 'center') x -= w / 2; else if (o.align === 'right') x -= w;
   const base = y + 3.5 * scale + F.cap * size / 2;                            // caps are centred in the 7*scale box
