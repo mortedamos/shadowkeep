@@ -1,7 +1,8 @@
 // The cloaked stranger (sprites: the "Gothic Hero" by Ansimuz, CC0).
 import { Entity, moveX, moveY, touchesSpikes } from './entity.js';
 import { Input } from './input.js';
-import { drawSheet, SHEET, sheetExtents } from './assets.js';
+import { drawSheet, SHEET, sheetExtents, hairBox } from './assets.js';
+import { Hair } from './hair.js';
 import { Audio_ as A } from './audio.js';
 import { COLORS } from './fx.js';
 import { T, clamp, approach, rand, TAU } from './util.js';
@@ -44,12 +45,13 @@ export class Player extends Entity {
     this.trail = []; this.fallSpeed = 0; this.dead = false; this.deathT = 0; this.landedT = 0; this.spell = 'ember'; this.castFired = false; this.interactCd = 0; this.idleT = 0; this.hitsThisSwing = 0;
     this.ench = null; this.fireFired = false; this.sunQuad = null; this.crouch = false; this.crouchT = 0;
     this.stain = { soot: 0, mud: 0, blood: 0 };       // what the cloak has picked up (see stain.js)
+    this.hair = new Hair();                             // his hair: a mesh that moves with him (see hair.js)
     this.sel = null; this.castItem = null; this.healT = 0; this.healPer = 0;      // hotbar selection, the item being thrown, bandage healing
   }
   get S() { return this.g.save; }
   get atkPower() { const S = this.S; return S.atk + Math.floor(S.level / 2); }
   get hurtbox() { const b = this.box; return { x: b.x + 1, y: b.y + 2, w: b.w - 2, h: b.h - 2 }; }
-  place(x, y, dir = 1) { this.x = x; this.y = y; this.vx = this.vy = 0; this.dir = dir; this.lastSafe = { x, y }; this.atk = 0; this.atkBuf = 0; this.dashT = 0; this.hurtT = 0; this.castT = 0; this.castItem = null; this.healT = 0; this.djumpT = 0; this.crouch = false; this.h = PH; this.trail.length = 0; if (this.g.fx.cloak) this.g.fx.cloak.ready = false; }
+  place(x, y, dir = 1) { this.x = x; this.y = y; this.vx = this.vy = 0; this.dir = dir; this.lastSafe = { x, y }; this.atk = 0; this.atkBuf = 0; this.dashT = 0; this.hurtT = 0; this.castT = 0; this.castItem = null; this.healT = 0; this.djumpT = 0; this.crouch = false; this.h = PH; this.trail.length = 0; if (this.g.fx.cloak) this.g.fx.cloak.ready = false; this.hair.reset(); }
 
   // ------------------------------------------------------------------ combat helpers
   swordDamage() { const E = this.ench; return Math.max(1, Math.round(this.atkPower * this.seq.dmg * (E ? ENCH[E.type].dmg : 1))); }
@@ -155,7 +157,7 @@ export class Player extends Entity {
   // ------------------------------------------------------------------ update
   update() {
     const g = this.g, S = this.S, room = g.room, I = Input; this.t++;
-    if (this.dead) { this.deathT++; this.vy = Math.min(this.vy + GRAV, MAXFALL); moveY(this, room); this.vx *= 0.9; this.stepCloak(); return; }
+    if (this.dead) { this.deathT++; this.vy = Math.min(this.vy + GRAV, MAXFALL); moveY(this, room); this.vx *= 0.9; this.stepCloak(); this.stepHair(); return; }
     for (const k of ['invT', 'hurtT', 'dashCd', 'castCd', 'dropThrough', 'coyote', 'jumpBuf', 'interactCd', 'djumpT', 'atkBuf']) if (this[k] > 0) this[k]--;
     if (!this.atk && this.comboT > 0) this.comboT--;
     const locked = this.hurtT > 0 || g.cutscene || g.playerFrozen;
@@ -255,7 +257,7 @@ export class Player extends Entity {
     // footsteps / run animation
     if (this.onGround && Math.abs(this.vx) > 0.3) { this.runT += Math.abs(this.vx) * 0.13; if (Math.floor(this.runT) % 6 === 0 && Math.floor(this.runT) !== this._lastStep) { this._lastStep = Math.floor(this.runT); A.sfx('step'); } } else this.runT = 0;
     this.idleT = (Math.abs(this.vx) < 0.1 && this.onGround) ? this.idleT + 1 : 0;
-    this.updateEnchant(); this.updateStains(); this.updateHeal(); this.swishWind(); this.stepCloak();
+    this.updateEnchant(); this.updateStains(); this.updateHeal(); this.swishWind(); this.stepCloak(); this.stepHair();
     if (touchesSpikes(this, room)) this.hurtSpikes();
   }
   updateHeal() {            // bandage: life flows back over ~1.5s
@@ -326,6 +328,18 @@ export class Player extends Entity {
     c.setStain(this.stain);
     c.step({ x: Math.round(this.x), ay: Math.round(this.y) - (this.crouch ? 15 : 27), dir: this.dir, vx: this.vx, vy: this.vy, floorY: this.onGround ? Math.round(this.y) : undefined, sil: this.silhouette() });
   }
+  // Where a point of the current frame's picture is in the world (mirrors exactly what drawSheet does with the frame: anchor, flip, jump-frame offset).
+  spritePoint() {
+    const fi = this.frameInfo(), s = SHEET[fi.sheet]; if (!s) return null;
+    const jump = fi.cy !== undefined, ay = jump ? fi.cy / fi.ch : s.ay, flip = this.dir !== s.face, tx = Math.round(this.x), ty = Math.round(jump ? this.y - this.h / 2 + 1 : this.y);
+    const X0 = Math.round(-s.w * s.ax) + s.dx * (flip ? -1 : 1), Y0 = Math.round(-s.h * ay) + s.dy;
+    return { fi, rest: (sx, sy) => [flip ? tx - X0 - sx : tx + X0 + sx, ty + Y0 + sy] };
+  }
+  // his hair is simulated every step (see hair.js); the picture it is cut from depends on the animation frame
+  stepHair() {
+    const sp = this.spritePoint(); if (!sp) return; const boxes = hairBox(sp.fi.sheet), f = ((Math.floor(sp.fi.f) % SHEET[sp.fi.sheet].n) + SHEET[sp.fi.sheet].n) % SHEET[sp.fi.sheet].n;
+    this.hair.step({ box: boxes && boxes[f], rest: sp.rest, vx: this.vx, vy: this.vy, dir: this.dir });
+  }
   // The hero's silhouette for the frame being drawn: row (world y) -> { back, front } = world x of the sprite's back / front edge on that row, or null.
   // (mirrors exactly what drawSheet does with the frame: anchor, flip, jump-frame offset)
   silhouette() {
@@ -346,6 +360,7 @@ export class Player extends Entity {
     const sid = suf && SHEET[base + suf] ? base + suf : base;       // enchanted variants recolor the slash arc
     const jump = fi.cy !== undefined, yy = jump ? y - this.h / 2 + 1 : y, extra = jump ? { ay: fi.cy / fi.ch } : {};
     drawSheet(ctx, sid, fi.f, x, yy, { dir, ...extra, ...o });
+    if (!A.settings.hair || o.flash || o.noFx) drawSheet(ctx, fi.sheet + '_hair', fi.f, x, yy, { dir, ...extra, ...o });                   // 3D Hair off (or a flash / an afterimage): the loose hair as a still picture
     if (cw && !o.flash && !o.noFx) for (const k of STAIN_KEYS) {       // stains on the sprite's mantle: its cape-only mask, tinted, laid over it
       const a = this.stain[k]; if (a > 0.02) drawSheet(ctx, fi.sheet + '_cwm', fi.f, x, yy, { dir, ...extra, flash: STAINS[k].color, alpha: (o.alpha !== undefined ? o.alpha : 1) * Math.min(0.6, a * 0.65) });
     }
@@ -357,6 +372,7 @@ export class Player extends Entity {
     if (this.onGround) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(Math.round(x - 7), Math.round(y - 1), 14, 2); }     // soft shadow
     const cl = this.g.fx.cloak; if (cl && A.settings.cloak) cl.draw(ctx, cx, cy, this.dead ? Math.max(0, 1 - Math.max(0, this.deathT - 60) / 60) : 1);       // the cloak hangs BEHIND the hero
     this.drawFrame(ctx, this.frameInfo(), x, y, this.dir, this.dead ? { alpha: Math.max(0, 1 - Math.max(0, this.deathT - 60) / 60) } : {});
+    if (A.settings.hair) { const fi = this.frameInfo(), hs = SHEET[fi.sheet + '_hair']; if (hs) { const f = ((Math.floor(fi.f) % hs.n) + hs.n) % hs.n; this.hair.draw(ctx, cx, cy, hs.img, f * hs.w, 0, this.dead ? Math.max(0, 1 - Math.max(0, this.deathT - 60) / 60) : 1); } }          // his hair: over the head
     ctx.globalAlpha = 1;
     const E = this.ench; if (E && E.shield > 0) drawShield(ctx, x, y, this.t, E.shield < 180);
   }

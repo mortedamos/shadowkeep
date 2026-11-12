@@ -76,21 +76,22 @@ const BFRAG = `precision highp float; varying float vSide; uniform vec3 uColor; 
 void main(){ float f=1.0-abs(vSide); float a=pow(max(f,0.0),uPow); gl_FragColor=vec4(uColor*a*uAlpha,0.0); }`;
 
 // ---------------------------------------------------------------- darkness / lights / hurt overlay
-const DARK_FLOOR = 0.46, DARK_SLOPE = 0.38;      // darkness of a room = floor + its ambient * slope  (ambient 0.1 -> 0.50, 0.35 -> 0.59, 0.58 -> 0.68)
+const DARK_FLOOR = 0.30, DARK_SLOPE = 0.30, VIG_SCALE = 0.7;      // darkness of a room = floor + its ambient * slope  (ambient 0.1 -> 0.33, 0.35 -> 0.41, 0.58 -> 0.47); an ambient of 0 = a lit scene with no darkness at all
+const WARM = [1, 0.66, 0.34];
 const DFRAG = /* glsl */`
 precision highp float; varying vec2 vUv;
 uniform vec4 uLights[24]; uniform vec3 uLightCol[24]; uniform int uCount;
 uniform float uAmbient; uniform vec3 uTint; uniform float uVig; uniform float uHurt; uniform vec2 uRes; uniform float uPulse;
 void main(){
   vec2 px=vec2(vUv.x*uRes.x,vUv.y*uRes.y);   // camera is y-down, so plane v grows downward on screen
-  float lit=0.0;
-  for(int i=0;i<24;i++){ if(i>=uCount) break; float d=distance(px,uLights[i].xy); lit+=uLights[i].w*pow(smoothstep(uLights[i].z,0.0,d),1.6); }
+  float lit=0.0; vec3 pool=vec3(0.0);
+  for(int i=0;i<24;i++){ if(i>=uCount) break; float d=distance(px,uLights[i].xy); float f=uLights[i].w*pow(smoothstep(uLights[i].z,0.0,d),1.6); lit+=f; pool+=uLightCol[i]*f; }
   lit=clamp(lit,0.0,1.0);
   float dark=uAmbient*(1.0-lit);
   vec2 v=vUv*2.0-1.0; float vig=uVig*smoothstep(0.55,1.45,length(v*vec2(0.9,1.1)));
-  dark=clamp(dark+vig*(1.0-lit*0.6),0.0,0.94);
+  dark=clamp(dark+vig*(1.0-lit*0.6),0.0,0.86);
   float hv=uHurt*smoothstep(0.35,1.3,length(v));
-  vec3 rgb=uTint*dark+vec3(0.55,0.0,0.02)*hv; float al=dark+hv*(1.0-dark);
+  vec3 rgb=uTint*dark+vec3(0.55,0.0,0.02)*hv+min(pool,vec3(1.2))*0.17*step(0.001,uAmbient); float al=dark+hv*(1.0-dark);          // a pool of coloured light round every light (so lights stand out without a dark room)
   gl_FragColor=vec4(rgb,al);
 }`;
 
@@ -101,7 +102,7 @@ void main(){
 const FOGFRAG = /* glsl */`
 precision highp float; varying vec2 vUv;
 uniform vec2 uCam; uniform vec2 uRes; uniform float uTime; uniform float uBase; uniform float uHeight; uniform float uDensity; uniform vec3 uColor;
-uniform vec4 uG[6]; uniform vec2 uGP[6];
+uniform vec4 uG[6]; uniform vec2 uGP[6]; uniform vec4 uW[6];
 float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
 float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1.0,0.0)),f.x),mix(h21(i+vec2(0.0,1.0)),h21(i+vec2(1.0,1.0)),f.x),f.y); }
 float fbm(vec2 p){ float a=0.5, s=0.0; for(int i=0;i<4;i++){ s+=a*vn(p); p=p*2.03+vec2(17.0,9.0); a*=0.5; } return s; }
@@ -119,7 +120,8 @@ void main(){
   float top = uHeight * (0.65 + 0.7*fbm(vec2(q.x/90.0 + t*0.03, 3.0)));         // the ragged top of the bank
   float hv = 1.0 - smoothstep(top*0.12, top, up);
   float d = hv * smoothstep(0.16, 0.74, n + 0.2*hv) * uDensity;                  // wispy: clear gaps where the noise is low
-  d = clamp(d * (1.0 - clamp(carve, 0.0, 0.85)), 0.0, 0.9);
+  float clearW = 0.0; for(int i=0;i<6;i++){ float k = uW[i].w; if(k>0.0){ float dd = length(w - uW[i].xy)/uW[i].z; clearW = max(clearW, k*(1.0 - smoothstep(0.0, 1.0, dd))); } }        // the mist thins to almost nothing around a wisp
+  d = clamp(d * (1.0 - clamp(carve, 0.0, 0.85)) * (1.0 - 0.92*clearW), 0.0, 0.9);
   vec3 col = uColor * (0.78 + 0.34*n);
   gl_FragColor = vec4(col*d, d);
 }`;
@@ -189,6 +191,59 @@ export const COLORS = {
   gold: [[1, 0.92, 0.45], [1, 0.55, 0.1]], red: [[1, 0.35, 0.3], [0.6, 0.05, 0.05]], ice: [[0.8, 0.95, 1], [0.3, 0.6, 1]],
 };
 
+// ---------------------------------------------------------------- will-o'-the-wisps
+// Cold blue lights that drift through a haunted place, in and out of the background.  Each has a depth z (0 = in the hero's own plane, 1 = far behind): deeper means smaller, fainter
+// and slower across the screen.  They shed real light (the darkness overlay lifts around them), and the ground mist thins to almost nothing where they float, so the place near a
+// wisp is easy to see.  But the hero can never get near one: as he closes in, a wisp bolts away into the background, and if he keeps coming it fades out and is gone for a while.
+class Wisps {
+  constructor(fx) { this.fx = fx; this.list = []; }
+  set(n) { this.list = Array.from({ length: n }, (_, i) => ({ i, x: 0, y: 0, vx: 0, vy: 0, z: 0.4, zt: 0.4, ph: rand(0, TAU), age: 0, life: 0, a: 0, fade: 0, rx: 0, ry: 0, state: 'wait', wait: 20 + i * 45 + rand(0, 60) })); }
+  spawn(w) {
+    const f = this.fx, fo = f.focus;
+    for (let tries = 0; tries < 10; tries++) {
+      w.x = f.camX + rand(0.08, 0.92) * W; w.y = f.camY + rand(0.22, 0.82) * H;
+      if (!fo || Math.hypot(w.x - fo.x, w.y - fo.y) > 130) break;                                       // never appear next to the hero
+    }
+    w.vx = rand(-0.25, 0.25); w.vy = rand(-0.12, 0.12); w.z = w.zt = rand(0.2, 0.9); w.age = 0; w.life = rand(520, 1100); w.a = 0; w.fade = 0; w.state = 'live'; w.rx = w.x; w.ry = w.y;
+  }
+  update(dt) {
+    const f = this.fx, fo = f.focus, cxm = f.camX + W / 2, cym = f.camY + H / 2;
+    for (const w of this.list) {
+      if (w.state === 'wait') { w.wait -= dt; if (w.wait <= 0) this.spawn(w); w.a = 0; continue; }
+      w.age += dt;
+      // a slow wander: a wavering push, soft walls at the edge of the view
+      w.vx += (Math.sin(w.age * 0.013 + w.ph) * 0.010 + Math.sin(w.age * 0.0047 + w.ph * 2.3) * 0.006) * dt; w.vy += (Math.cos(w.age * 0.017 + w.ph * 1.7) * 0.008 + Math.sin(w.age * 0.05 + w.ph) * 0.004) * dt;
+      if (w.x < f.camX - 10) w.vx += 0.012 * dt; else if (w.x > f.camX + W + 10) w.vx -= 0.012 * dt;
+      if (w.y < f.camY + 24) w.vy += 0.012 * dt; else if (w.y > f.camY + H - 30) w.vy -= 0.012 * dt;
+      // in and out of the background
+      w.zt = 0.5 + 0.45 * Math.sin(w.age * 0.0042 + w.ph);
+      let threat = 0;
+      if (fo) {
+        const dx = w.x - fo.x, dy = w.y - fo.y, d = Math.hypot(dx, dy) || 1, R = 84 + 26 * (1 - w.z);
+        if (d < R) { threat = 1 - d / R; w.vx += (dx / d) * 0.16 * threat * dt; w.vy += (dy / d) * 0.12 * threat * dt; w.zt = 1; w.z += 0.035 * threat * dt; }       // bolts away - and into the background
+        if (d < 38 || (d < R * 0.55 && w.z > 0.92)) w.fade = Math.min(1, w.fade + 0.07 * dt);                                                                   // too close: it winks out
+      }
+      if (threat === 0) w.fade = Math.max(0, w.fade - 0.012 * dt);
+      w.z += (w.zt - w.z) * 0.02 * dt; w.z = clamp(w.z, 0, 1);
+      const drag = Math.pow(0.986, dt); w.vx *= drag; w.vy *= drag; const sp = Math.hypot(w.vx, w.vy), mx = 1.9; if (sp > mx) { w.vx *= mx / sp; w.vy *= mx / sp; }
+      w.x += w.vx * dt * (1 - 0.35 * w.z); w.y += w.vy * dt * (1 - 0.35 * w.z);
+      const env = Math.min(1, w.age / 60) * Math.min(1, (w.life - w.age) / 80);
+      w.a = Math.max(0, env * (1 - w.fade));
+      if (w.age > w.life || (w.fade >= 1 && w.a <= 0.02)) { w.state = 'wait'; w.wait = rand(90, 300); w.a = 0; w.fade = 0; continue; }
+      // where it is drawn: far ones are pulled toward the middle of the view as the camera moves (slower parallax)
+      w.rx = w.x + (cxm - w.x) * 0.3 * w.z; w.ry = w.y + (cym - w.y) * 0.3 * w.z;
+      const sc = 1 - 0.55 * w.z, br = (1 - 0.55 * w.z) * w.a, fl = 1 + 0.12 * Math.sin(w.age * 0.31 + w.ph) + 0.06 * Math.sin(w.age * 0.77);
+      f.add.add({ x: w.rx, y: w.ry, life: 1, s0: 104 * sc * fl, s1: 104 * sc * fl, c0: [0.12, 0.34, 1], a0: 0.36 * br, a1: 0.36 * br, kind: 0 });          // halo
+      f.add.add({ x: w.rx, y: w.ry, life: 1, s0: 46 * sc * fl, s1: 46 * sc * fl, c0: [0.38, 0.72, 1], a0: 0.8 * br, a1: 0.8 * br, kind: 0 });          // glow
+      f.add.add({ x: w.rx, y: w.ry, life: 1, s0: 14 * sc * fl, s1: 14 * sc * fl, c0: [0.9, 0.98, 1], a0: 1.0 * br, a1: 1.0 * br, kind: 6 });             // core
+      if (Math.floor(w.age) % 3 < dt) f.add.add({ x: w.rx + rand(-2, 2), y: w.ry + rand(-2, 2), vx: -w.vx * 0.25 + rand(-0.08, 0.08), vy: -rand(0.05, 0.25), life: rand(34, 60), s0: 9 * sc, s1: 1, c0: [0.3, 0.62, 1], c1: [0.1, 0.2, 0.8], a0: 0.55 * br, a1: 0, kind: 0, drag: 0.98 });     // a fading tail
+      if (dt >= 1 && f.lights.length < 22) f.lights.push([w.rx, w.ry, 78 * (1 - 0.3 * w.z), 0.95 * br, [0.35, 0.62, 1]]);                                                       // it lights the dark
+    }
+  }
+  // what the fog shader needs: where mist is cleared [x, y, radius, strength]
+  fog(i) { const w = this.list[i]; if (!w || w.state !== 'live' || w.a < 0.02) return [0, 0, 1, 0]; return [w.rx, w.ry, 92 * (1 - 0.3 * w.z), Math.min(1, w.a * (1 - 0.3 * w.z) * 1.1)]; }
+}
+
 export class FX {
   constructor(canvas) {
     this.canvas = canvas;
@@ -207,10 +262,12 @@ export class FX {
     this.darkMesh.renderOrder = 0; this.darkMesh.frustumCulled = false; this.scene.add(this.darkMesh);
 
     this.fogU = { uCam: { value: new THREE.Vector2() }, uRes: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uBase: { value: 0 }, uHeight: { value: 105 }, uDensity: { value: 0 }, uColor: { value: new THREE.Vector3(0.64, 0.7, 0.8) },
-      uG: { value: Array.from({ length: 6 }, () => new THREE.Vector4()) }, uGP: { value: Array.from({ length: 6 }, () => new THREE.Vector2(1, 0)) } };
+      uG: { value: Array.from({ length: 6 }, () => new THREE.Vector4()) }, uGP: { value: Array.from({ length: 6 }, () => new THREE.Vector2(1, 0)) }, uW: { value: Array.from({ length: 6 }, () => new THREE.Vector4(0, 0, 1, 0)) } };
     this.fogMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.ShaderMaterial({ vertexShader: QVERT, fragmentShader: FOGFRAG, uniforms: this.fogU, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, ...NORMAL_PM }));
     this.fogMesh.renderOrder = -2; this.fogMesh.frustumCulled = false; this.fogMesh.visible = false; this.scene.add(this.fogMesh);
     this.gusts = [];                              // bursts of moving air (see gust())
+    this.wisps = new Wisps(this);                  // will-o'-the-wisps (see Wisps)
+    this.focus = null;                              // the hero's position {x, y}: wisps will not let it come near
     this.cloak = new Cloak(this.scene);          // the hero's white cloak (see cloak.js)
     this.alpha = new PSystem(800, false, this.scene, 1);
     this.add = new PSystem(5000, true, this.scene, 2);
@@ -223,7 +280,7 @@ export class FX {
 
   // wipe everything (used when changing rooms)
   reset() {
-    this.add.n = 0; this.alpha.n = 0; this.gusts.length = 0; this.lights.length = 0; this.pendingThunder.length = 0; this.flashA = 0; this.hurt = 0;
+    this.add.n = 0; this.alpha.n = 0; this.gusts.length = 0; this.wisps.set(0); this.lights.length = 0; this.pendingThunder.length = 0; this.flashA = 0; this.hurt = 0;
     for (const q of this.quads) { q.m.visible = false; this.quadPool.push(q.m); } this.quads.length = 0;
     for (const b of this.bolts) { for (const m of b.parts) { this.scene.remove(m); m.material.dispose(); } for (const g of b.geos) g.dispose(); } this.bolts.length = 0;
   }
@@ -339,6 +396,7 @@ export class FX {
   // storm: random lightning while a room has weather
   setStorm(on, rate = 0.0025) { this.storm = on ? rate : null; }
 
+  setWisps(n) { this.wisps.set(n); }
   // ---- gusts and fog ----------------------------------------------
   // a puff of moving air at (x, y) travelling (vx, vy) px/step: s = strength, r = reach.  The swish of a sword, a dash.  It shoves smoke, embers and fog (and the game leans flames away from it).
   gust(x, y, vx, vy, r = 32, s = 1, life = 26) { this.gusts.push({ x, y, vx, vy, r, s, k: s, life: 0, max: life }); if (this.gusts.length > 6) this.gusts.shift(); }
@@ -348,9 +406,12 @@ export class FX {
   // ---- lights / darkness ---------------------------------------
   // A room's `ambient` (0..~0.6, how gloomy it is relative to the others) is lifted onto a floor of darkness: even the lightest room is dim enough that a torch, a candle, a brazier or a lightning flash
   // visibly lights what is around it (before this, a 0.1-0.35 veil made the lights almost invisible).  Lightning and other big flashes pull the veil back for a moment (render()).
-  setAmbient(amount, tint = [0.015, 0.01, 0.05], vig = 0.5) { this.ambBase = DARK_FLOOR + (amount || 0) * DARK_SLOPE; this.darkU.uAmbient.value = this.ambBase; this.darkU.uTint.value.set(...tint); this.darkU.uVig.value = vig; }
+  setAmbient(amount, tint = [0.015, 0.01, 0.05], vig = 0.5) {
+    const lit = !(amount > 0);                                                                          // 0 = a lit scene (the title screen, the ending): no darkness and no vignette
+    this.ambBase = lit ? 0 : DARK_FLOOR + amount * DARK_SLOPE; this.darkU.uAmbient.value = this.ambBase; this.darkU.uTint.value.set(...tint); this.darkU.uVig.value = lit ? 0 : vig * VIG_SCALE;
+  }
   clearLights() { this.lights.length = 0; }
-  light(x, y, r, intensity = 1) { if (this.lights.length < 24) this.lights.push([x, y, r, intensity]); }   // world coords; made screen-relative at render time
+  light(x, y, r, intensity = 1, col = null) { if (this.lights.length < 24) this.lights.push([x, y, r, intensity, col]); }       // col: the colour of its pool of light (default a warm flame colour)   // world coords; made screen-relative at render time
 
   // ---- ambient weather ------------------------------------------
   setAmbientFx(type) { this.ambient = type; }
@@ -391,15 +452,17 @@ export class FX {
     }
     for (let i = this.pendingThunder.length - 1; i >= 0; i--) { const p = this.pendingThunder[i]; p.t -= dt; if (p.t <= 0) { if (this.onThunder) this.onThunder(p.power); this.pendingThunder.splice(i, 1); } }
     this.weather(dt);
+    if (dt > 0) this.wisps.update(dt);
   }
 
   // ------------------------------------------------------------ render
   render() {
     const u = this.darkU; u.uCount.value = this.lights.length;
-    for (let i = 0; i < this.lights.length; i++) { const l = this.lights[i]; u.uLights.value[i].set(l[0] - this.camX, l[1] - this.camY, l[2], l[3]); }
+    for (let i = 0; i < this.lights.length; i++) { const l = this.lights[i], c = l[4] || WARM; u.uLights.value[i].set(l[0] - this.camX, l[1] - this.camY, l[2], l[3]); u.uLightCol.value[i].set(c[0], c[1], c[2]); }
     u.uHurt.value = this.hurt; u.uAmbient.value = (this.ambBase === undefined ? u.uAmbient.value : this.ambBase) * (1 - Math.min(0.85, this.flashA * 1.15));        // a flash (lightning...) lights the whole scene while it lasts
     { const F = this.fogU; this.fogMesh.visible = F.uDensity.value > 0.01;
       if (this.fogMesh.visible) { F.uCam.value.set(this.camX + this.shakeX, this.camY + this.shakeY); F.uTime.value = this.time;
+        for (let i = 0; i < 6; i++) { const wf = this.wisps.fog(i); F.uW.value[i].set(wf[0], wf[1], wf[2], wf[3]); }
         for (let i = 0; i < 6; i++) { const g = this.gusts[i]; if (g) { F.uG.value[i].set(g.x, g.y, g.vx, g.vy); F.uGP.value[i].set(g.r, g.k); } else { F.uG.value[i].set(0, 0, 0, 0); F.uGP.value[i].set(1, 0); } } } }
     this.add.mat.uniforms.uTime.value = this.time; this.alpha.mat.uniforms.uTime.value = this.time;
     this.add.upload(); this.alpha.upload();

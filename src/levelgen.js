@@ -6,14 +6,14 @@
 //     anything wider) with "modules" dropped in: save door, double-jump ledge, secret cell, the dash gulf, lore tablets
 //   - towers zig-zag upward in 2-3 row hops;  boss arenas get randomised platforms;  sanctuaries are fixed
 //   - the macro structure (zones, bosses, ability order, exits, save rooms) never changes, only the rooms' insides
-import { B, ZONES, ROOMS as AUTHORED, HOUSES, DOORS, arrangeCandelabras } from './rooms.js';
+import { B, ZONES, ROOMS as AUTHORED, HOUSES, DOORS, arrangeCandelabras, tidyRoom } from './rooms.js';
 import { ITEMS, ITEM_ORDER } from './itemdata.js';
 const offerOf = (item, o = {}) => ({ item, qty: o.qty || ITEMS[item].pack, price: o.price || ITEMS[item].price, stock: o.stock || 3 });          // what a merchant sells: one pack, for its price, three times at most
 import { TILE } from './world.js';
 import { validateRoom, checkSpawns, roomOf, surfaces } from './validate.js';
 import { mulberry32 } from './util.js';
 
-export const GEN_VERSION = 2;
+export const GEN_VERSION = 3;
 const MAX_TRY = 60;
 
 // ------------------------------------------------------------------------------------------------ seeded random helpers
@@ -37,7 +37,7 @@ const T1 = 'THE SHADOWKEEP SWALLOWED THE SUN LONG AGO. ONLY A STRANGER FOOLISH E
 const LOOK = {
   6: { weather: 'embers', ambient: 0.34, horizon: 12, tint: [0.16, 0.05, 0.0], vig: 0.55 },
   1: { weather: 'rain', storm: true, ambient: 0.12, horizon: 12 },
-  7: { weather: 'wisps', ambient: 0.16, horizon: 12, tint: [0.0, 0.03, 0.02] },
+  7: { weather: 'wisps', wisps: 4, ambient: 0.16, horizon: 12, tint: [0.0, 0.03, 0.02] },          // (weather 'wisps' = drifting motes; wisps: 4 = four will-o'-the-wisps, see fx.js)
   2: { weather: 'dust', ambient: 0.35, horizon: 12 },
   3: { weather: 'wisps', ambient: 0.3, horizon: 12 },
   4: { weather: 'sparks', ambient: 0.42, horizon: 12 },
@@ -90,22 +90,27 @@ const SPEC = {
   wb: { kind: 'arena', zone: 7, name: "The Mother's Hollow", w: [40, 46], outdoor: true, abilities: ['djump'], boss: 'bramble', reward: 'mpup', plats: 3, rise: 3, seal: 'both', flyRow: 6, candles: [3, 3], decor: 'swamp',
     opts: { ...LOOK[7], boss: 'bramble', music: 'boss', fog: 0.45 } },
   sw: { kind: 'sanctuary', zone: 7, name: 'Boardwalk Chapel', parent: 'w2' },
-  wa: { kind: 'interior', zone: 7, name: "Fisherman's Hut", parent: 'w3', look: 'hut', theme: 'hall', tint: [0.0, 0.05, 0.02], npc: { kind: 'hatman', title: 'FISHERMAN', text: 'SOMETHING SINGS BENEATH THE BOARDS AT NIGHT. I STOPPED FISHING. I START COUNTING THE NOTES INSTEAD. TAKE THIS, AND KEEP MOVING.', again: 'IT HAS NOT SUNG FOR TWO NIGHTS. I DO NOT LIKE THE QUIET.', gifts: ['it_holy', 'it_caltrops'], sells: { item: 'caltrops', price: 35 } } },
+  wa: { kind: 'interior', zone: 7, name: "Fisherman's Hut", parent: 'w3', look: 'hut', theme: 'hall', tint: [0.0, 0.05, 0.02], npc: { kind: 'hatman', title: 'FISHERMAN', text: 'SOMETHING SINGS BENEATH THE BOARDS AT NIGHT. I STOPPED FISHING. I START COUNTING THE NOTES INSTEAD. TAKE THIS, AND KEEP MOVING.', again: 'IT HAS NOT SUNG FOR TWO NIGHTS. I DO NOT LIKE THE QUIET.', gifts: ['it_holy', 'it_marrow'], sells: { item: 'marrow', price: 40 } } },
 
   // ======== ZONE 2 - THE GREAT HALL
   th: { kind: 'teleport', zone: 2, name: 'Waystone Vestibule', opts: LOOK[2] },
   h1: { kind: 'corridor', zone: 2, name: 'Entrance Hall', w: [66, 76], deck: true, opts: { ...LOOK[2], ambient: 0.34 },
-    mods: [{ t: 'door', to: 's2', kind: 'wood' }, { t: 'deckDoor', to: 'ha', kind: 'wood' }, { t: 'tablet', id: 'tab3', near: 'start', text: 'THE GREAT HALL ONCE RANG WITH FEASTING. NOW THE ARMOR ITSELF STALKS THE FLOOR.' }],
-    candles: [4, 6], barrels: [2, 4], mix: { bat: [3, 3], armor: [2, 3], ghost: [1, 1], zealot: [1, 2] } },
-  h2: { kind: 'corridor', zone: 2, name: 'Hall of Armor', w: [84, 98], opts: { ...LOOK[2], ambient: 0.36 },
+    mods: [{ t: 'door', to: 's2', kind: 'wood' }, { t: 'deckDoor', to: 'ha', kind: 'wood' }, { t: 'deckDoor', to: 'mr', kind: 'crypt' }, { t: 'tablet', id: 'tab3', near: 'start', text: 'THE GREAT HALL ONCE RANG WITH FEASTING. NOW THE FACES ON THE WALLS WATCH - AND SOME OF THEM WATCH BACK.' }],
+    candles: [4, 6], barrels: [2, 4], mix: { bat: [3, 3], ghost: [1, 1], zealot: [3, 5] } },
+  h2: { kind: 'corridor', zone: 2, name: 'Portrait Gallery', w: [84, 98], opts: { ...LOOK[2], ambient: 0.36 },
     mods: [{ t: 'djLedge', kind: 'mpup', id: 'h2_mp' }, { t: 'cell', gate: 'crystal', kind: 'hpup', id: 'h2_hp' }],
-    candles: [5, 6], barrels: [2, 4], mix: { armor: [3, 3], knight: [1, 1], ghost: [2, 2], fireskull: [2, 2], bat: [3, 3], wyrm: [1, 1], zealot: [2, 2] } },
+    candles: [5, 6], barrels: [2, 4], mix: { skeleton: [1, 1], ghost: [2, 2], fireskull: [2, 2], bat: [3, 3], wyrm: [1, 1], zealot: [5, 5] } },
   h4: { kind: 'arena', zone: 2, name: 'Phantom Stable', w: [40, 46], boss: 'nightmare', reward: 'dash', plats: 2, rise: 3, seal: 'both', abilities: ['djump'], decor: 'torch',
     opts: { weather: 'embers', ambient: 0.3, horizon: 12, boss: 'nightmare', music: 'boss' } },
   h3: { kind: 'tower', zone: 2, name: 'Belfry Stairs', w: [28, 32], h: [34, 40], top: [8, 10], opts: { ...LOOK[2], ambient: 0.4 },
-    mods: [{ t: 'tablet', id: 'tab4', text: 'THE BELFRY STAIRS CLIMB TO THE CHAPEL. THE BELLS HAVE NOT RUNG SINCE THE LORD DESCENDED.' }], candles: [3, 4], barrels: [1, 2], mix: { bat: [3, 3], armor: [2, 2], ghost: [1, 1], fireskull: [2, 2], zealot: [1, 1] } },
+    mods: [{ t: 'tablet', id: 'tab4', text: 'THE BELFRY STAIRS CLIMB TO THE CHAPEL. THE BELLS HAVE NOT RUNG SINCE THE LORD DESCENDED.' }], candles: [3, 4], barrels: [1, 2], mix: { bat: [3, 3], ghost: [1, 1], fireskull: [2, 2], zealot: [3, 3] } },
   s2: { kind: 'sanctuary', zone: 2, name: 'Hall Sanctuary', parent: 'h1' },
-  ha: { kind: 'interior', zone: 2, name: "Servants' Quarters", parent: 'h1', look: 'study', theme: 'hall', npc: { kind: 'woman', title: 'LAST SERVANT', text: 'THE LORD DISMISSED US ALL AT DUSK, AND THE ARMOUR WOULD NOT LEAVE. I HID. I AM VERY GOOD AT HIDING. HERE - IT IS NOT MUCH, BUT IT IS HONEST.', again: 'THE ARMOUR WATCHES THE DOORS. NOT THE CEILING. REMEMBER THAT.', gifts: ['it_bandage', 'heart', 'it_dagger'], sells: { item: 'bandage', price: 70 } } },
+  ha: { kind: 'interior', zone: 2, name: "Servants' Quarters", parent: 'h1', look: 'study', theme: 'hall', npc: { kind: 'woman', title: 'LAST SERVANT', text: 'THE LORD DISMISSED US ALL AT DUSK, BUT THE PICTURES WOULD NOT STOP WATCHING. I HID. I AM VERY GOOD AT HIDING. HERE - IT IS NOT MUCH, BUT IT IS HONEST.', again: 'THERE IS A MIRROR BEHIND THE OTHER DOOR UPSTAIRS. I DO NOT LOOK AT IT. NEITHER SHOULD YOU.', gifts: ['it_bandage', 'heart', 'it_dagger'], sells: { item: 'bandage', price: 70 } } },
+
+  // another OPTIONAL boss: a second door on the upper floor of the Entrance Hall opens on a room with a great mirror set into its end wall.  Walk up to it and it cracks - your reflection steps out, in silver and
+  // violet, and fights with a sword and the very items you carry (the fight is sealed in until it falls; it leaves a mana container)
+  mr: { kind: 'arena', lair: true, mirror: true, zone: 2, name: 'The Mirror Room', parent: 'h1', w: [44, 48], boss: 'mirror', reward: 'mpup', plats: 2, rise: 3, candles: [2, 2], decor: 'torch',
+    opts: { ...LOOK[2], ambient: 0.26, tint: [0.02, 0, 0.08], vig: 0.62, boss: 'mirror', music: 'boss' } },
 
   // ======== ZONE 3 - THE MOONLIT CHAPEL
   tc: { kind: 'teleport', zone: 3, name: 'Waystone Chancel', opts: LOOK[3] },
@@ -126,9 +131,9 @@ const SPEC = {
   tu: { kind: 'teleport', zone: 4, name: 'Waystone Boilerhouse', opts: LOOK[4] },
   u1: { kind: 'corridor', zone: 4, name: 'Boiler Corridor', w: [70, 82], opts: LOOK[4],
     mods: [{ t: 'door', to: 's5', kind: 'wood' }, { t: 'djLedge', kind: 'hpup', id: 'u1_hp' }, { t: 'tablet', id: 'tab7', near: 'start', text: 'THE LORD BUILT HIS SERVANTS OF BRASS AND SPRING SO THEY WOULD NEVER TIRE, NEVER PRAY, NEVER FLEE.' }],
-    candles: [3, 4], barrels: [2, 3], mix: { knight: [2, 2], sorcerer: [1, 2], fireskull: [1, 1], hound: [1, 1], bat: [2, 2], emberwyrm: [1, 1], zealot: [1, 2] } },
+    candles: [3, 4], barrels: [2, 3], mix: { skeleton: [2, 2], sorcerer: [1, 2], fireskull: [1, 1], hound: [1, 1], bat: [2, 2], emberwyrm: [1, 1], zealot: [1, 2] } },
   u2: { kind: 'tower', zone: 4, name: 'Gear Shaft', w: [28, 32], h: [36, 42], top: [9, 11], opts: { ...LOOK[4], ambient: 0.45 },
-    topItem: { kind: 'atkup', id: 'u2_atk' }, candles: [3, 4], barrels: [1, 2], mix: { knight: [2, 2], sorcerer: [1, 1], fireskull: [3, 3], bat: [2, 2], emberwyrm: [1, 1], zealot: [1, 1] } },
+    topItem: { kind: 'atkup', id: 'u2_atk' }, candles: [3, 4], barrels: [1, 2], mix: { skeleton: [2, 2], sorcerer: [1, 1], fireskull: [3, 3], bat: [2, 2], emberwyrm: [1, 1], zealot: [1, 1] } },
   u3: { kind: 'arena', zone: 4, name: 'The Foundry', w: [44, 50], h: 16, boss: 'colossus', reward: 'thunder', plats: 2, rise: 3, seal: 'both', exitGate: 'crystal', abilities: ['djump'], decor: 'brazier',
     opts: { weather: 'sparks', ambient: 0.35, horizon: 14, boss: 'colossus', music: 'boss' } },
   s5: { kind: 'sanctuary', zone: 4, name: 'Furnace Sanctuary', parent: 'u1' },
@@ -137,13 +142,13 @@ const SPEC = {
   tt: { kind: 'teleport', zone: 5, name: 'Waystone Antechamber', opts: LOOK[5] },
   t1: { kind: 'corridor', zone: 5, name: 'Hall of Shadows', w: [80, 92], deck: true, opts: { ...LOOK[5], fog: 0.55 },
     mods: [{ t: 'door', to: 's4', kind: 'wood' }, { t: 'deckDoor', to: 'ta', kind: 'wood' }, { t: 'cell', gate: 'crystal', kind: 'mpup', id: 't1_mp' }, { t: 'tablet', id: 'tab8', near: 'start', text: 'HE WAITS ABOVE. THE ONE WHO TOOK THE SUN. TURN BACK, STRANGER - OR BRING THE DAWN.' }],
-    candles: [3, 3], barrels: [2, 3], mix: { armor: [2, 2], knight: [1, 1], wraith: [2, 2], archmage: [1, 1], bat: [4, 4], ghost: [2, 2], sorcerer: [1, 1], fireskull: [2, 2], wyrm: [1, 2], zealot: [2, 2] } },
+    candles: [3, 3], barrels: [2, 3], mix: { skeleton: [1, 1], wraith: [2, 2], archmage: [1, 1], bat: [4, 4], ghost: [2, 2], sorcerer: [1, 1], fireskull: [2, 2], wyrm: [1, 2], zealot: [4, 4] } },
   t2: { kind: 'arena', zone: 5, name: 'Throne of Shadows', w: [44, 50], h: 16, boss: 'shadow', reward: 'dawn', plats: 3, rise: 3, seal: 'left', abilities: ['djump'], decor: 'banner', flyRow: 5,
     opts: { ...LOOK[5], ambient: 0.5, weather: 'embers', vig: 0.75, boss: 'shadow', music: 'boss_final' } },
   s4: { kind: 'sanctuary', zone: 5, name: 'Last Sanctuary', parent: 't1' },
   ta: { kind: 'interior', zone: 5, name: 'The Hidden Study', parent: 't1', look: 'study', theme: 'hall', ambient: 0.5, tint: [0.03, 0.0, 0.05], npc: { kind: 'oldman', title: 'THE LORD\'S SCRIBE', text: 'I WROTE DOWN EVERYTHING HE DID, AND NEVER ONCE LOOKED UP. NOW I CANNOT STOP LOOKING. HE IS ABOVE US. TAKE THIS, STRANGER - AND WHEN YOU MEET HIM, DO NOT LET HIM SPEAK.', again: 'I HAVE NO MORE PAGES. ONLY THE ONES I CANNOT BURN.', gifts: ['it_holy', 'it_holy', 'heart'], sells: { item: 'holy', price: 50 } } },
 };
-const ORDER = ['v1', 'tv', 'v2', 'v3', 'vb', 'sv', 'tg', 'g1', 'g2', 'g4', 'g3', 's1', 'tw', 'w1', 'w2', 'w3', 'wb', 'sw', 'th', 'h1', 'h2', 'h4', 'h3', 's2', 'tc', 'c1', 'c2', 'c3', 's3', 'tu', 'u1', 'u2', 'u3', 's5', 'tt', 't1', 't2', 's4', 'hv1', 'hv2', 'hv3', 'hv4', 'ga', 'wa', 'ha', 'ta', 'cv'];
+const ORDER = ['v1', 'tv', 'v2', 'v3', 'vb', 'sv', 'tg', 'g1', 'g2', 'g4', 'g3', 's1', 'tw', 'w1', 'w2', 'w3', 'wb', 'sw', 'th', 'h1', 'h2', 'h4', 'h3', 's2', 'tc', 'c1', 'c2', 'c3', 's3', 'tu', 'u1', 'u2', 'u3', 's5', 'tt', 't1', 't2', 's4', 'hv1', 'hv2', 'hv3', 'hv4', 'ga', 'wa', 'ha', 'ta', 'cv', 'mr'];
 // the main road: each room's right door leads into the next room's left door
 const CHAIN = ['v1', 'tv', 'v2', 'v3', 'vb', 'tg', 'g1', 'g2', 'g4', 'g3', 'tw', 'w1', 'w2', 'w3', 'wb', 'th', 'h1', 'h2', 'h4', 'h3', 'tc', 'c1', 'c2', 'c3', 'tu', 'u1', 'u2', 'u3', 'tt', 't1', 't2'];
 const LINKS = CHAIN.slice(1).map((id, i) => [CHAIN[i], 'R', id, 'L']);
@@ -152,11 +157,16 @@ const DOOR_LINK = { 'v2>v3': 'wood', 'g1>g2': 'crypt', 'w1>w2': 'wood', 'h1>h2':
 // abilities the player owns when coming BACK through a zone (they've beaten that zone's boss by then)
 const BACK = { 6: [], 1: ['djump'], 7: ['djump'], 2: ['djump', 'dash'], 3: ['djump', 'dash', 'ember'], 4: ['djump', 'dash', 'ember', 'thunder'], 5: ['djump', 'dash', 'ember', 'thunder', 'dawn'] };
 const GATE = { barricade: TILE.BARRICADE, crystal: TILE.CRYSTAL, crack: TILE.CRACK };
-const BOSS_TYPE = { vampire: 'boss_vampire', beast: 'boss_beast', nightmare: 'boss_nightmare', angel: 'boss_angel', colossus: 'boss_colossus', shadow: 'boss_shadow', cinder: 'boss_cinder', bramble: 'boss_bramble' };
+// haunted portraits lurk among the pictures in the castle's halls: more in the Portrait Gallery and the Shadow Throne, a chance of one elsewhere indoors
+for (const id of ['h1', 'h2', 'h3', 'c1', 'c2', 'c3', 'u1', 'u2', 't1']) if (SPEC[id] && SPEC[id].mix) SPEC[id].mix.portrait = id === 'h2' || id === 't1' ? [1, 1] : [0, 1];
+const PORTRAIT_PEOPLE = 15;
+const BOSS_TYPE = { vampire: 'boss_vampire', beast: 'boss_beast', nightmare: 'boss_nightmare', angel: 'boss_angel', colossus: 'boss_colossus', shadow: 'boss_shadow', cinder: 'boss_cinder', bramble: 'boss_bramble', mirror: 'boss_mirror' };
 const FLYERS = new Set(['bat', 'ghost', 'wraith', 'fireskull', 'wyrm', 'frostwyrm', 'emberwyrm']);
 const FLYING_BOSS = new Set(['angel', 'shadow', 'bramble']);
 
 // ------------------------------------------------------------------------------------------------ shared: populate + decorate
+// is there empty room for a framed portrait (about 3 tiles across, 3 high) hanging with its bottom edge on tile row `row`, centred on column x?
+const wallRoom = (b, x, row) => { const W = b.w; for (let ty = row - 3; ty < row; ty++) for (let tx = x - 1; tx <= x + 1; tx++) { if (tx < 0 || tx >= W || ty < 0) return false; if (b.def.tiles[ty * W + tx] !== 0) return false; } return true; };
 function reachSurfaces(S, seen) { return S.list.filter(sf => seen.has(sf.id)); }
 
 // enemies, candles and decor go ONLY onto surfaces the validator proved reachable
@@ -168,11 +178,15 @@ function populate(b, W, H, spec, r, S, seen, g, hasCeiling, pads) {
   for (const [type, [lo, hi]] of Object.entries(spec.mix || {})) {
     const n = r.i(lo, hi);
     for (let i = 0; i < n; i++) {
+      if (type === 'portrait') {                                                                           // on a wall, three tiles above the floor, where there is room for the whole frame
+        let c = null; for (let tr = 0; tr < 10 && !c; tr++) { const q = pickGround(3, 1); if (q && wallRoom(b, q.x, q.sf.ty - 3)) c = q; } if (!c) continue;          // (a picture on the wall needs no floor space of its own)
+        b.e('portrait', c.x, c.sf.ty - 3, { ci: r.i(0, PORTRAIT_PEOPLE - 1), frame: r.i(0, 4) }); continue;
+      }
       if (type === 'bat') {
         const c = pickGround(1) || null; if (!c) continue;
         if (hasCeiling) b.e('bat', c.x, 3); else b.e('bat', c.x, Math.max(3, c.sf.ty - r.i(5, 7)));
       } else if (FLYERS.has(type)) { const c = pickGround(1); if (!c) continue; b.e(type, c.x, Math.max(hasCeiling ? 4 : 3, c.sf.ty - r.i(4, 6))); }
-      else { const c = pickGround(type === 'hound' ? 6 : type === 'armor' || type === 'knight' ? 5 : 3); if (!c) continue; b.e(type, c.x, c.sf.ty); }
+      else { const c = pickGround(type === 'hound' ? 6 : 3); if (!c) continue; b.e(type, c.x, c.sf.ty); }
     }
   }
   for (let i = 0, n = spec.barrels ? Math.round(r.i(spec.barrels[0], spec.barrels[1]) * 0.6) : 0; i < n; i++) { const c = pickGround(2, 2); if (c) b.e('barrel', c.x, c.sf.ty, { drop: r.pick(['coin', 'coin', 'heart', 'mana', 'coin', 'heart']) }); }          // clay pots: one hit, one small treat
@@ -187,8 +201,8 @@ function populate(b, W, H, spec, r, S, seen, g, hasCeiling, pads) {
 function decorate(b, W, spec, r, g, ceilRows, flatCols) {
   const th = spec.theme || ZONES[spec.zone].theme;
   if (th === 'swamp') {          // Gothicvania Swamp: huge twisted trees behind, ferns and vines on the ground, the odd headstone
-    let last = -99; for (let i = 0; i < Math.round(W / 9) && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 14) continue; last = x; b.d('img', x, g[x], { img: 'swamp_trees', back: true }); }
-    last = -9; for (let i = 0; i < Math.round(W / 4) && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 6) continue; last = x; b.d('img', x, g[x], { img: r.chance(0.6) ? 'swamp_props' : r.pick(['cemetery_stone-1', 'cemetery_stone-3', 'cemetery_bush-small']), back: false }); }
+    let last = -99; for (let i = 0; i < Math.round(W / 9) && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 14) continue; last = x; b.d('img', x, g[x], { img: 'swamp_trees', back: true, sink: 3 }); }
+    last = -9; for (let i = 0; i < Math.round(W / 4) && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 6) continue; last = x; const im = r.chance(0.6) ? 'swamp_props' : r.pick(['cemetery_stone-1', 'cemetery_stone-3', 'cemetery_bush-small']); b.d('img', x, g[x], { img: im, back: false, sink: im === 'swamp_props' ? 4 : 1 }); }          // (the vine sheet's pictures end 1-4px above the bottom of the image: sunk so they stand IN the ground)
     // shallow pools on flat ground (clear stretches only: no pits, steps or spikes): wading through one washes the white cloak
     const placed = [];
     for (let tries = 0, pools = 0; tries < 60 && pools < Math.max(1, Math.round(W / 30)) && flatCols.length; tries++) {
@@ -226,6 +240,7 @@ function decorate(b, W, spec, r, g, ceilRows, flatCols) {
   if (th === 'underworks') place('brazier', r.i(2, 3));
   // set dressing: the Hall is a library of bookcases (drawn in code) between teal Sidescroller's pillars; the Chapel and the Throne keep to their columns, banners and candelabras;
   // the Underworks is crates, urns and barred windows
+  if (th === 'hall' || th === 'chapel' || th === 'throne' || th === 'underworks') spread(r.i(1, 3), 15, x => { if (wallRoom(b, x, g[x] - 3)) b.d('portrait', x, g[x] - 3, { ci: r.i(0, PORTRAIT_PEOPLE - 1), emo: r.pick([0, 0, 1, 1, 4, 2, 3]), frame: r.i(0, 4) }); });          // framed portraits on the walls (some are not just pictures: see portraits.js)
   if (th === 'hall') {
     spread(r.i(1, 2), 16, x => b.d('bookcase', x, g[x], { back: true })); spread(r.i(1, 2), 14, x => b.d('img', x, g[x], { img: 'dg_pillar_' + r.i(1, 4), back: true }));
     spread(r.i(1, 2), 12, x => b.d('img', x, g[x], { img: 'dg_urn_' + r.i(1, 3) })); spread(1, 12, x => b.d('hang', x, 2, { img: 'dg_banner_' + r.i(1, 6) }));
@@ -241,7 +256,7 @@ function genCorridor(id, spec, r) {
   const outdoor = !!spec.outdoor, DECK = !!spec.deck, DY = DECK ? 12 : 0, H = 14 + DY, BASE = 12 + DY, DK = 13, PAD = 6, ceil = outdoor ? 0 : 2, gyMin = (outdoor ? 8 : 9) + DY;
   const mods = (spec.mods || []).map(m => ({ ...m })), flatMods = mods.filter(m => ['door', 'djLedge', 'cell', 'gap'].includes(m.t)), tablets = mods.filter(m => m.t === 'tablet'), deckDoors = mods.filter(m => m.t === 'deckDoor');
   const target = r.i(spec.w[0], spec.w[1]);
-  const g = [], plats = [], ledges = [], spikes = [], doors = [], items = [], cells = [], climbs = []; let x = 0, gy = BASE, gapStart = -1, gapEnd = -1;
+  const g = [], plats = [], ledges = [], doors = [], items = [], cells = [], climbs = []; let x = 0, gy = BASE, gapStart = -1, gapEnd = -1;
   const col = v => { g[x++] = v; };
   const flat = n => { for (let i = 0; i < n; i++) col(gy); };
   const canStep = (up, h) => { const ng = gy + (up ? -h : h); return ng >= gyMin && ng <= BASE; };
@@ -253,12 +268,11 @@ function genCorridor(id, spec, r) {
     step: () => { const up = gy >= BASE ? true : r.chance(0.5), h = r.i(1, 2); if (canStep(up, h)) { step(up, h); flat(r.i(2, 4)); } else flat(3); },
     pit: () => { flat(2); const w = r.i(2, 3); for (let i = 0; i < w; i++) col(-1); flat(r.i(3, 4)); },
     bridge: () => { flat(2); const len = r.i(6, 10), x0 = x; for (let i = 0; i < len; i++) col(-1); const n = Math.ceil(len / 4); for (let k = 0; k < n; k++) { const c = Math.round(x0 + (k + 1) * len / (n + 1)), pl = r.i(2, 3); plats.push([c - Math.floor(pl / 2), pl, gy - r.i(0, 1)]); } flat(r.i(3, 4)); },
-    spikes: () => { flat(3); const n = r.i(2, 3); for (let i = 0; i < n; i++) { spikes.push([x, gy]); col(gy); } flat(r.i(3, 4)); },
     block: () => { const h = r.i(1, 2); if (!canStep(true, h)) return flat(3); flat(2); step(true, h); flat(r.i(2, 4)); step(false, h); flat(r.i(2, 3)); },
     stairs: () => { const n = r.i(2, 3), up = gy > gyMin + n && r.chance(0.6); for (let i = 0; i < n; i++) { if (!canStep(up, 1)) break; step(up, 1); flat(2); } flat(1); },
     loot: () => { const len = r.i(3, 5); flat(1); plats.push([x + 1, len, gy - 3]); flat(len + 2); },
   };
-  const WEIGHTS = [['flat', 16], ['step', 18], ['pit', 14], ['bridge', 10], ['spikes', 10], ['block', 13], ['stairs', 10], ['loot', 9]];
+  const WEIGHTS = [['flat', 21], ['step', 18], ['pit', 19], ['bridge', 10], ['block', 13], ['stairs', 10], ['loot', 9]];      // spikes live ONLY at the bottom of pits and gaps (never on open ground, where scenery can hide them)
   const MOD = {
     door: m => { toBase(); flat(2); const w = r.i(5, 7), x0 = x; flat(w); doors.push({ x: x0 + (w >> 1), gy, to: m.to, kind: m.kind || 'wood' }); flat(2); },
     djLedge: m => { toBase(); flat(2); const padX = x; flat(3); plats.push([padX, 3, gy - 3]); const lx = x, row = gy - 3 - (outdoor ? 5 : 4); ledges.push([lx, 6, row]); flat(8); items.push({ ...m, tx: lx + 3, gy: row, needs: 'djump' }); },
@@ -280,7 +294,6 @@ function genCorridor(id, spec, r) {
   const W = x, b = new B(id, spec.name, spec.zone, W, H, { ...spec.opts, theme: spec.theme, ...(DECK ? { horizon: BASE } : {}) });
   for (let cx = 0; cx < W; cx++) { if (g[cx] >= 0) b.rect(cx, g[cx], 1, H - g[cx]); else b.put(cx, H - 1, TILE.SPIKE); }
   if (!outdoor) b.ceil(0, W, ceil);
-  for (const [sx, sg] of spikes) b.put(sx, sg - 1, TILE.SPIKE);
   for (const [px, len, row] of plats) b.plat(px, len, row);
   for (const [lx, len, row] of ledges) b.ledge(lx, len, row);
   if (DECK) {                                                                                      // the upper floor, with the odd hole, raised block and floating platform
@@ -288,15 +301,24 @@ function genCorridor(id, spec, r) {
     if (len < 14) return { ok: false, errs: ['upper floor too short'] };
     for (let k = 0; k < 3; k++) { b.plat(L.x0 + 1 + k * 4, 4, BASE - 3 - 3 * k); b.plat(R.x0 + 9 - k * 4, 4, BASE - 3 - 3 * k); }          // a staircase of one-way platforms up each end
     b.rect(da, DK, len, 2);
-    const feats = r.shuffle(['hole', 'block', 'hole', 'block', 'plat']).slice(0, r.i(2, 4)), nf = Math.min(feats.length, Math.floor((len - 10) / 8)), keepOut = [];
+    const feats = r.shuffle(['hole', 'block', 'hole', 'block', 'plat']).slice(0, r.i(2, 4)), nf = Math.min(feats.length, Math.floor((len - 10) / 8)), keepOut = [], holes = [];
     for (let k = 0; k < nf; k++) {
       const cx = da + 5 + Math.round((len - 10) * (k + 0.5) / nf), f = feats[k];
-      if (f === 'hole') { const w = r.i(2, 3); b.rect(cx, DK, w, 2, TILE.EMPTY); keepOut.push([cx - 2, cx + w + 1]); }                   // a gap to jump (fall and you land on the lower floor)
+      if (f === 'hole') { const w = r.i(2, 3); b.rect(cx, DK, w, 2, TILE.EMPTY); keepOut.push([cx - 2, cx + w + 1]); holes.push([cx, w]); }                   // a gap to jump (fall and you land on the lower floor)
       else if (f === 'block') { const w = r.i(3, 4), h = r.i(1, 2); b.rect(cx, DK - h, w, h); keepOut.push([cx - 2, cx + w + 1]); }
       else { b.plat(cx, 4, DK - 3); keepOut.push([cx - 1, cx + 5]); }
     }
-    for (const m of deckDoors) {                                                                   // a door on the upper floor leads to a small room of its own
-      const cand = []; for (let cx = da + 4; cx <= db - 4; cx++) if (!keepOut.some(([a, z]) => cx >= a && cx <= z)) cand.push(cx);
+    if ((spec.theme || ZONES[spec.zone].theme) === 'swamp') {                                          // a tall mire room has WATERFALLS: through every hole in the upper floor, from the sky to the lower floor, and a couple of cascades that seep through the slab
+      const low = c => (g[c] >= 0 ? g[c] : BASE), taken = [];
+      for (const [hx, hw] of holes) { b.d('waterfall', hx + hw / 2 - 0.5, low(hx + (hw >> 1)), { top: -80, w: hw * 16 - 10 }); taken.push(hx + hw / 2); }
+      const cand = []; for (let c = da + 6; c <= db - 6; c++) if (!keepOut.some(([a, z]) => c >= a && c <= z) && g[c - 1] >= 17 && g[c] >= 17 && g[c + 1] >= 17) cand.push(c);
+      for (let i = 0, want = holes.length >= 2 ? 1 : 2; i < want; i++) {
+        const ok = r.shuffle(cand.filter(c => taken.every(q => Math.abs(q - c) >= 14))); if (!ok.length) break; const c = ok[0]; taken.push(c);
+        b.d('waterfall', c, DK, { top: -80, w: 22 }); b.d('waterfall', c, g[c], { top: (DK + 2) * 16, w: 16 });          // (it falls on to the upper floor, and comes out again under it)
+      }
+    }
+    for (const m of deckDoors) {                                                                   // a door on the upper floor leads to a small room of its own (and two of them stand well apart)
+      const cand = []; for (let cx = da + 4; cx <= db - 4; cx++) if (!keepOut.some(([a, z]) => cx >= a && cx <= z) && doors.every(d => !d.deck || Math.abs(d.x - cx) >= 13)) cand.push(cx);
       if (!cand.length) return { ok: false, errs: ['no place for the upper door'] };
       const mid = cand.filter(cx => cx > da + len * 0.25 && cx < da + len * 0.75); doors.push({ x: r.pick(mid.length ? mid : cand), gy: DK, to: m.to, kind: m.kind || 'wood', deck: true });
     }
@@ -366,11 +388,17 @@ function genArena(id, spec, r) {
   const outdoor = !!spec.outdoor, H = spec.h || 14, BASE = H - 2, W = r.i(spec.w[0], spec.w[1]), rise = spec.rise || 3;
   const b = new B(id, spec.name, spec.zone, W, H, { ...spec.opts, theme: spec.theme });
   b.floor(0, W, BASE); if (!outdoor) b.ceil(0, W, 2);
-  const L = r.i(5, 9), len1 = r.i(4, 5), Rr = W - r.i(9, 13) - len1;
+  const mirror = !!spec.mirror, MW = mirror ? 14 : 0, mx0 = W - MW;                              // the mirror room: its last 14 columns are a solid wall with the great mirror set into it
+  const L = r.i(5, 9), len1 = r.i(4, 5), Rr = mirror ? mx0 - r.i(5, 7) - len1 : W - r.i(9, 13) - len1;
   b.plat(L, len1, BASE - rise); b.plat(Rr, len1, BASE - rise);
+  if (mirror) {
+    b.rect(mx0, 2, MW, BASE - 2);
+    const band = 7, fx = mx0 * 16 + 3, fx1 = W * 16 - 13, fy = 36, gy1 = BASE * 16;               // the frame, the glass inside it (its left edge is the mirror's plane: the reflection stands where you would, seen from the other side) and the floor it stands on
+    b.def.mirror = { fx, fy, fw: fx1 - fx, fh: gy1 + band - fy, band, plane: fx + band, x1: fx1 - band, y0: fy + band, y1: gy1, wall: mx0 * 16 };
+  }
   const must = [{ tx: L + 1, gy: BASE - rise, name: 'left platform' }, { tx: Rr + 1, gy: BASE - rise, name: 'right platform' }];
   if (spec.plats >= 3) { const ml = r.i(5, 7), mx = Math.round(W / 2 - ml / 2) + r.i(-2, 2), mr = BASE - rise - 2; b.plat(mx, ml, mr); must.push({ tx: mx + 2, gy: mr, name: 'middle platform' }); }
-  const bossX = Math.round(W * 0.7) + r.i(-3, 2), flying = FLYING_BOSS.has(spec.boss), brow = flying ? BASE - (spec.flyRow || 6) : BASE;
+  const bossX = mirror ? mx0 - 3 : Math.round(W * 0.7) + r.i(-3, 2), flying = FLYING_BOSS.has(spec.boss), brow = flying ? BASE - (spec.flyRow || 6) : BASE;
   b.e(BOSS_TYPE[spec.boss], bossX, brow, { reward: spec.reward });
   const lair = !!spec.lair;                                                                       // a lair is entered by a door (at x=3), has no other way out, and needs no seals
   const seals = lair ? [] : [{ x: 0, y0: BASE - 3, y1: BASE - 1 }];
@@ -380,15 +408,15 @@ function genArena(id, spec, r) {
   if (spec.exitGate) b.rect(W - 1, BASE - 3, 1, 3, GATE[spec.exitGate]);
   const g = new Array(W).fill(BASE), meta = { abilities: spec.abilities || [], back: BACK[spec.zone], entry: { L: { tx: 1, gy: BASE }, R: spec.seal === 'left' || lair ? null : { tx: spec.exitGate ? W - 4 : W - 2, gy: BASE } }, must, items: [], start: { tx: 3, gy: BASE } };
   b.def.meta = meta; b.def.entries = { L: meta.entry.L, R: spec.seal === 'left' || lair ? null : { tx: W - 2, gy: BASE } };
-  if (spec.candles) { const n = spec.candles[0], ns = Math.max(1, Math.round(n / 2.5)), st = new Set(Array.from({ length: ns }, (_, j) => Math.floor((j + 0.5) * n / ns)));
-    for (let k = 0; k < n; k++) { const cx = Math.round(8 + (W - 16) * (k + 0.5) / n) + r.i(-2, 2); if (st.has(k)) b.e('statue', cx, BASE, { drop: ['heart', 'heart', 'mana'][k % 3] }); else b.candle(cx, BASE); } }
+  if (spec.candles) { const n = spec.candles[0];                                                                          // (a boss room has candelabras only: no treasure statues)
+    const span = (mirror ? mx0 - 6 : W - 8) - 8; for (let k = 0; k < n; k++) { const cx = Math.round(8 + span * (k + 0.5) / n) + r.i(-2, 2); b.candle(cx, BASE); } }
   const v = validateRoom(b.def); if (!v.ok) return { ok: false, errs: v.errs, def: b.def };
   // decor
   const flat = []; for (let cx = 3; cx < W - 3; cx++) flat.push(cx);
   const th = ZONES[spec.zone].theme;
   if (th === 'graveyard') { b.d('brazier', 4, BASE).d('brazier', W - 5, BASE).d('img', Math.round(W / 2), BASE, { img: 'cemetery_statue', back: true }); for (const k of ['cemetery_stone-4', 'cemetery_stone-1']) b.d('img', r.i(8, W - 9), BASE, { img: k }); }
   else if (th === 'village' || th === 'swamp') { decorate(b, W, spec, r, g, 0, flat); b.d('brazier', 4, BASE).d('brazier', W - 5, BASE); }
-  else { b.torches([4, 12, Math.round(W / 2), W - 13, W - 5].filter(cx => cx > 2 && cx < W - 2), 6); if (spec.decor === 'column') { b.d('column', 4, BASE).d('column', W - 5, BASE); b.d('cdl', r.i(10, 16), BASE).d('cdl', W - r.i(12, 18), BASE); } else if (spec.decor === 'brazier') { b.d('brazier', 4, BASE).d('brazier', W - 5, BASE); } else if (spec.decor === 'banner') { b.d('column', 4, BASE).d('column', W - 5, BASE).d('brazier', 11, BASE).d('brazier', W - 12, BASE); for (const bx of [8, 14, W - 15, W - 9]) b.d('banner', bx, 2, { len: 8, color: '#6a1020' }); } else for (const bx of [10, W - 11]) b.d('banner', bx, 2, { len: 6, color: '#7a1e2a' }); }
+  else { const lim = mirror ? mx0 - 2 : W - 2; b.torches([4, 12, Math.round(W / 2), W - 13, W - 5, mx0 - 2].filter(cx => cx > 2 && cx < lim), 6); if (spec.decor === 'column') { b.d('column', 4, BASE).d('column', W - 5, BASE); b.d('cdl', r.i(10, 16), BASE).d('cdl', W - r.i(12, 18), BASE); } else if (spec.decor === 'brazier') { b.d('brazier', 4, BASE).d('brazier', W - 5, BASE); } else if (spec.decor === 'banner') { b.d('column', 4, BASE).d('column', W - 5, BASE).d('brazier', 11, BASE).d('brazier', W - 12, BASE); for (const bx of [8, 14, W - 15, W - 9]) b.d('banner', bx, 2, { len: 8, color: '#6a1020' }); } else for (const bx of mirror ? [10, mx0 - 9] : [10, W - 11]) b.d('banner', bx, 2, { len: 6, color: mirror ? '#3a1a5a' : '#7a1e2a' }); }
   const sp = checkSpawns(b.def); if (sp.length) return { ok: false, errs: sp, def: b.def };
   return { ok: true, def: b.def };
 }
@@ -525,7 +553,7 @@ export function buildWorld(seed, opts = {}) {
       if (!hand) throw new Error('level generator could not build room ' + id + ' for seed ' + seed + ': ' + (report.errors[id] || []).slice(0, 3).join(' | '));
       def = authoredDef(id); report.attempts[id] = seed === 0 ? 0 : MAX_TRY; if (seed !== 0) report.fallbacks.push(id);
     }
-    def.id = id; arrangeCandelabras(def); rooms[id] = def;          // (candelabras are scenery: set them once the room's doors and loot are known)
+    def.id = id; tidyRoom(def); arrangeCandelabras(def); rooms[id] = def;          // (candelabras are scenery: set them once the room's doors and loot are known)
   }
   const linked = new Set();
   for (const k of Object.keys(DOOR_LINK)) {

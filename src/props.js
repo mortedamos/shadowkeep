@@ -159,7 +159,7 @@ export class Altar {
     this.t++;
     if (this.t === 1) this.circle = g.fx.quad({ kind: 'circle', x: this.x, y: this.y - 1, w: 88, h: 34, color: [0.7, 0.45, 1], life: 1, hold: true, spin: 0.01, p: [0, 12], a0: 0.55, a1: 0.55, pulse: 3, order: 1 });
     for (const [ox, oy, s] of [[-8.5, -23, 0.8], [8.5, -23, 0.8], [-0.5, -26, 1]]) g.fx.flame(this.x + ox, this.y + oy, { scale: s, seed: ox, color: 'purple', sparks: false });
-    g.fx.light(this.x, this.y - 20, 80, 0.9);
+    g.fx.light(this.x, this.y - 20, 80, 0.9, [0.72, 0.5, 1]);
     if (this.t % 6 === 0) g.fx.emit({ x: this.x + rand(-14, 14), y: this.y - 4, vx: 0, vy: -rand(0.3, 0.9), life: rand(50, 90), s0: 6, s1: 1, c0: [0.8, 0.6, 1], c1: [0.4, 0.3, 1], a0: 0.9, a1: 0, kind: 6 });
     if (this.used > 0) this.used--;
   }
@@ -187,7 +187,7 @@ export class Waystone {
     if (this.t === 1) this.circle = g.fx.quad({ kind: 'circle', x: this.x, y: this.y - 1, w: 96, h: 36, color: [0.4, 0.85, 1], life: 1, hold: true, spin: 0.012, p: [0, 12], a0: 0.2, a1: 0.2, pulse: 3, order: 1 });
     if (this.circle) { const a = lit ? 0.6 + (this.flare > 0 ? 0.4 : 0) : 0.16; this.circle.a0 = this.circle.a1 = a; }
     if (this.flare > 0) this.flare--;
-    if (lit) { g.fx.glow(this.x, this.y - 30, 34 + Math.sin(this.t * 0.07) * 4, [0.4, 0.85, 1], 0.4); g.fx.light(this.x, this.y - 30, 110, 0.9); if (this.t % 7 === 0) g.fx.emit({ x: this.x + rand(-12, 12), y: this.y - 4, vx: 0, vy: -rand(0.4, 1.0), life: rand(40, 80), s0: 5, s1: 1, c0: [0.5, 0.9, 1], c1: [0.2, 0.5, 1], a0: 0.9, a1: 0, kind: 6 }); }
+    if (lit) { g.fx.glow(this.x, this.y - 30, 34 + Math.sin(this.t * 0.07) * 4, [0.4, 0.85, 1], 0.4); g.fx.light(this.x, this.y - 30, 110, 0.9, [0.4, 0.85, 1]); if (this.t % 7 === 0) g.fx.emit({ x: this.x + rand(-12, 12), y: this.y - 4, vx: 0, vy: -rand(0.4, 1.0), life: rand(40, 80), s0: 5, s1: 1, c0: [0.5, 0.9, 1], c1: [0.2, 0.5, 1], a0: 0.9, a1: 0, kind: 6 }); }
     else if (this.t % 20 === 0) g.fx.emit({ x: this.x + rand(-6, 6), y: this.y - 34, vx: 0, vy: -rand(0.1, 0.3), life: 40, s0: 4, s1: 1, c0: [0.5, 0.7, 1], a0: 0.6, a1: 0, kind: 6 });
     if (!lit && !p.dead && Math.abs(p.x - this.x) < 44 && Math.abs(p.y - this.y) < 30) this.attune(g);
   }

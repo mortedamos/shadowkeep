@@ -26,6 +26,7 @@ Mountain at Dusk Background
 (OpenGameArt.org)
 
 The hero, the monsters, the castle and the village are mostly his work.
+The Reflection (the boss in the Mirror Room) is the Gothic Hero again, recoloured at load time.
 
 ## ETTiNGRiNDER - CC0
 Haunted Forest Trees
@@ -37,7 +38,7 @@ Cropped and rearranged for use in the game.
 
 ## Balmer, with Redshrike - CC BY 3.0
 Bosses and Monsters Spritesheets (Ars Notoria)
-The acolyte, the archmage, the brass sorcerer, the gnu knight, the Cinder Warden, the Brazen Hierophant and the Mire Mother.
+The acolyte, the archmage, the brass sorcerer, the Cinder Warden, the Brazen Hierophant and the Mire Mother.
 Cropped and rearranged for use in the game.
 
 ## Emcee Flesher - OGA-BY 3.0
@@ -52,6 +53,11 @@ The moonlit graveyard set.
 xxg_4_free
 The Crimson Count, the vampire lord.
 ; (the download came without a licence file: confirm its terms with the author before a public release, and credit them properly here)
+
+## Portraits
+The framed pictures on the castle walls: fifteen painted faces, five moods each.
+Pixelated for the game.
+; (they were supplied by the game's author: confirm where they came from, and that they may be published, before a public release)
 
 ## Szadi art - public domain
 Pixel Platformer Set 1

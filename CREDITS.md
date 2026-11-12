@@ -17,7 +17,7 @@ Some sprites are recolored at load time (bone-white skeleton, green zombie, fros
 
 ## The hero - Gothic Hero by Ansimuz
 
-The cloaked stranger is the "Gothic Hero" from the Gothicvania Patreon's Collection above (CC0). The sword-enchantment arcs are recolors of its slash frames made at load time.
+The cloaked stranger is the "Gothic Hero" from the Gothicvania Patreon's Collection above (CC0). The sword-enchantment arcs are recolors of its slash frames made at load time, and so is the Reflection (the boss in the Mirror Room): the same sheets with all 19 colours swapped for silver and violet.
 
 An alternative hero, *Dark Hooded Warrior* by oliveiramiro2, is archived in `assets/archive/hooded-warrior/` and is not loaded.
 
@@ -36,7 +36,7 @@ Not used right now. The pack ships without a formal license file; see `assets/ar
 | [Mountain at Dusk Background](https://opengameart.org/content/mountain-at-dusk-background) | Luis Zuno (Ansimuz) | CC0 | the mountain ranges behind the burning village |
 | [Haunted Forest Trees](https://opengameart.org/content/haunted-forest-trees) | ETTiNGRiNDER | CC0 | the gnarled dead trees in the graveyard rooms |
 | [Castlevania-esque Tilemap (Stone and Bricks)](https://opengameart.org/content/castlevania-esque-tilemap-stone-and-bricks) | Chloe Wolfe | **CC-BY 4.0** (attribution required) | the village's cobbled street and brickwork |
-| [Bosses and Monsters Spritesheets (Ars Notoria)](https://opengameart.org/content/bosses-and-monsters-spritesheets-ars-notoria) | Balmer, with Redshrike | **CC-BY 3.0** (attribution required) | the acolyte (disciple), archmage (mage-2), brass sorcerer (mage-1), gnu knight, and the three bosses: the Cinder Warden (gnu), the Brazen Hierophant (mage-1, drawn larger) and the Mire Mother (Andromalius + tentacles) |
+| [Bosses and Monsters Spritesheets (Ars Notoria)](https://opengameart.org/content/bosses-and-monsters-spritesheets-ars-notoria) | Balmer, with Redshrike | **CC-BY 3.0** (attribution required) | the acolyte (disciple), archmage (mage-2), brass sorcerer (mage-1), and the three bosses: the Cinder Warden (gnu), the Brazen Hierophant (mage-1, drawn larger) and the Mire Mother (Andromalius + tentacles) |
 | [Super Dead Gunner: Cyber-tooth (enemy)](https://opengameart.org/content/super-dead-gunner-cyber-tooth-enemy) | Emcee Flesher | **OGA-BY 3.0** (or CC0; attribution required under OGA-BY) | the bone / frost / ember wyrms (the sheet is sliced and re-assembled in code) |
 
 ### The newest packs
@@ -55,6 +55,14 @@ Attribution: "Castlevania-esque Tilemap" by Chloe Wolfe, CC-BY 4.0 (https://crea
 Spritesheets" by Balmer, with Redshrike, CC-BY 3.0 (https://creativecommons.org/licenses/by/3.0/); "Cyber-tooth" by Emcee Flesher, OGA-BY 3.0.
 The wyrm sheet, the Ars Notoria sheets and the tilemap were cropped / rearranged for use in the game; the only other change is load-time color shifts.
 
+## Portraits
+
+| What | Source | Licence |
+|---|---|---|
+| The fifteen painted portraits (five expressions each) in `assets/portraits/` | supplied by the game's author | **not recorded here - confirm the origin and that they may be published before a public release** |
+
+The game does not ship the full-size pictures: `tools/pixelate-portraits.ps1` shrinks them to 26x33 pixels, gives each person one 32-colour palette, and packs them into `assets/portraits/pixel/portraits.png`.
+
 ## Fonts - SIL Open Font License 1.1
 
 | Font | Used for | Source |
@@ -70,7 +78,7 @@ The font files are in `assets/fonts/`; the licenses are in `assets/credits/licen
 
 ## Original art made for this project
 
-The bat, haunted armor, item icons, props (candelabra, torch, bookcase, barred window,
+The bat, item icons, props (candelabra, torch, bookcase, barred window,
 brazier, altar, tablet, chest, pedestal, spikes, breakable/burnable/crystal/seal tiles) and projectiles are drawn
 in code - see `src/procart.js`.
 

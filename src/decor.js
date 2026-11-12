@@ -1,9 +1,18 @@
 // Static scenery drawn with the room (tombstones, torches, banners, doors ...) + the list of flames to light them.
-import { IMG, drawSheet } from './assets.js';
+import { IMG, SHEET, drawSheet } from './assets.js';
 import { extra } from './world.js';
 import { T } from './util.js';
+import { drawFramedPortrait, FH } from './portraitart.js';
 
-const BACK_KINDS = new Set(['column']);
+const BACK_KINDS = new Set(['column', 'waterfall', 'portrait']);
+// Is this piece of scenery drawn over a hazard (a spike tile)?  Nothing may stand in front of a hazard: the room drops such pieces when it loads.
+export function decoCoversHazard(d, spikes) {
+  if (isBack(d)) return false; let x0, y0, w, h;
+  if (d.t === 'img') { const im = IMG[d.img]; if (!im) return false; const sc = d.scale || 1; w = Math.round(im.width * sc); h = Math.round(im.height * sc); x0 = d.x - w / 2; y0 = d.y - h + (d.sink || 0); }
+  else if (d.t === 'cdl' || d.t === 'brazier') { const s = SHEET[d.t === 'cdl' ? 'candelabra' : 'brazier']; if (!s) return false; w = s.w; h = s.h; x0 = d.x - s.ax * w; y0 = d.y - s.ay * h; }
+  else return false;
+  return spikes.some(([tx, ty]) => x0 < tx * T + T - 1 && x0 + w > tx * T + 1 && y0 < ty * T + T && y0 + h > ty * T + 6);
+}
 export const isBack = d => BACK_KINDS.has(d.t) || (d.back && (d.t === 'img' || d.t === 'bookcase' || d.t === 'barwin'));
 
 export function drawDeco(g, d, cx, cy, t, room) {
@@ -12,6 +21,28 @@ export function drawDeco(g, d, cx, cy, t, room) {
   switch (d.t) {
     case 'img': { const im = IMG[d.img], sc = d.scale || 1, w = Math.round(im.width * sc), h = Math.round(im.height * sc); g.drawImage(im, Math.round(x - w / 2), y - h + (d.sink || 0), w, h); break; }
     case 'hang': { const im = IMG[d.img], sc = d.scale || 1, w = Math.round(im.width * sc), h = Math.round(im.height * sc); g.drawImage(im, Math.round(x - w / 2), y, w, h); break; }       // hangs from the top edge (banners, a caged skeleton)
+    case 'waterfall': {        // a waterfall: d.top = the world y it pours from (it may start above the room), d.y = where it lands, d.w = its width.  Drawn behind the ground and the hero.
+      const w = d.w, top = Math.max(Math.round(d.top - cy), -2), bot = y, x0 = x - Math.round(w / 2), len = bot - top; if (bot <= 0 || top >= 216 || len <= 0) break;
+      const hs = (a, b) => hash(d.x * 0.37 + a, b);
+      g.fillStyle = 'rgba(88,146,160,0.42)'; g.fillRect(x0, top, w, len);                                      // the body of the water
+      g.fillStyle = 'rgba(165,218,228,0.26)'; g.fillRect(x0 + 3, top, w - 6, len);                             // a paler heart
+            // ragged foam down both edges (a dash here, a gap there, wavering a pixel or two)
+      for (let yy = top; yy < bot; yy += 5) { const wy = Math.floor((yy + cy) / 5); if (hs(wy, 11) > 0.35) { g.fillStyle = 'rgba(232,250,252,' + (0.28 + 0.3 * hs(wy, 12)).toFixed(2) + ')'; const sw = Math.round(Math.sin((wy + t * 0.12) * 0.7) * 1.2); g.fillRect(x0 + sw, yy, 1 + (hs(wy, 13) > 0.7 ? 1 : 0), 4); g.fillRect(x0 + w - 1 - sw, yy, 1 + (hs(wy, 14) > 0.7 ? 1 : 0), 4); } }
+      const n = Math.max(5, Math.floor(w / 2.4));
+      for (let k = 0; k < n; k++) {                                                                            // streaks of white water racing down (anchored in the world, so they do not swim when the camera moves)
+        const sx = x0 + 1 + Math.floor(hs(k, 1) * (w - 3)), sp = 1.8 + hs(k, 2) * 2.4, per = 38 + Math.floor(hs(k, 6) * 26), ph = hs(k, 3) * per, ln = 6 + Math.floor(hs(k, 4) * 20), wd = hs(k, 7) > 0.6 ? 2 : 1;
+        g.fillStyle = 'rgba(240,253,255,' + (0.25 + 0.55 * hs(k, 5)).toFixed(2) + ')';
+        for (let wy = Math.floor((cy + top) / per) * per - per; wy < cy + bot; wy += per) { const a = Math.round(wy + ((t * sp + ph) % per) - cy), b = Math.min(a + ln, bot), a2 = Math.max(a, top); if (b > a2) g.fillRect(sx, a2, wd, b - a2); }
+      }
+      { const gr = g.createLinearGradient(0, Math.max(top, bot - 44), 0, bot); gr.addColorStop(0, 'rgba(215,242,248,0)'); gr.addColorStop(1, 'rgba(215,242,248,0.30)'); g.fillStyle = gr; g.fillRect(x0 - 2, Math.max(top, bot - 44), w + 4, Math.min(len, 44)); }      // the water turns to mist as it nears the bottom
+      if (top > 0) { g.fillStyle = 'rgba(210,240,246,0.30)'; g.fillRect(x0 - 2, top, w + 4, 2); }              // a lip where it leaves a ledge
+      // where it lands: a boiling of foam and ripples on a small pool
+      g.fillStyle = 'rgba(60,112,128,0.55)'; g.fillRect(x0 - 8, bot - 3, w + 16, 3); g.fillStyle = 'rgba(205,238,244,0.6)'; g.fillRect(x0 - 8, bot - 3, w + 16, 1);
+      for (let i = 0; i < 6; i++) { const fx = x0 + ((i * 9 + Math.floor(t * 0.5)) % (w + 8)) - 4, fh = 2 + Math.floor(hs(i, Math.floor(t / 5)) * 4); g.fillStyle = 'rgba(240,252,255,0.7)'; g.fillRect(fx, bot - 3 - fh, 3, fh); }
+      for (let i = 0; i < 2; i++) { const ph = ((t * 0.5 + i * 30) % 60) / 60, rw = Math.round((w + 10) * (0.5 + ph)); g.fillStyle = 'rgba(215,242,248,' + (0.5 * (1 - ph)).toFixed(2) + ')'; g.fillRect(x - Math.round(rw / 2), bot - 1, rw, 1); }
+      break;
+    }
+    case 'portrait': drawFramedPortrait(g, x, y, { ci: d.ci, a: d.emo, frame: d.frame }); break;          // a framed portrait on the wall: x = its centre, y = the bottom edge of the frame (see portraitart.js)
     case 'dgtorch': drawSheet(g, 'dg_torch', Math.floor(t / 6 + d.x) % 4, x, y); break;
     case 'bookcase': {         // a tall bookcase drawn in code: oak frame, three shelves of books in a dozen colours (the same books every time for the same place)
       const W = 30, H = 46, x0 = x - 15, y0 = y - H, hh = n => { const s = Math.sin(d.x * 12.9898 + n * 78.233) * 43758.5453; return s - Math.floor(s); };

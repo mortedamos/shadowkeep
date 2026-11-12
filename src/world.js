@@ -35,6 +35,23 @@ export function extra() { // derived images built once
   return EXTRA;
 }
 
+// the five mud top tiles with every transparent pixel filled from the mud below it (a solid tile whose top row is its first row of moss)
+let SWAMP_LIP = null;
+function swampLip() {
+  if (SWAMP_LIP) return SWAMP_LIP; SWAMP_LIP = [];
+  for (let c = 0; c < 5; c++) {
+    const cv = canvasOf(16, 16), g = cv.getContext('2d'); g.drawImage(IMG.swamp_tileset, 224 + c * 16, 0, 16, 16, 0, 0, 16, 16);
+    const d = g.getImageData(0, 0, 16, 16), p = d.data;
+    for (let x = 0; x < 16; x++) {
+      let r = -1, gr = 0, b = 0;
+      for (let y = 15; y >= 0; y--) { const i = (y * 16 + x) * 4; if (p[i + 3] >= 128) { r = p[i]; gr = p[i + 1]; b = p[i + 2]; p[i + 3] = 255; } else if (r >= 0) { p[i] = r; p[i + 1] = gr; p[i + 2] = b; p[i + 3] = 255; } }
+      const i0 = x * 4; p[i0] = Math.min(255, p[i0] * 1.16); p[i0 + 1] = Math.min(255, p[i0 + 1] * 1.16); p[i0 + 2] = Math.min(255, p[i0 + 2] * 1.1);
+    }
+    g.putImageData(d, 0, 0); SWAMP_LIP.push(cv);
+  }
+  return SWAMP_LIP;
+}
+
 // ------------------------------------------------------------------ tile themes
 // Each theme draws one 16x16 cell (tx,ty) onto g.  nb: {u,d,l,r} neighbour-solid flags, depth: solid tiles directly above (0 = surface)
 const blit = (g, img, sx, sy, w, h, dx, dy) => g.drawImage(img, sx, sy, w, h, dx, dy, w, h);
@@ -49,9 +66,11 @@ const THEME = {
     plat(g, tx, ty) { const im = IMG.cemetery_tileset, v = Math.floor(hash1(tx * 5.1) * 4); blit(g, im, 64 + v * 16, 55, 16, 25, tx * T, ty * T - 9); g.fillStyle = 'rgba(0,0,10,0.55)'; g.fillRect(tx * T, ty * T + 8, 16, 2); },
   },
   // Gothicvania Swamp: mossy mud blocks (the third block, 5 tiles wide, is used) - top lip, mid, dark underside
+  // The lip tiles are solid() from their first opaque row down, but the art starts 3-8px below the tile's top and ragged: the visible ground sat lower than the ground you walk on, with
+  // dark gaps between.  swampLip() fills every transparent pixel from the mud below it (and lightens the top row a little for an edge), so the ground you see IS the ground you stand on.
   swamp: {
-    solid(g, tx, ty, nb, depth) { const im = IMG.swamp_tileset, c = ((tx % 5) + 5) % 5; blit(g, im, 224 + c * 16, depth === 0 ? 0 : depth === 1 ? 16 : 32, 16, 16, tx * T, ty * T); },       // the mud block is 5 tiles wide (x=224..303); the 6th column of the sheet is empty and used to leave a hole in the ground
-    plat(g, tx, ty) { const im = IMG.swamp_tileset, c = ((tx % 5) + 5) % 5; blit(g, im, 224 + c * 16, 0, 16, 10, tx * T, ty * T); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(tx * T, ty * T + 10, 16, 2); },
+    solid(g, tx, ty, nb, depth) { const c = ((tx % 5) + 5) % 5; if (depth === 0) g.drawImage(swampLip()[c], tx * T, ty * T); else blit(g, IMG.swamp_tileset, 224 + c * 16, depth === 1 ? 16 : 32, 16, 16, tx * T, ty * T); },       // the mud block is 5 tiles wide (x=224..303); the 6th column of the sheet is empty and used to leave a hole in the ground
+    plat(g, tx, ty) { const c = ((tx % 5) + 5) % 5; g.drawImage(swampLip()[c], 0, 0, 16, 10, tx * T, ty * T, 16, 10); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(tx * T, ty * T + 10, 16, 2); },
   },
   // the burning village: cobbles and brickwork from the Castlevania-esque stone-and-bricks tilemap (Chloe Wolfe, CC-BY 4.0)
   // The wall in that tilemap repeats every 32px both ways.  The surface course is the six fully-opaque tiles x=288..383 (their wrap-around seam is as good as the
@@ -72,7 +91,12 @@ const THEME = {
       else if (depth === 1) blit(g, im, x0 + col * 16, 184, 16, 16, tx * T, ty * T);
       else { blit(g, im, 16, 80, 16, 16, tx * T, ty * T); if (hash1(tx * 9.1 + ty * 3.3) < 0.25) blit(g, im, 24, 124, 16, 16, tx * T, ty * T); }
     },
-    plat(g, tx, ty, im = IMG.church_tileset) { blit(g, im, 192 + (tx & 1) * 16, 160, 16, 12, tx * T, ty * T); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(tx * T, ty * T + 12, 16, 2); },
+    // The even platform tile's art leaves its top 6 rows EMPTY (the stone starts half way down the tile), so those platforms looked 6px lower than the ones you stand on, next to the full
+    // slab of the odd tile: the surface was unclear.  It is set upside down, so the empty part faces DOWN and the stone starts at the walking surface.
+    plat(g, tx, ty, im = IMG.church_tileset) {
+      if ((tx & 1) === 0) { g.save(); g.translate(tx * T, ty * T + 12); g.scale(1, -1); g.drawImage(im, 192, 160, 16, 12, 0, 0, 16, 12); g.restore(); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(tx * T, ty * T + 6, 16, 2); }
+      else { blit(g, im, 208, 160, 16, 12, tx * T, ty * T); g.fillStyle = 'rgba(0,0,0,0.5)'; g.fillRect(tx * T, ty * T + 12, 16, 2); }
+    },
   },
   underworks: {
     solid(g, tx, ty, nb, depth) {
@@ -147,11 +171,16 @@ export function drawBackground(g, room, camX, camY, t) {
 // like layerRepeat, drawn at `sc` of its size; `img` may be a list of images that follow one another
 function layerScaled(g, img, sc, scroll, y) {
   const list = Array.isArray(img) ? img : [img], ws = list.map(m => Math.round(m.width * sc)), total = ws.reduce((a, b) => a + b, 0); let x = -(((scroll % total) + total) % total), i = 0;
-  while (x < W) { const m = list[i % list.length], w = ws[i % list.length]; if (x + w > 0) g.drawImage(m, Math.round(x), Math.round(y), w, Math.round(m.height * sc)); x += w; i++; }
+  while (x < W) { const m = list[i % list.length], w = ws[i % list.length]; if (x + w > 0) { if (y > 0 && topOpaque(m)) g.drawImage(m, 0, 0, m.width, 1, Math.round(x), 0, w, Math.round(y)); g.drawImage(m, Math.round(x), Math.round(y), w, Math.round(m.height * sc)); } x += w; i++; }
 }
 function layerRepeat(g, img, scroll, y, gap) {
-  const w = img.width + gap, off = -(((scroll % w) + w) % w);
-  for (let x = off; x < W; x += w) g.drawImage(img, Math.round(x), Math.round(y));
+  const w = img.width + gap, off = -(((scroll % w) + w) % w), ext = y > 0 && topOpaque(img);
+  for (let x = off; x < W; x += w) { if (ext) g.drawImage(img, 0, 0, img.width, 1, Math.round(x), 0, img.width, Math.round(y)); g.drawImage(img, Math.round(x), Math.round(y)); }          // (above the picture: its own top row, stretched - so the top edge of a layer never shows when the camera climbs)
+}
+const TOPOP = new WeakMap();
+function topOpaque(img) {                                   // is the picture's top row solid (a layer that fills the sky above it), as opposed to a silhouette?
+  let v = TOPOP.get(img); if (v === undefined) { const c = canvasOf(img.width, 1), g = c.getContext('2d'); g.drawImage(img, 0, 0, img.width, 1, 0, 0, img.width, 1); const p = g.getImageData(0, 0, img.width, 1).data; v = true; for (let i = 3; i < p.length; i += 4) if (p[i] < 250) { v = false; break; } TOPOP.set(img, v); }
+  return v;
 }
 
 // ------------------------------------------------------------------ Room
@@ -174,7 +203,7 @@ export class Room {
 
   prerender() {
     this.canvas = this.canvas || canvasOf(this.pw, this.ph); const g = this.canvas.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, this.pw, this.ph);
-    const th = THEME[this.theme]; this.anim.length = 0;
+    const th = THEME[this.theme]; this.anim.length = 0; this.spikes = [];          // (spikes are also drawn again on the clear layer above fog and darkness: a hazard must always be seen)
     // depth: contiguous solid tiles above
     for (let ty = 0; ty < this.h; ty++) for (let tx = 0; tx < this.w; tx++) {
       const v = this.tiles[ty * this.w + tx]; if (!v) continue;
@@ -183,7 +212,7 @@ export class Room {
         // ceilings/overhangs: tile with air below and solid above shouldn't look like grass-top
         th.solid(g, tx, ty, { u: this.solid(tx, ty - 1), d: this.solid(tx, ty + 1), l: this.solid(tx - 1, ty), r: this.solid(tx + 1, ty) }, depth);
       } else if (v === TILE.PLAT) th.plat(g, tx, ty);
-      else if (v === TILE.SPIKE) drawSheet(g, 'spikes', 0, tx * T, ty * T, { ax: 0, ay: 0 });
+      else if (v === TILE.SPIKE) { drawSheet(g, 'spikes', 0, tx * T, ty * T, { ax: 0, ay: 0 }); this.spikes.push([tx, ty]); }
       else if (v === TILE.CRACK) drawSheet(g, 't_crack', 0, tx * T, ty * T, { ax: 0, ay: 0 });
       else if (v === TILE.BARRICADE) drawSheet(g, 't_barricade', 0, tx * T, ty * T, { ax: 0, ay: 0 });
       else if (v === TILE.CRYSTAL || v === TILE.SEAL) this.anim.push([tx, ty, v]);

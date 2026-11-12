@@ -6,6 +6,7 @@ import { ENCH } from './enchant.js';
 
 export const SHEET = {};   // id -> { img, n, w, h, face, ax, ay }
 export const IMG = {};     // environment images by name
+export const PORTRAIT = { img: null, w: 48, h: 60, chars: [] };      // the pixelated portraits (see tools/pixelate-portraits.ps1): one atlas, a row per person, a column per expression
 
 const ENV = [
   'cemetery_tileset', 'cemetery_sky', 'cemetery_mountains', 'cemetery_graveyard',
@@ -34,7 +35,7 @@ const META = {
   angel_idle: { ay: 0.6 }, angel_attack: { ay: 0.6 },
   demon_idle: { face: -1 }, demon_attack: { face: -1 }, demon_attack_nb: { face: -1 },
   fireball: { ay: 0.5 }, death_small: {}, death_big: {},
-  reaper_idle: { face: -1 }, reaper_run: { face: -1 }, reaper_attack: { face: -1 }, reaper_dead: { face: -1 },       // Szadi's sickle fighter is drawn facing left
+  // (Szadi's sickle fighter, reaper_*, is drawn facing RIGHT in every animation - the default - so it has no entry here; it was once marked as facing left, which made him run backwards)
 };
 // the Crimson Count (xxg_4_free): his feet are on row 130 of each 144px cell
 Object.assign(META, { vampire_idle: { ay: 0.9 }, vampire_run: { ay: 0.9 }, vampire_atk: { ay: 0.9 }, vampire_jump: { ay: 0.9 }, vampire_hurt: { ay: 0.9 }, vampire_dead: { ay: 0.9 } });
@@ -70,11 +71,15 @@ export async function loadAll(progress = () => {}) {
       progress(++done / total);
     }),
     ...ENV.map(async name => { IMG[name] = await loadImg(`assets/env/${name}.png`); progress(++done / total); }),
+    loadImg('assets/portraits/pixel/portraits.png').then(img => { PORTRAIT.img = img; }).catch(() => {}),                                  // (without the atlas the portraits are just empty frames)
+    fetch('assets/portraits/pixel/portraits.json').then(r => r.json()).then(j => { PORTRAIT.w = j.w; PORTRAIT.h = j.h; PORTRAIT.chars = j.chars.map(c => c.id); }).catch(() => {}),
   ]);
   buildCyberTooth(cyberImg);              // the skull-headed serpent: one big grid sliced into strips
   buildRecolors();
+  buildHair();                            // the hero's quiff is lifted out of his sprites (it is simulated and drawn by hair.js)
+  buildEvil();                            // the mirror twin: the hero in silver and violet (hero_*_evil)
   buildWhiteCape();                       // the hero's baked red cape -> white (used while the White Cloak option is on)
-  drawProcedural(addSheet, SHEET, IMG);   // custom pixel art: bat, armor, icons, props
+  drawProcedural(addSheet, SHEET, IMG);   // custom pixel art: bat, icons, props
   buildEnchants();                        // enchanted sword variants (needs the hero sheets)
 }
 
@@ -138,6 +143,82 @@ function buildRecolors() {
   for (const k of ['idle', 'appear', 'vanish', 'shriek']) recolor('ghost_' + k, 'ghostg_' + k, (h, s, l) => [0.42, s * 0.9, l]);
   // blue "frozen" nightmare is the original; make a cursed-green wraith lantern ghost
   recolor('wraith', 'wraith_g', (h, s, l) => [0.45, s, l * 1.05]);
+}
+
+// ---------- the hero's hair ----------
+// The Gothic Hero's baked hair is a pompadour in the two cream tones ffd9b9 / af9785: one small patch on top of his head (the sword's slash arcs use the same tones, but they are big
+// or far from the head, so only a patch of 25-70 pixels no wider than 11 counts).  For every frame the whole patch is taken out of the sprite, and new hair is painted on a sheet of
+// its own, <sheet>_hair: it sweeps over the forehead and FALLS around the face - behind the head, past the shoulder blades, and in a lock beside the cheek.  It is placed by the
+// frame's FACE (the skin pixels beside the old patch), so it sits right however the head is turned or bobbing.  hair.js draws that picture as a bendable mesh (or, with 3D Hair off, plain).
+// HAIR_BOX[sheet][frame] = { bx, by, bw, bh }: where the painted hair is in the sheet frame (null if the frame has none).
+const HAIR_TONES = new Set([0xffd9b9, 0xaf9785]), SKIN_TONES = new Set([0xe1924d, 0xffc98b]), HAIR_BOX = {};
+export const hairBox = id => HAIR_BOX[id];
+const HAIR_LIGHT = [0xff, 0xd9, 0xb9], HAIR_SHADE = [0xaf, 0x97, 0x85];
+// the hair of one frame as spans per row (x relative to the face's left edge, facing right; W = the face's width): [row, x0, x1, shade?]
+function hairSpans(W) {
+  const out = [], R = 16;                                             // rows from the top of the head
+  const add = (r, x0, x1) => { if (x1 >= x0) out.push([r, x0, x1]); };
+  add(0, 2, W - 1); add(1, 0, W); add(2, -2, W + 1); add(3, -3, W + 1);                       // the crown, and a fringe swept forward over the forehead
+  add(4, -3, 3); add(4, W - 1, W + 1);                                                          // a gap where the brow and the eye show, the fringe's tip in front
+  for (let r = 5; r < R; r++) {                                                                 // the curtain behind the head, and a lock beside the cheek
+    const left = r <= 13 ? -3 : -2, right = r <= 8 ? 1 : r <= 11 ? -1 : r <= 13 ? -2 : -1; add(r, left, right);                 // (a lock beside the cheek down to the jaw, then the hair hangs strictly behind the head)
+  }
+  return out;
+}
+function buildHair() {
+  for (const id of HERO_SHEETS) {
+    const s = SHEET[id]; if (!s) continue;
+    const W = s.img.width, base = canvasOf(W, s.img.height), bg = base.getContext('2d'); bg.drawImage(s.img, 0, 0);
+    const bd = bg.getImageData(0, 0, W, base.height), p = bd.data, layer = new Uint8ClampedArray(p.length), boxes = [];
+    for (let f = 0; f < s.n; f++) {
+      const at = (x, y) => (y * W + f * s.w + x) * 4, key = (x, y) => { if (x < 0 || y < 0 || x >= s.w || y >= s.h) return -1; const i = at(x, y); return p[i + 3] < 128 ? -1 : (p[i] << 16) | (p[i + 1] << 8) | p[i + 2]; };
+      const seen = new Uint8Array(s.w * s.h); let box = null;
+      for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) {
+        if (seen[y * s.w + x] || !HAIR_TONES.has(key(x, y))) continue;
+        const st = [[x, y]], comp = []; seen[y * s.w + x] = 1; let a0 = x, a1 = x, b0 = y, b1 = y;
+        while (st.length) { const [a, b] = st.pop(); comp.push([a, b]); a0 = Math.min(a0, a); a1 = Math.max(a1, a); b0 = Math.min(b0, b); b1 = Math.max(b1, b);
+          for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = a + dx, ny = b + dy; if (nx >= 0 && ny >= 0 && nx < s.w && ny < s.h && !seen[ny * s.w + nx] && HAIR_TONES.has(key(nx, ny))) { seen[ny * s.w + nx] = 1; st.push([nx, ny]); } } }
+        if (comp.length < 25 || comp.length > 70 || a1 - a0 + 1 > 11 || b1 - b0 + 1 > 12) continue;                     // not the hair: a slash arc, or a speck of it
+        for (const [a, b] of comp) p[at(a, b) + 3] = 0;                                                                 // the pompadour comes out of the sprite
+        // the face: skin pixels within a pixel or two of the old patch, grown over the skin around them
+        const fs = new Set(), q = []; for (const [a, b] of comp) for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) { const nx = a + dx, ny = b + dy, kk = ny * s.w + nx; if (SKIN_TONES.has(key(nx, ny)) && !fs.has(kk)) { fs.add(kk); q.push([nx, ny]); } }
+        while (q.length) { const [a, b] = q.pop(); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const nx = a + dx, ny = b + dy, kk = ny * s.w + nx; if (nx >= a0 - 6 && nx <= a1 + 6 && ny <= b1 + 10 && !fs.has(kk) && SKIN_TONES.has(key(nx, ny))) { fs.add(kk); q.push([nx, ny]); } } }
+        let fx0 = 1e9, fx1 = -1, fy0 = 1e9; for (const kk of fs) { const fx = kk % s.w, fy = Math.floor(kk / s.w); fx0 = Math.min(fx0, fx); fx1 = Math.max(fx1, fx); fy0 = Math.min(fy0, fy); }
+        if (fx1 < 0) { fx0 = a0 + 1; fx1 = a1 - 2; fy0 = b1 - 3; }                                                      // (no face found: guess from the patch)
+        const FW = Math.max(5, Math.min(8, fx1 - fx0)), top = fy0 - 4; let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
+        for (const [r, sx0, sx1] of hairSpans(FW)) for (let xx = sx0; xx <= sx1; xx++) {
+          const px = fx0 + xx, py = top + r; if (px < 0 || py < 0 || px >= s.w || py >= s.h) continue;
+          const edge = xx === sx0, strand = r > 4 && ((xx - sx0 + (r >> 2)) % 3 === 1) && r % 2 === 0, shade = edge || r === 4 || r >= 14 || (xx === sx1 && r >= 9) || strand;       // shadow along the back edge, in streaks like strands, under the crown, at the tips
+          const c = shade ? HAIR_SHADE : HAIR_LIGHT, i = at(px, py); layer[i] = c[0]; layer[i + 1] = c[1]; layer[i + 2] = c[2]; layer[i + 3] = 255;
+          x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+        }
+        if (x1 >= 0) box = { bx: x0, by: y0, bw: x1 - x0 + 1, bh: y1 - y0 + 1 };
+      }
+      boxes.push(box);
+    }
+    bg.putImageData(bd, 0, 0); s.img = base;
+    const lc = canvasOf(W, base.height); lc.getContext('2d').putImageData(new ImageData(layer, W, base.height), 0, 0);
+    addSheet(id + '_hair', lc, s.n, s.w, s.h, { face: s.face, ax: s.ax, ay: s.ay, dx: s.dx, dy: s.dy }); HAIR_BOX[id] = boxes;
+  }
+}
+
+// ---------- the mirror twin, as <sheet>_evil ----------
+// The same sheets as the hero (his baked cape and his new hair included) with every one of the 19 colours of his sprite swapped: the crimson cape goes deep violet, the gold armour cold steel,
+// the pale skin, hair and sword-arcs ghostly silver.  The twin is drawn with these; its eyes burn red in the effects layer.
+const EVIL = new Map([[0xed053e, [74, 20, 104]], [0x810936, [50, 12, 76]], [0x800735, [40, 10, 62]], [0x983e1d, [96, 48, 120]], [0x671915, [32, 16, 44]], [0x691a17, [32, 16, 44]], [0x130a1b, [8, 5, 14]],
+  [0xbc6c17, [84, 92, 138]], [0xffcc61, [176, 184, 222]], [0xe1924d, [132, 126, 150]], [0xffd9b9, [226, 226, 244]], [0xffdbb9, [226, 226, 244]], [0xaf9785, [108, 106, 140]], [0xc69985, [128, 120, 156]],
+  [0xffc98b, [196, 192, 214]], [0x573b60, [50, 28, 82]], [0x966495, [112, 76, 150]]]);
+function buildEvil() {
+  for (const id of HERO_SHEETS) {
+    const s = SHEET[id]; if (!s) continue;
+    const c = canvasOf(s.img.width, s.img.height), g = c.getContext('2d'); g.drawImage(s.img, 0, 0); const hl = SHEET[id + '_hair']; if (hl) g.drawImage(hl.img, 0, 0);          // (his hair, as a still picture)
+    const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+    for (let i = 0; i < p.length; i += 4) {
+      if (p[i + 3] < 8) continue; const to = EVIL.get((p[i] << 16) | (p[i + 1] << 8) | p[i + 2]);
+      if (to) { p[i] = to[0]; p[i + 1] = to[1]; p[i + 2] = to[2]; } else { p[i] *= 0.55; p[i + 1] *= 0.45; p[i + 2] *= 0.8; }
+    }
+    g.putImageData(d, 0, 0); addSheet(id + '_evil', c, s.n, s.w, s.h, { face: s.face, ax: s.ax, ay: s.ay, dx: s.dx, dy: s.dy });
+  }
 }
 
 // ---------- the white cloak, as <sheet>_cw ----------

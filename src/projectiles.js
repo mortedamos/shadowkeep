@@ -2,7 +2,7 @@
 import { drawSheet } from './assets.js';
 import { Audio_ as A } from './audio.js';
 import { COLORS } from './fx.js';
-import { T, rand, TAU } from './util.js';
+import { T, rand, TAU, clamp } from './util.js';
 import { TILE } from './world.js';
 import { TUNE } from './enchant.js';
 
@@ -15,6 +15,7 @@ const KINDS = {
   skull: { sheet: 'fireskull', n: 8, w: 14, h: 14, grav: 0, glow: [0.4, 0.9, 1], hitFx: COLORS.blue, dmg: 12, scale: 0.38, fxTrail: COLORS.blue, spinFrames: true },
   spore: { sheet: 'orb_dark', n: 2, w: 10, h: 10, grav: 0, glow: [0.4, 1, 0.4], hitFx: COLORS.green, dmg: 9, scale: 1.5, fxTrail: COLORS.green },
   blood: { sheet: 'orb_dark', n: 2, w: 9, h: 9, grav: 0, glow: [1, 0.1, 0.2], hitFx: COLORS.red, dmg: 9, scale: 1.3, fxTrail: COLORS.red },
+  wisp: { sheet: 'orb_dark', n: 1, w: 12, h: 12, grav: 0, glow: [0.4, 0.7, 1], hitFx: COLORS.blue, dmg: 8, orb: true },                                  // (a haunted portrait's blue fire - see HomingWisp)
   ember: { sheet: 'fireball', n: 3, w: 8, h: 8, grav: 0.04, glow: [1, 0.4, 0.1], hitFx: COLORS.fire, dmg: 7, scale: 0.6, orb: true },          // (orb: burning light + flame particles in the effects layer, not the fireball sprite)
 };
 
@@ -45,6 +46,22 @@ export class Projectile {
     const f = this.k.spinFrames ? Math.floor(this.t / 4) : this.k.n > 1 ? Math.floor(this.t / 4) : 0;
     drawSheet(ctx, this.k.sheet, f, this.x - cx, this.y - cy, { dir: this.k.flipDir ? this.dir : 1, scale: this.scale, rot: this.k.aim || this.k.spin ? this.rot : 0, ay: 0.5 });
   }
+}
+
+// a wisp of blue fire that follows the hero for a while (a haunted portrait lets them go).  It turns at a limited rate, so it can be dodged; the sword can cut it down.
+export class HomingWisp extends Projectile {
+  constructor(x, y, vx, vy, dmg = 8) { super(x, y, vx, vy, 'wisp', { dmg, life: 330 }); this.destructible = true; this.w = 12; this.h = 12; this.spd = Math.hypot(vx, vy) || 1; this.ph = rand(TAU); }
+  update(g) {
+    this.t++; if (--this.life <= 0) { this.explode(g); return; }
+    const p = g.player, want = Math.atan2(p.y - 20 - this.y, p.x - this.x), cur = Math.atan2(this.vy, this.vx);
+    let da = want - cur; da = Math.atan2(Math.sin(da), Math.cos(da)); const a = cur + clamp(da, -0.06, 0.06) + Math.sin(this.t * 0.12 + this.ph) * 0.035;       // a little waver, like a flame
+    this.spd = Math.min(1.5, this.spd + 0.012); this.vx = Math.cos(a) * this.spd; this.vy = Math.sin(a) * this.spd; this.x += this.vx; this.y += this.vy; this.dir = this.vx >= 0 ? 1 : -1;
+    if (g.room.solid(Math.floor(this.x / T), Math.floor(this.y / T))) { this.explode(g); return; }
+    g.fx.fire(this.x, this.y + 4, { scale: 0.5, color: 'blue', n: 1 }); g.fx.glow(this.x, this.y, 10, [0.4, 0.7, 1], 0.5); g.fx.light(this.x, this.y, 40, 0.55, [0.4, 0.7, 1]);
+    if (this.t % 3 === 0) g.fx.emit({ x: this.x - this.vx * 2 + rand(-2, 2), y: this.y + rand(-2, 2), vx: rand(-0.1, 0.1), vy: -rand(0.1, 0.4), life: rand(16, 28), s0: 6, s1: 1, c0: [0.5, 0.8, 1], c1: [0.2, 0.4, 1], a0: 0.8, a1: 0, kind: 6 });
+  }
+  explode(g) { this.dead = true; g.fx.burst(this.x, this.y, 8, COLORS.blue, { speed: 1.6, s0: 9, s1: 2 }); g.fx.sparks(this.x, this.y, 6, [[1, 1, 1], [0.5, 0.8, 1]], 2.2); g.fx.ring(this.x, this.y, 12, [0.5, 0.8, 1], 12, 0.25); A.sfx('hit'); }
+  draw() {}                                                                                                                                       // (all of it is in the effects layer)
 }
 
 export class Fireball extends Projectile {

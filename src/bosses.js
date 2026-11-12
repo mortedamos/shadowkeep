@@ -13,6 +13,8 @@ import { COLORS } from './fx.js';
 import { Projectile, Shockwave, FirePatch } from './projectiles.js';
 import { dropItem, rollEnchantDrop } from './props.js';
 import { drawText } from './font.js';
+import { PW as HPW, PH as HPH } from './physics.js';
+import { heroFrame, JUMP_CY, JATK_CY, TwinDagger, TwinAxe, TwinTorch, TwinFlask, TwinArrow } from './mirror.js';
 import { clamp, rand, approach, overlap } from './util.js';
 
 // name shown over the boss + colour + pictogram for each attack
@@ -37,6 +39,14 @@ const ATTACKS = {
   lunge: { label: 'BLOOD LUNGE', rgb: [255, 70, 90], glyph: 'chevrons' },
   bolts: { label: 'BLOOD BOLTS', rgb: [255, 60, 90], icon: 'orb' },
   mist: { label: 'MIST STEP', rgb: [190, 110, 255], glyph: 'diag' },
+  slash: { label: 'SWORD', rgb: [214, 214, 255], glyph: 'chevrons' },
+  dash: { label: 'SHADOW DASH', rgb: [170, 110, 255], glyph: 'chevrons' },
+  dagger: { label: 'DAGGERS', rgb: [200, 205, 240], icon: 'dagger' },
+  axe: { label: 'AXE', rgb: [255, 190, 120], icon: 'axe' },
+  torch: { label: 'TORCH', rgb: [255, 140, 60], icon: 'torchi' },
+  marrow: { label: 'MAGIC ARROW', rgb: [200, 190, 255], icon: 'marrow' },
+  holy: { label: 'HOLY WATER', rgb: [190, 225, 255], icon: 'holy' },
+  bandage: { label: 'BANDAGE', rgb: [180, 255, 190], icon: 'bandage' },
 };
 const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
@@ -654,4 +664,168 @@ export class BossVampire extends Boss {
   }
 }
 
-export const BOSS_TYPES = { boss_vampire: BossVampire, boss_beast: BossBeast, boss_nightmare: BossNightmare, boss_angel: BossAngel, boss_colossus: BossColossus, boss_shadow: BossShadow, boss_cinder: BossCinder, boss_bramble: BossBramble };
+// ============================================================================================== THE REFLECTION (the Mirror Room's optional boss)
+// The mirror in the end wall shows you, mirrored.  Walk up to it and the glass cracks, the reflection turns silver and violet and steps out to fight you: with a SWORD (a two-blow combo, three in the
+// second half), a SHADOW DASH that cuts as it ends, a LEAP (second half), and the very same things you can carry - DAGGERS (flat: duck under them), an AXE and a TORCH and HOLY WATER (lobbed at where you
+// stand: the landing spot is marked), a homing MAGIC ARROW (cut it down, or outrun it) - and it will bind its wounds with a BANDAGE if it can find a quiet moment (that is your opening).
+// While it is still a reflection it IS the boss: its position tracks yours mirrored across the glass (x = 2 * plane - yours) and it draws itself clipped to the glass (see mirror.js).
+const TOSS = new Set(['dagger', 'axe', 'torch', 'marrow', 'holy']), LOB = { axe: [46, 3.4], torch: [42, 3], holy: [39, 3] };          // LOB: [frames in the air, fastest sideways speed]
+const P1 = ['slash', 'slash', 'dash', 'dagger', 'axe', 'torch', 'marrow', 'holy'], P2 = ['slash', 'slash', 'dash', 'dash', 'dagger', 'axe', 'torch', 'marrow', 'holy', 'leap'];
+export class BossMirror extends Boss {
+  constructor(g, x, y, o) {
+    super(g, x, y, HPW, HPH, o); this.hp = this.maxHp = 230; this.dmg = 12; this.xp = 150; this.bossName = 'THE REFLECTION'; this.sub = 'WHAT THE GLASS KEPT'; this.dir = -1; this.deathFx = [[0.85, 0.85, 1], [0.3, 0.2, 0.6]]; this.ice = { w: 30, h: 56 };
+    this.mv = g.mirrorView; this.plane = this.mv ? this.mv.m.plane : x + 24; this.triggerDist = 70; this.name = 'twin';
+    this.reflecting = true; this.evil = 0; this.hold = null; this.live = false; this.hitDone = false; this.blow = 0; this.bt = 0; this.tx = x; this.trail = []; this.heals = 0; this.thrown = 0; this.lastToss = -99; this.hi = false;
+  }
+  get spd() { return this.phase === 2 ? 1.18 : 1; }
+  tele(k) { return Math.round({ slash: 46, dash: 50, dagger: 46, axe: 48, torch: 48, marrow: 46, holy: 48, leap: 54, bandage: 34 }[k] / this.spd); }
+  dangerous() { return this.live; }
+  physics() { if (this.reflecting) return; super.physics(); }                 // (inside the glass it has no body: nothing pushes it about)
+  update() {
+    if (!this.active) {
+      const g = this.g, p = g.player; this.t++;
+      this.x = 2 * this.plane - p.x; this.y = p.y; this.dir = -p.dir; this.vx = this.vy = 0;                  // the reflection: it IS the boss, standing in the glass and doing what you do
+      if (!g.save.flags['boss_' + g.room.id] && Math.abs(p.x - this.plane) < this.triggerDist && p.onGround && !p.dead && g.state === 'play' && !g.cutscene) this.start();
+      return;
+    }
+    super.update();
+  }
+  intro(g) {
+    const st = this.st, p = g.player, mv = this.mv, m = mv ? mv.m : null;
+    if (st < 26) { this.x = 2 * this.plane - p.x; this.y = p.y; this.dir = -p.dir; } else if (this.reflecting) { this.dir = -1; if (st === 26) this.hold = p.frameInfo(); }          // (it stops copying you, and looks at you)
+    if (st === 1) { if (mv) mv.startCrack(this.y - 22); A.sfx('crack'); g.shake(2, 50); g.fx.flash([0.7, 0.8, 1], 0.2); }
+    if (st < 56) {
+      const k = st / 56; if (mv) mv.cr = k; this.evil = k * k; if (mv) g.fx.light(this.x, this.y - 20, 70, 0.6 * k, [1, 0.2, 0.3]);
+      if (st === 18 || st === 34 || st === 46) { A.sfx('crack'); g.shake(2 + st / 18, 12); if (mv) g.fx.sparks(mv.m.plane + 4, this.y - 22, 6, [[1, 1, 1], [0.7, 0.85, 1]], 2.4, { dir: Math.PI, spread: 1.6, gy: 0.15 }); }
+      if (this.evil > 0.2) g.fx.glow(this.x + this.dir * 4, this.y - 28, 7, [1, 0.12, 0.2], 0.8 * this.evil);
+    }
+    if (st === 56 && this.reflecting) {
+      this.reflecting = false; if (mv) mv.shatter(g); this.x = (m ? m.wall : this.plane - 10) - 12; this.y = m ? m.y1 : this.y; this.vx = -1; this.vy = -2.4; this.onGround = false; this.dir = -1; this.evil = 1; this.hold = null;
+      g.fx.ring(this.x, this.cy, 60, [0.7, 0.45, 1], 26, 0.12); g.fx.burst(this.x, this.cy, 18, [[0.7, 0.5, 1], [0.15, 0.05, 0.3]], { speed: 2.6, s0: 14 }); A.sfx('roar');
+    }
+    if (st > 56) { this.faceP(); this.vx = approach(this.vx, 0, 0.1); g.fx.glow(this.x + this.dir * 4, this.y - 28, 7, [1, 0.12, 0.2], 0.8); }
+  }
+  swordBox(reach) { return { x: this.dir > 0 ? this.x : this.x - reach, y: this.y - 52, w: reach, h: 48 }; }
+  strike(g, reach, extra = 0) { const p = g.player; if (!this.hitDone && overlap(this.swordBox(reach), p.hurtbox)) { this.hitDone = true; p.hurt(this.dmg + extra, this.x); } }
+  hand() { return [this.x + this.dir * 12, this.y - 24]; }
+  lobVx(k) { const L = LOB[k], hx = this.hand()[0]; return clamp((this.g.player.x - hx) / L[0], -L[1], L[1]); }          // an item lobbed at where you stand (it falls short if you are far: the mark shows where it will really land)
+  lobLand(k) { return this.hand()[0] + this.lobVx(k) * LOB[k][0]; }
+  // let go of an item (the aim is made when it leaves the hand, as yours is)
+  toss(g, k) {
+    const p = g.player, [hx, hy] = this.hand(), d = this.dir; A.sfx(k === 'dagger' ? 'slash' : 'cast'); this.lastToss = this.t;
+    if (k === 'dagger') { const n = this.phase === 2 ? 3 : 1; for (let i = 0; i < n; i++) g.addProjectile(new TwinDagger(hx, hy, d, (i - (n - 1) / 2) * 0.32)); }
+    else if (k === 'axe') g.addProjectile(new TwinAxe(hx, hy - 2, this.lobVx(k)));
+    else if (k === 'torch') g.addProjectile(new TwinTorch(hx, hy - 2, this.lobVx(k)));
+    else if (k === 'holy') g.addProjectile(new TwinFlask(hx, hy - 2, this.lobVx(k)));
+    else if (k === 'marrow') g.addProjectile(new TwinArrow(hx, hy, d));
+    if (LOB[k]) { this.landX = this.lobLand(k); this.landT = LOB[k][0] - 6; }                    // (the spot stays marked while it is in the air)
+    g.fx.ring(hx, hy, 14, [0.75, 0.6, 1], 12, 0.2);
+  }
+  ai(g) {
+    const p = g.player, spd = this.spd, d = Math.abs(this.dx()), [hx, hy] = this.hand(); this.live = false;
+    for (const q of this.trail) q.life--; this.trail = this.trail.filter(q => q.life > 0);
+    if (this.landT > 0) { this.landT--; if (!this.warns) this.warns = [{ type: 'ring', x: this.landX, y: this.y, r: 26 }]; }
+    g.fx.light(this.x, this.y - 20, 56, 0.45, [0.65, 0.5, 1]); g.fx.glow(this.x + this.dir * 4, this.y - 28, 7, [1, 0.12, 0.2], 0.75);
+    if (this.t % 5 === 0) g.fx.emit({ x: this.x + rand(-6, 6), y: this.y - rand(4, 34), vx: rand(-0.15, 0.15), vy: -rand(0.2, 0.6), life: 28, s0: 5, s1: 1, c0: [0.65, 0.4, 1], c1: [0.2, 0.05, 0.4], a0: 0.6, a1: 0, kind: 6 });      // a faint violet haze
+    switch (this.state) {
+      case 'idle': {
+        this.faceP(); this.vx = approach(this.vx, d > 110 ? this.dir * 1.5 : d < 42 ? -this.dir * 1.2 : 0, 0.14);
+        if (this.hp < this.maxHp * 0.6 && this.heals < (this.phase === 2 ? 2 : 1) && d > 70 && this.st > 20 && Math.random() < 0.025) { this.state = 'bandage'; this.st = 0; this.plan = null; break; }
+        this.planNext(this.phase === 2 ? P2 : P1, Math.round(70 / spd)); break; }
+      case 'slash': {                                                                                  // a combo: a long wind-up and a cut, then quick follow-ups
+        const n = this.phase === 2 ? 3 : 2, T0 = this.tele('slash'); if (this.st === 1) { this.blow = 0; this.bt = 0; this.hitDone = false; this.faceP(); }
+        const wind = this.blow === 0 ? T0 : Math.round(24 / spd), reach = this.blow === n - 1 && n === 3 ? 54 : 46, LIVE = 7; this.bt++;
+        if (this.bt <= wind) {
+          if (this.bt === 1 && this.blow > 0) { this.faceP(); this.hitDone = false; }
+          this.vx = d > 30 && this.bt < wind * 0.7 ? this.dir * 1.3 : 0; this.tell('slash', this.bt / wind, [{ type: 'rect', x: this.dir > 0 ? this.x : this.x - reach - 14, y: this.y - 52, w: reach + 14, h: 48 }]);
+        } else if (this.bt <= wind + LIVE) {
+          if (this.bt === wind + 1) { A.sfx('slash'); g.fx.ring(this.x + this.dir * 30, this.y - 30, 30, [0.75, 0.65, 1], 12, 0.2); g.fx.gust && g.fx.gust(this.x + this.dir * 30, this.y - 30, this.dir * 3, 0, 36, 1, 20); }
+          this.vx = this.dir * 1.8; this.live = true; this.strike(g, reach + 8, this.blow === n - 1 ? 3 : 0);
+        } else {
+          this.vx = approach(this.vx, 0, 0.4);
+          if (this.bt > wind + LIVE + (this.blow < n - 1 ? 8 : 26)) { if (this.blow < n - 1) { this.blow++; this.bt = 0; } else { this.state = 'idle'; this.st = -10; } }
+        }
+        break; }
+      case 'dash': {                                                                                   // through where you stand, a cut at the end of it
+        const T0 = this.tele('dash'), run = 24, sp = this.phase === 2 ? 6.4 : 5.4;
+        if (this.st === 1) { this.faceP(); this.hitDone = false; this.trail.length = 0; }
+        if (this.st < T0) { this.vx = 0; this.tell('dash', this.st / T0, [{ type: 'lane', x0: this.x, x1: this.x + this.dir * sp * run, y: this.y }]); }
+        else if (this.st < T0 + run) {
+          if (this.st === T0) { A.sfx('dash'); g.fx.ring(this.x, this.cy, 36, [0.7, 0.45, 1], 14, 0.2); }
+          this.vx = this.dir * sp; this.live = true; if (this.st >= T0 + run - 9) { if (this.st === T0 + run - 9) A.sfx('slash'); this.strike(g, 42, 2); }
+          if (this.st % 2 === 0) this.trail.push({ x: this.x, y: this.y, fi: this.pose(), dir: this.dir, life: 14 });
+        } else { this.vx = approach(this.vx, 0, 0.6); if (this.st > T0 + run + 22) { this.state = 'idle'; this.st = -10; } }
+        break; }
+      case 'dagger': case 'axe': case 'torch': case 'marrow': case 'holy': {
+        const k = this.state, T0 = this.tele(k), V = k === 'dagger' ? 2 : this.phase === 2 ? 2 : 1, gap = k === 'dagger' ? 16 : 26; this.vx = approach(this.vx, 0, 0.3);
+        if (this.st === 1) { this.faceP(); this.thrown = 0; this.tx = clamp(p.x, 30, g.room.pw - 30); }
+        if (this.st < T0) this.tell(k, this.st / T0, k === 'dagger' ? [{ type: 'lane', x0: hx, x1: hx + this.dir * 220, y: this.y - 6 }] : k === 'marrow' ? [{ type: 'line', x0: hx, y0: hy, x1: p.x, y1: p.y - 20 }] : [{ type: 'ring', x: this.lobLand(k), y: this.y, r: 28 }]);
+        else if (this.thrown < V && this.st >= T0 + gap * this.thrown) { if (this.thrown > 0) this.faceP(); this.toss(g, k); this.thrown++; }
+        else if (this.thrown >= V && this.st > T0 + gap * (V - 1) + 26) { this.state = 'idle'; this.st = -12; }
+        break; }
+      case 'bandage': {                                                                                // it kneels and binds its wounds: a quiet moment - strike now
+        const T0 = this.tele('bandage'); this.vx = approach(this.vx, 0, 0.3);
+        if (this.st < T0) this.tell('bandage', this.st / T0);
+        else if (this.st < T0 + 100) {
+          if (this.st === T0) { A.sfx('heal'); this.heals++; g.popup(this.x, this.y - 46, 'BANDAGE', '#f2efe6'); g.fx.ring(this.x, this.y - 18, 20, [0.95, 0.95, 0.9], 18, 0.2); }
+          this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.15 / 100);
+          if (this.t % 5 === 0) g.fx.emit({ x: this.x + rand(-7, 7), y: this.y - rand(2, 26), vx: rand(-0.1, 0.1), vy: -rand(0.3, 0.8), life: 30, s0: 5, s1: 1, c0: [0.75, 1, 0.8], c1: [0.3, 0.9, 0.5], a0: 0.9, a1: 0, kind: 6 });
+        } else { this.state = 'idle'; this.st = -16; }
+        break; }
+      case 'leap': {                                                                                   // (second half) it jumps onto where you stand - even up on a platform - and cuts on the way down
+        const T0 = this.tele('leap');
+        if (this.st === 1) { this.tx = clamp(p.x, 40, g.room.pw - 40); this.hitDone = false; this.hi = p.y < this.y - 20; }
+        if (this.st < T0) { this.vx = 0; this.dir = this.tx >= this.x ? 1 : -1; this.tell('leap', this.st / T0, [{ type: 'ring', x: this.tx, y: this.hi ? p.y : this.y, r: 34 }]); }
+        else if (this.st === T0) { this.vy = -5.1; this.vx = clamp((this.tx - this.x) / (this.hi ? 36 : 48), -3.6, 3.6); this.onGround = false; A.sfx('jump'); }
+        else if (this.st > T0 + 8 && this.onGround) { this.vx = 0; g.shake(3, 10); A.sfx('boom'); g.fx.ring(this.x, this.y - 4, 50, [0.7, 0.45, 1], 18, 0.15); g.fx.burst(this.x, this.y - 4, 8, [[0.6, 0.45, 0.9], [0.15, 0.1, 0.3]], { speed: 1.8, s0: 10, up: 0.5 }); this.state = 'idle'; this.st = -22; }
+        else if (this.vy > 0.4) { this.live = true; this.strike(g, 46, 2); }
+        break; }
+    }
+  }
+  // which picture of the hero's sheets it is wearing (the same sheets as his, recoloured)
+  pose() {
+    const s = this.state, st = this.st, t = this.t;
+    if (this.dying) return { sheet: 'hero_hurt', f: this.dying < 20 ? 0 : this.dying < 44 ? 1 : 2 };
+    if (this.state === 'intro') return { sheet: 'hero_idle', f: Math.floor(t / 11) % 4 };
+    if (s === 'slash') { const wind = this.blow === 0 ? this.tele('slash') : Math.round(24 / this.spd), bt = this.bt; return { sheet: 'hero_attack', f: bt <= wind ? (bt < wind * 0.6 ? 0 : 1) : bt <= wind + 4 ? 2 : bt <= wind + 7 ? 3 : bt <= wind + 11 ? 4 : 5 }; }
+    if (s === 'dash') { const T0 = this.tele('dash'); return st < T0 ? { sheet: 'hero_crouch', f: 1 } : st < T0 + 15 ? { sheet: 'hero_run', f: 3 } : st < T0 + 24 ? { sheet: 'hero_attack', f: 2 } : { sheet: 'hero_attack', f: 3 }; }
+    if (TOSS.has(s)) { const T0 = this.tele(s); return { sheet: 'hero_attack', f: t - this.lastToss < 9 ? 2 : st < T0 * 0.55 ? 0 : 1 }; }
+    if (s === 'bandage') return { sheet: 'hero_crouch', f: this.st < this.tele('bandage') ? 1 : 2 };
+    if (!this.onGround) {
+      if (s === 'leap' && this.vy > 0.4) { const f = this.vy < 2 ? 3 : 4; return { sheet: 'hero_jump_attack', f, cy: JATK_CY[f], ch: 80 }; }
+      const f = this.vy < -3 ? 1 : this.vy < -0.6 ? 2 : this.vy < 1.2 ? 3 : 4; return { sheet: 'hero_jump', f, cy: JUMP_CY[f], ch: 77 };
+    }
+    if (s === 'leap') return { sheet: 'hero_crouch', f: 1 };
+    if (Math.abs(this.vx) > 0.3) return { sheet: 'hero_run', f: Math.floor(t / 4) % 12 };
+    return { sheet: 'hero_idle', f: Math.floor(t / 11) % 4 };
+  }
+  get wall() { return this.mv ? this.mv.m.wall : 1e9; }                       // (the mirror's wall: nothing it drops may land inside it)
+  dyingSeq() {
+    const g = this.g; if (this.dying % 4 === 0) g.fx.sparks(this.x + rand(-9, 9), this.y - rand(6, 34), 6, [[1, 1, 1], [0.7, 0.8, 1], [0.6, 0.4, 1]], 3.4, { gy: 0.15 });
+    if (this.x > this.wall - 60) this.x = Math.max(this.wall - 60, this.x - 1.5);               // (it sinks back from the wall as it falls, so its reward lies in the room)
+    super.dyingSeq();
+  }
+  onPhase2() {
+    const g = this.g; g.fx.flash([0.7, 0.5, 1], 0.5); g.shake(5, 24); A.sfx('roar'); g.fx.ring(this.x, this.cy, 90, [0.7, 0.5, 1], 34, 0.14);
+    const X = x => Math.min(x, this.wall - 14); dropItem(g, 'heart', X(this.x - 36), this.cy - 20); dropItem(g, 'heart', X(this.x + 36), this.cy - 20); dropItem(g, 'mana', X(this.x), this.cy - 30);          // (a breather, as every boss gives)
+    this.state = 'idle'; this.st = -40; this.plan = null; g.banner('IT LEARNS', 'FROM YOU', 150, { y: 60, color: '#c9c0ff' });
+  }
+  // inside the glass: you, mirrored, turning silver and violet as the cracks spread (the glass itself is MirrorView's)
+  drawReflection(ctx, cx, cy) {
+    const mv = this.mv, p = this.g.player; if (!mv) return;
+    const fi = this.hold || p.frameInfo(), x = this.x - cx, y = this.y - cy, k = this.evil;
+    mv.clip(ctx, cx, cy);
+    if (k < 1) { const o = { alpha: 0.94 * (1 - k) }; heroFrame(ctx, fi.sheet, fi, x, y, this.dir, p.h, o); heroFrame(ctx, fi.sheet + '_hair', fi, x, y, this.dir, p.h, o); }
+    if (k > 0) heroFrame(ctx, fi.sheet + '_evil', fi, x, y, this.dir, p.h, { alpha: 0.94 * k });
+    ctx.restore(); mv.over(ctx, cx, cy);
+  }
+  draw(ctx, cx, cy) {
+    if (this.reflecting) { this.drawReflection(ctx, cx, cy); return; }
+    const fi = this.pose(), x = this.x - cx, y = this.y - cy, a = this.dying > 70 ? Math.max(0, 1 - (this.dying - 70) / 80) : 1;
+    for (const q of this.trail) heroFrame(ctx, q.fi.sheet + '_evil', q.fi, q.x - cx, q.y - cy, q.dir, this.h, { flash: '#7c5cff', alpha: q.life / 14 * 0.45 });
+    if (this.onGround && !this.dying) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(Math.round(x - 7), Math.round(y - 1), 14, 2); }
+    heroFrame(ctx, fi.sheet + '_evil', fi, x, y, this.dir, this.h, { flash: this.flashT > 0, alpha: a < 1 ? a : undefined });
+  }
+}
+
+export const BOSS_TYPES = { boss_vampire: BossVampire, boss_beast: BossBeast, boss_nightmare: BossNightmare, boss_angel: BossAngel, boss_colossus: BossColossus, boss_shadow: BossShadow, boss_cinder: BossCinder, boss_bramble: BossBramble, boss_mirror: BossMirror };

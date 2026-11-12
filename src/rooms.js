@@ -34,7 +34,7 @@ export class B {
     this.def = {
       id, name, zone, w, h, theme: o.theme || ZONES[zone].theme, bg: o.bg || null, tiles: new Uint8Array(w * h), spawns: [], decos: [], exits: [], doors: [], seals: [],
       horizon: (o.horizon !== undefined ? o.horizon : h - 2) * 16, fog: o.fog || 0, weather: o.weather || null, storm: !!o.storm, ambient: o.ambient === undefined ? 0.3 : o.ambient,
-      tint: o.tint || [0.015, 0.01, 0.05], music: o.music || ZONES[zone].music, boss: o.boss || null, save: !!o.save, indoor: !!o.indoor, map: o.map || { x: 0, y: 0 }, vig: o.vig === undefined ? 0.5 : o.vig,
+      tint: o.tint || [0.015, 0.01, 0.05], music: o.music || ZONES[zone].music, boss: o.boss || null, save: !!o.save, indoor: !!o.indoor, wisps: o.wisps || 0, map: o.map || { x: 0, y: 0 }, vig: o.vig === undefined ? 0.5 : o.vig,
     };
     this.w = w; this.h = h;
   }
@@ -46,7 +46,6 @@ export class B {
   ledge(x, len, gy) { return this.rect(x, gy, len, 1); }                                // 1-thick solid ledge
   plat(x, len, gy) { return this.rect(x, gy, len, 1, TILE.PLAT); }                      // one-way platform
   pit(x0, x1) { return this.rect(x0, this.h - 1, x1 - x0, 1, TILE.SPIKE); }            // bottomless pit with spikes at the bottom row
-  spikes(x0, x1, gy) { return this.rect(x0, gy - 1, x1 - x0, 1, TILE.SPIKE); }          // spikes sitting on ground surface gy
   crack(x, y, w, h) { return this.rect(x, y, w, h, TILE.CRACK); }                      // breakable with the sword
   barricade(x, y, w, h) { return this.rect(x, y, w, h, TILE.BARRICADE); }              // burns with Ember
   crystal(x, y, w, h) { return this.rect(x, y, w, h, TILE.CRYSTAL); }                  // shatters with Thunder
@@ -99,10 +98,34 @@ const add = b => { ROOMS[b.def.id] = b.def; return b; };
 // and set again the way a castle's steward would: in pairs flanking the doors and the waystone, one beside each tablet, at the foot of walls and steps, and - with what is left -
 // spaced evenly along the floor.  Never on top of statues, barrels, loot or doors.  The result is the same every time (a hash of the room's id, not the generator's random numbers).
 // (A candelabra placed with { keep: true } is deliberate - the pair beside an altar - and stays where it is.)
+// ---------------------------------------------------------------------------------------------------------------------------------------------------
+// Tidying a finished room: (1) a boss room has no treasure statues (the fight is the reward), and (2) nothing that stands on the floor may hide a door: a barrel, statue, tablet or chest
+// whose body overlaps a door's is slid along the same floor to the nearest free spot (never past a gap or a wall, so it stays reachable), or removed if there is no room for it.
+// Scenery drawn in front of a door (candelabras, braziers, standing images) is kept off doors by arrangeCandelabras and the generators; the same measure is checked by tools/test-levels.mjs.
+const PROP_BOX = { statue: [10, 40], barrel: [11, 24], tablet: [10, 30], chest: [12, 20] };       // [half width, height] in px of what stands on the floor
+const DOOR_HW = 17, DOOR_H = 43;                                                                   // a door sprite is about 33px wide and 43px tall
+export const hidesDoor = (s, d) => { const b = PROP_BOX[s.type]; return !!b && Math.abs((s.x - d.x) * 16) < b[0] + DOOR_HW - 2 && s.y * 16 - b[1] < d.gy * 16 - 4 && s.y * 16 > d.gy * 16 - DOOR_H + 4; };
+export function tidyRoom(def) {
+  if (def.tidied) return; def.tidied = true;
+  if (def.boss || def.spawns.some(s => s.type.startsWith('boss_'))) def.spawns = def.spawns.filter(s => s.type !== 'statue');
+  const W = def.w, H = def.h, T = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? 1 : def.tiles[y * W + x]), floor = (x, y) => { const v = T(x, y); return (v === TILE.SOLID || v === TILE.PLAT) && T(x, y - 1) === 0 && T(x, y - 2) === 0 && T(x, y - 3) === 0; };
+  const spare = (x, y, type, self) => { const b = PROP_BOX[type]; return !(def.doors || []).some(d => hidesDoor({ type, x, y }, d) || (Math.abs(d.gy - y) <= 3 && Math.abs((x - d.x) * 16) < b[0] + DOOR_HW + 6)) && !def.spawns.some(o => o !== self && Math.abs(o.y - y) <= 3 && Math.abs(o.x - x) < 2 && (PROP_BOX[o.type] || o.type === 'altar' || o.type === 'waystone' || o.type === 'itemspawn' || o.type === 'upgrade')); };
+  for (const s of def.spawns.slice()) {
+    if (!PROP_BOX[s.type] || !(def.doors || []).some(d => hidesDoor(s, d))) continue;
+    let spot = null;
+    for (const dir of [1, -1]) {                                                                   // walk outward along the same floor, both ways; take the nearer free spot
+      for (let k = 1; k <= 12; k++) { const x = s.x + dir * k; if (x < 2 || x > W - 3 || !floor(x, s.y)) break; if (spare(x, s.y, s.type, s)) { if (!spot || k < spot.k) spot = { x, k }; break; } }
+    }
+    if (spot) s.x = spot.x; else if (s.type === 'statue' || s.type === 'barrel') def.spawns.splice(def.spawns.indexOf(s), 1);
+  }
+}
+
 const STATIC_SPAWNS = new Set(['statue', 'barrel', 'tablet', 'altar', 'chest', 'waystone', 'itemspawn', 'upgrade']);
 const BLOCK_DECOS = new Set(['brazier', 'column', 'pool', 'door', 'gate']);
+const OUTDOOR_THEMES = new Set(['swamp', 'graveyard']);                                       // open country: no candelabras (a mire has no use for them), whatever the builder asked for
 export function arrangeCandelabras(def) {
   if (def.cdlDone) return; def.cdlDone = true;                                                          // (hand-built rooms are shared between worlds: do it once)
+  if (OUTDOOR_THEMES.has(def.theme) && !def.indoor && !def.save) { def.decos = def.decos.filter(d => d.t !== 'cdl'); return; }
   const loose = def.decos.filter(d => d.t === 'cdl' && !d.keep); if (!loose.length && !def.spawns.some(s => s.type === 'waystone')) return;
   def.decos = def.decos.filter(d => !(d.t === 'cdl' && !d.keep));
   if (def.theme === 'village' && def.h <= 20) return;                                              // a burning street has lamps and braziers, not candelabras (the bell tower inside is another matter)
@@ -217,13 +240,13 @@ saveRoom('s1', "Gravekeeper's Crypt", 1, 'g2', 37, 12, 1, 2);
   b.d('cdl', 9, 12).d('cdl', 33, 12).d('cdl', 55, 12);
   b.door(57, 12, 's2', 3, 12, 'wood');
   b.candle(14, 12, 'heart').e('statue', 26, 12, { drop: 'mana' }).candle(38, 8, 'potion').candle(44, 12, 'coin').e('statue', 18, 12, { drop: 'coin' });
-  b.many('bat', [14, 30, 42], 2).many('armor', [26, 40], 12).e('ghost', 50, 7);
-  b.tablet(4, 12, 'THE GREAT HALL ONCE RANG WITH FEASTING. NOW THE ARMOR ITSELF STALKS THE FLOOR.', 'tab3');
+  b.many('bat', [14, 30, 42], 2).many('zealot', [26, 40], 12).e('ghost', 50, 7);
+  b.tablet(4, 12, 'THE GREAT HALL ONCE RANG WITH FEASTING. NOW THE FACES ON THE WALLS WATCH - AND SOME OF THEM WATCH BACK.', 'tab3');
   b.exit('L', 9, 11, 'g3', 36, 12).exit('R', 9, 11, 'h2', 1, 12);
   add(b);
 }
 {
-  const b = new B('h2', 'Hall of Armor', 2, 90, 14, { weather: 'dust', ambient: 0.36, horizon: 12, map: { x: 4, y: 3 } });
+  const b = new B('h2', 'Portrait Gallery', 2, 90, 14, { weather: 'dust', ambient: 0.36, horizon: 12, map: { x: 4, y: 3 } });
   b.floor(0, 30, 12).pit(30, 34).floor(34, 90, 12).ceil(0, 90, 2).plat(31, 2, 9);
   b.block(42, 10, 4, 2).block(48, 8, 3, 4).plat(54, 3, 9).ledge(59, 6, 4).block(72, 10, 4, 2);
   b.e('upgrade', 62, 4, { kind: 'mpup', id: 'h2_mp' });
@@ -231,7 +254,7 @@ saveRoom('s1', "Gravekeeper's Crypt", 1, 'g2', 37, 12, 1, 2);
   b.e('upgrade', cx, 12, { kind: 'hpup', id: 'h2_hp' });
   b.torches([8, 20, 38, 52, 68, 86], 6).d('cdl', 14, 12).d('cdl', 40, 12).d('cdl', 70, 12).d('banner', 26, 2, { len: 5, color: '#7a1e2a' }).d('banner', 62, 2, { len: 5, color: '#7a1e2a' });
   b.candle(10, 12, 'heart').candle(24, 12, 'mana').e('statue', 36, 12, { drop: 'coin' }).candle(52, 12, 'potion').candle(66, 12, 'heart').e('statue', 88, 12, { drop: 'mana' });
-  b.many('armor', [18, 36, 56, 70], 12).e('ghost', 28, 6).e('ghost', 64, 7).e('fireskull', 44, 6).e('fireskull', 76, 5).many('bat', [20, 50, 66], 2).e('wyrm', 46, 4);
+  b.many('zealot', [18, 36, 56, 70], 12).e('ghost', 28, 6).e('ghost', 64, 7).e('fireskull', 44, 6).e('fireskull', 76, 5).many('bat', [20, 50, 66], 2).e('wyrm', 46, 4);
   b.exit('L', 9, 11, 'h1', 58, 12).exit('R', 9, 11, 'h4', 1, 12);
   add(b);
 }
@@ -250,7 +273,7 @@ saveRoom('s1', "Gravekeeper's Crypt", 1, 'g2', 37, 12, 1, 2);
   b.floor(0, 30, 34).ceil(0, 30, 2);
   b.plat(4, 6, 31).plat(12, 6, 28).plat(20, 6, 25).plat(12, 6, 22).plat(4, 6, 19).plat(12, 6, 16).plat(20, 6, 13).plat(12, 6, 10).ledge(18, 12, 8);
   b.torches([2, 27], 30).torches([2, 27], 22).torches([2, 27], 14).torches([2, 27], 6);
-  b.many('bat', [8, 24], 5).e('bat', 16, 12).e('armor', 24, 34).e('armor', 24, 8).e('ghost', 10, 18).e('fireskull', 22, 20).e('fireskull', 8, 14);
+  b.many('bat', [8, 24], 5).e('bat', 16, 12).e('zealot', 24, 34).e('zealot', 24, 8).e('ghost', 10, 18).e('fireskull', 22, 20).e('fireskull', 8, 14);
   b.candle(7, 31, 'heart').candle(23, 25, 'mana').e('statue', 7, 19, { drop: 'potion' }).candle(21, 8, 'heart');
   b.tablet(20, 8, 'THE BELFRY STAIRS CLIMB TO THE CHAPEL. THE BELLS HAVE NOT RUNG SINCE THE LORD DESCENDED.', 'tab4');
   b.exit('L', 31, 33, 'h4', 40, 12).exit('R', 5, 7, 'c1', 1, 12);
@@ -308,7 +331,7 @@ saveRoom('s3', 'Chapel Sanctuary', 3, 'c1', 33, 12, 7, 0);
   b.torches([8, 20, 34, 48, 62], 6).d('brazier', 14, 12).d('brazier', 40, 12).d('brazier', 66, 12);
   b.door(31, 12, 's5', 3, 12, 'wood');
   b.e('statue', 10, 12, { drop: 'heart' }).candle(42, 12, 'mana').candle(60, 12, 'potion');
-  b.many('knight', [16, 48], 12).many('sorcerer', [34, 60], 12).e('fireskull', 40, 6).e('hound', 54, 12).e('bat', 18, 4).e('bat', 66, 5).e('emberwyrm', 44, 4);
+  b.many('skeleton', [16, 48], 12).many('sorcerer', [34, 60], 12).e('fireskull', 40, 6).e('hound', 54, 12).e('bat', 18, 4).e('bat', 66, 5).e('emberwyrm', 44, 4);
   b.tablet(6, 12, 'THE LORD BUILT HIS SERVANTS OF BRASS AND SPRING SO THEY WOULD NEVER TIRE, NEVER PRAY, NEVER FLEE.', 'tab7');
   b.exit('L', 9, 11, 'c3', 40, 14).exit('R', 9, 11, 'u2', 1, 36);
   add(b);
@@ -318,7 +341,7 @@ saveRoom('s3', 'Chapel Sanctuary', 3, 'c1', 33, 12, 7, 0);
   b.floor(0, 30, 36).ceil(0, 30, 2);
   b.plat(4, 6, 33).plat(12, 6, 30).plat(20, 6, 27).plat(12, 6, 24).plat(4, 6, 21).plat(12, 6, 18).plat(20, 6, 15).plat(12, 6, 12).ledge(18, 12, 10);
   b.torches([2, 27], 32).torches([2, 27], 24).torches([2, 27], 16).d('brazier', 26, 36).d('brazier', 4, 36);
-  b.e('knight', 22, 10).e('sorcerer', 14, 12).e('knight', 22, 27).e('fireskull', 12, 28).e('fireskull', 20, 18).e('bat', 8, 20).e('bat', 24, 22).e('fireskull', 6, 14).e('emberwyrm', 16, 23);
+  b.e('skeleton', 22, 10).e('sorcerer', 14, 12).e('skeleton', 22, 27).e('fireskull', 12, 28).e('fireskull', 20, 18).e('bat', 8, 20).e('bat', 24, 22).e('fireskull', 6, 14).e('emberwyrm', 16, 23);
   b.e('statue', 7, 33, { drop: 'heart' }).candle(23, 27, 'mana').candle(7, 21, 'potion').e('statue', 22, 10, { drop: 'heart' });
   b.e('upgrade', 28, 10, { kind: 'atkup', id: 'u2_atk' });
   b.exit('L', 33, 35, 'u1', 74, 12).exit('R', 7, 9, 'u3', 1, 14);
@@ -346,7 +369,7 @@ saveRoom('s5', 'Furnace Sanctuary', 4, 'u1', 31, 12, 10, 0);
   b.torches([14, 24, 40, 54, 68], 6).d('banner', 16, 2, { len: 7, color: '#6a1020' }).d('banner', 32, 2, { len: 7, color: '#6a1020' }).d('banner', 50, 2, { len: 7, color: '#6a1020' }).d('banner', 66, 2, { len: 7, color: '#6a1020' });
   b.door(57, 12, 's4', 3, 12, 'wood');
   b.candle(22, 12, 'heart').candle(44, 12, 'mana').e('statue', 62, 10, { drop: 'potion' });
-  b.many('armor', [22, 34, 52], 12).many('wraith', [24, 40, 56], 7).many('bat', [12, 28, 48, 64], 2).e('ghost', 20, 6).e('ghost', 46, 5).e('sorcerer', 67, 12).e('fireskull', 30, 6).e('fireskull', 58, 5).e('wyrm', 38, 4);
+  b.many('zealot', [22, 34, 52], 12).many('wraith', [24, 40, 56], 7).many('bat', [12, 28, 48, 64], 2).e('ghost', 20, 6).e('ghost', 46, 5).e('sorcerer', 67, 12).e('fireskull', 30, 6).e('fireskull', 58, 5).e('wyrm', 38, 4);
   b.tablet(3, 12, 'HE WAITS ABOVE. THE ONE WHO TOOK THE SUN. TURN BACK, STRANGER - OR BRING THE DAWN.', 'tab8');
   b.exit('L', 9, 11, 'u3', 44, 14).exit('R', 9, 11, 't2', 1, 14);
   add(b);

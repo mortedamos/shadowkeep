@@ -1,7 +1,7 @@
 // The white cloak remembers what happened to it.  Three stains, each 0..1:
 //   soot  - singed by fire (fire breath, flame pillars, fireballs, burning things)
 //   mud   - dirtied by filth (zombies, swamp creatures, thrown bones, shockwaves that throw up dirt)
-//   blood - splashed by things that bite and cut (hounds, bats, wyrms, knights, spikes)
+//   blood - splashed by things that bite and cut (hounds, bats, wyrms, spikes)
 // A hit adds a little (never a lot - "slightly discolored"), every stain fades on its own over a minute or two, and WATER washes it off:
 // standing in the rain, or wading through a pool, strips it in seconds.
 export const STAINS = {
@@ -12,7 +12,7 @@ export const STAINS = {
 export const STAIN_KEYS = Object.keys(STAINS);
 export const RAIN_WASH = 1 / (14 * 60), POOL_WASH = 1 / (2.5 * 60);     // per frame
 
-const BY_NAME = { fireskull: 'soot', ghoul: 'soot', emberwyrm: 'soot', zombie: 'mud', swampthing: 'mud', swampspider: 'mud', skeleton: 'mud', hound: 'blood', bat: 'blood', wyrm: 'blood', frostwyrm: 'blood', gnuknight: 'blood', armor: 'blood', sorcerer: 'soot' };
+const BY_NAME = { fireskull: 'soot', ghoul: 'soot', emberwyrm: 'soot', zombie: 'mud', swampthing: 'mud', swampspider: 'mud', skeleton: 'mud', hound: 'blood', bat: 'blood', wyrm: 'blood', frostwyrm: 'blood', sorcerer: 'soot' };
 const BY_PROJ = { fire: 'soot', ember: 'soot', bone: 'mud', gear: 'soot' };
 const BOSS = { BossBeast: s => (s === 'breath' || s === 'pillars' ? 'soot' : 'blood'), BossNightmare: () => 'soot', BossColossus: () => 'soot', BossShadow: () => 'soot' };
 

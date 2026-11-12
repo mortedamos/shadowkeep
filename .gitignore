@@ -6,6 +6,8 @@
 # (Several of these packs forbid redistributing them as packs, and some came without a licence file.  The game only uses the pieces
 #  cut out of them into assets/env/ and assets/sprites/ - see CREDITS.md.)
 assets/sprites/source/
+# the full-size painted portraits stay on this machine: the game loads the pixelated atlas in assets/portraits/pixel/ (made by tools/pixelate-portraits.ps1)
+assets/portraits/*.jpg
 assets/source/
 assets/archive/
 

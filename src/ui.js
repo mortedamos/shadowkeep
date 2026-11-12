@@ -228,7 +228,7 @@ export class TitleScreen {
       ctx.restore(); ctx.fillStyle = 'rgba(10,10,28,0.9)'; ctx.fillRect(0, top - 6, W, 6);
       drawText(ctx, 'UP / DOWN SCROLL     ESC BACK', W / 2, H - 14, { align: 'center', color: DIM });
     }
-    else if (this.mode === 'options') { panel(ctx, 60, 88, W - 120, 102); drawText(ctx, 'OPTIONS', W / 2, 95, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 84, 114, 14, 'left'); }
+    else if (this.mode === 'options') { panel(ctx, 60, 76, W - 120, 126); drawText(ctx, 'OPTIONS', W / 2, 83, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 84, 102, 14, 'left'); }
     else if (this.mode === 'seed') {
       panel(ctx, 50, 84, W - 100, 112); drawText(ctx, 'CHOOSE A SEED', W / 2, 91, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' });
       const tw = textWidth(this.seed, 2); drawText(ctx, this.seed || 'RANDOM', W / 2 - (this.seed ? 3 : 0), 112, { align: 'center', scale: 2, color: this.seed ? PALE : DIM });
@@ -248,6 +248,7 @@ function optionsMenu(onBack) {
     { label: 'MUTE', val: () => (A.settings.muted ? 'ON' : 'OFF'), action: () => A.toggleMute() },
     { label: 'BOSS HINTS', val: () => (A.settings.hints ? 'ON' : 'OFF'), action: () => { A.settings.hints = !A.settings.hints; A.save(); } },
     { label: 'WHITE CLOAK', val: () => (A.settings.cloak ? 'ON' : 'OFF'), action: () => { A.settings.cloak = !A.settings.cloak; A.save(); } },
+    { label: '3D HAIR', val: () => (A.settings.hair ? 'ON' : 'OFF'), action: () => { A.settings.hair = !A.settings.hair; A.save(); } },
     { label: 'BACK', action: onBack },
   ]);
 }
@@ -270,7 +271,7 @@ export class PauseMenu {
       const g = this.g, S = g.save; panel(ctx, 100, 36, W - 200, 150); drawText(ctx, 'PAUSED', W / 2, 46, { align: 'center', scale: 2, color: GOLD });
       this.main.draw(ctx, W / 2, 74, 13);
       drawText(ctx, `LV ${S.level}   HP ${S.hp}/${S.maxHp}   MP ${S.mp}/${S.maxMp}`, W / 2, 146, { align: 'center', color: PALE }); drawText(ctx, `POWER ${g.player.atkPower}   GOLD ${S.gold}   TIME ${fmtTime(S.time)}`, W / 2, 158, { align: 'center', color: '#b5a47a' }); drawText(ctx, S.seed ? 'CASTLE SEED ' + S.seed : 'THE CLASSIC CASTLE', W / 2, 170, { align: 'center', color: DIM });
-    } else if (this.mode === 'options') { panel(ctx, 70, 62, W - 140, 104); drawText(ctx, 'OPTIONS', W / 2, 69, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 94, 90, 14, 'left'); }
+    } else if (this.mode === 'options') { panel(ctx, 70, 48, W - 140, 130); drawText(ctx, 'OPTIONS', W / 2, 55, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 94, 76, 14, 'left'); }
     else controlsScreen(ctx);
   }
 }
@@ -345,8 +346,9 @@ export class MapScreen {
       drawText(ctx, 'LEFT / RIGHT CHOOSE     ENTER TRAVEL     ESC CANCEL', W / 2, H - 12, { align: 'center', color: PALE });
       return;
     }
+    { const here = ROOMS[g.room.id]; if (here) drawText(ctx, 'YOU ARE IN:  ' + (ZONES[here.zone].name + ' - ' + here.name).toUpperCase(), W / 2, H - 47, { align: 'center', color: '#ffffff', scale: 1.1 }); }          // where the hero is
     const done = Object.keys(S.flags).filter(k => /^(g2|h2|c1|u1|u2|t1|c2|v2|v3|g4|w1|w2|w3|bu)_/.test(k) && !k.endsWith('_u')).length;
-    drawText(ctx, 'WHITE = YOU   PURPLE = SAVE   CYAN CROSS = WAYSTONE   SKULL = BOSS   ARROWS SCROLL', W / 2, H - 22, { align: 'center', color: DIM }); drawText(ctx, `ROOMS ${Object.keys(S.visited).length}/${Object.keys(ROOMS).length}   SECRETS ${done}   ${S.seed ? 'SEED ' + S.seed : 'CLASSIC CASTLE'}`, W / 2, H - 12, { align: 'center', color: PALE });
+    drawText(ctx, 'WHITE = YOU   PURPLE = SAVE   CYAN CROSS = WAYSTONE', W / 2, H - 35, { align: 'center', color: DIM }); drawText(ctx, 'SKULL = BOSS   ARROWS SCROLL', W / 2, H - 24, { align: 'center', color: DIM }); drawText(ctx, `ROOMS ${Object.keys(S.visited).length}/${Object.keys(ROOMS).length}   SECRETS ${done}   ${S.seed ? 'SEED ' + S.seed : 'CLASSIC CASTLE'}`, W / 2, H - 12, { align: 'center', color: PALE });
   }
 }
 
@@ -354,7 +356,7 @@ export class MapScreen {
 const INTRO = [
   'FOR A HUNDRED YEARS THE SUN HAS NOT RISEN OVER THE VALE.',
   'IT WAS TAKEN BY THE LORD OF THE SHADOWKEEP, WHO WALLED THE DAWN BEHIND HIS THRONE.',
-  'THOSE WHO ENTERED NEVER RETURNED. THEIR ARMOR STILL WALKS THE HALLS.',
+  'THOSE WHO ENTERED NEVER RETURNED. THEIR PORTRAITS STILL WATCH THE HALLS.',
   'YOU HAVE NO NAME. ONLY A CLOAK, A BLADE, AND A DEBT THE DARKNESS OWES.',
   'THE GATE IS OPEN. THE STORM IS WAITING.',
 ];

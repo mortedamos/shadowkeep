@@ -1,6 +1,6 @@
 // More inhabitants: the panicking villagers of the burning town (Gothicvania Town, ansimuz CC0), the swamp creatures (Gothicvania Swamp, ansimuz CC0)
-// and the cultists / gnu knight from "Bosses and Monsters Spritesheets" (Balmer, CC-BY 3.0, with Redshrike).
-import { Enemy, Armor, Wizard, Zombie, Hound } from './enemies.js';
+// and the cultists from "Bosses and Monsters Spritesheets" (Balmer, CC-BY 3.0, with Redshrike).
+import { Enemy, Wizard, Zombie, Hound } from './enemies.js';
 import { drawSheet } from './assets.js';
 import { Audio_ as A } from './audio.js';
 import { dropItem } from './props.js';
@@ -8,6 +8,7 @@ import { ITEMS, addItem, itemCount } from './itemdata.js';
 import { COLORS } from './fx.js';
 import { groundAhead, wallAhead } from './entity.js';
 import { T, rand, dist, approach, overlap } from './util.js';
+import { HauntedPortrait } from './portraits.js';
 
 // ------------------------------------------------------------------------------------------------ VILLAGER (harmless, terrified)
 const SHOUTS = ['HELP!', 'RUN!', 'THEY COME!', 'MERCY!', 'THE FIRE!', 'NO, NO!', 'SAVE US!', 'MONSTERS!'];
@@ -149,19 +150,6 @@ class Acolyte extends Cultist { constructor(g, x, y, o) { super(g, x, y, o, { na
 class Sorcerer extends Cultist { constructor(g, x, y, o) { super(g, x, y, o, { name: 'sorcerer', idle: 'ars_mage1_r0', cast: 'ars_mage1_r1', tip: [0, 52], n: 4, scale: 0.62, fx: COLORS.gold, glow: [1, 0.72, 0.28], stats: { hp: 34, dmg: 10, xp: 26, shot: 'fire', shotDmg: 12, shotSpd: 1.9 } }); this.h = 46; } }
 class Archmage extends Cultist { constructor(g, x, y, o) { super(g, x, y, o, { name: 'archmage', idle: 'ars_mage2_r0', cast: 'ars_mage2_r1', tip: [-45, 98], n: 4, scale: 0.55, fx: COLORS.purple, glow: [0.7, 0.3, 1], stats: { hp: 30, dmg: 8, xp: 26, shot: 'fire', shotDmg: 12, shotSpd: 2.0 } }); this.h = 40; } }
 
-// ------------------------------------------------------------------------------------------------ GNU KNIGHT (the heavy guard - Armor's shield-and-swing logic, new body)
-class GnuKnight extends Armor {
-  constructor(g, x, y, o) { super(g, x, y, o); this.name = 'gnuknight'; this.hp = this.maxHp = 40; this.dmg = 15; this.xp = 24; this.scale = 0.6; this.deathFx = COLORS.gold; }
-  draw(ctx, cx, cy) {
-    let id = 'ars_gnu_r0', f = Math.floor(this.t / 12) % 5, dx = 0;
-    if (this.state === 'walk') { id = 'ars_gnu_r1'; f = Math.floor(this.t / 8) % 5; }
-    else if (this.state === 'wind') { f = 3; dx = -this.dir * Math.min(5, this.st * 0.3) + Math.sin(this.st * 1.7); this.g.fx.glow(this.x + this.dir * 10, this.y - 52, 8 + this.st * 0.35, [1, 0.85, 0.45], 0.25 + this.st * 0.015); }
-    else if (this.state === 'strike') { id = 'ars_gnu_r1'; f = 2; dx = this.dir * (this.st < 6 ? 10 : 5); }
-    else if (this.state === 'rec') f = 0;
-    this.spr(ctx, id, f, cx, cy + 1, { dx }); this.g.fx.light(this.x, this.y - 24, 38, 0.3);
-  }
-}
-
 // ------------------------------------------------------------------------------------------------ ZEALOT (Szadi pixel platformer set, public domain: the sickle fighter)
 // A quick red-robed cultist.  He closes the distance, plants his feet (the tell: a raised sickle and a ring), then lunges through a wide slash.
 class Zealot extends Enemy {
@@ -189,4 +177,4 @@ class Zealot extends Enemy {
   }
 }
 
-export const BEAST_TYPES = { villager: Villager, swampspider: SwampSpider, swampthing: SwampThing, acolyte: Acolyte, archmage: Archmage, sorcerer: Sorcerer, knight: GnuKnight, zealot: Zealot };
+export const BEAST_TYPES = { portrait: HauntedPortrait, villager: Villager, swampspider: SwampSpider, swampthing: SwampThing, acolyte: Acolyte, archmage: Archmage, sorcerer: Sorcerer, zealot: Zealot };

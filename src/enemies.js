@@ -13,7 +13,7 @@ export class Enemy extends Entity {
   constructor(g, x, y, w, h, o = {}) {
     super(x, y, w, h); this.g = g; this.hp = this.maxHp = 10; this.dmg = 8; this.xp = 5; this.flashT = 0; this.kbRes = 0; this.invuln = false; this.harmless = false; this.alpha = 1;
     this.gravity = true; this.isBoss = false; this.lastHit = 0; this.gold = 0; this.o = o; this.hurtT = 0; this.name = 'enemy'; this.scale = 1; this.deathFx = COLORS.red;
-    this.burnT = 0; this.burnDmg = 0; this.slowT = 0;                                  // thrown torches set things ablaze; caltrops slow
+    this.burnT = 0; this.burnDmg = 0; this.slowT = 0;                                  // thrown torches set things ablaze (slowT: slowed, kept for effects that slow)
     this.freezeT = 0; this.freezeImmune = 0; this.freezeImmuneAfter = 180;      // Frost enchant: frozen timer, and the grace period after thawing
   }
   // FROST: turn to ice for `frames`.  Ignored while already frozen, during the post-thaw immunity, or when invulnerable.
@@ -72,7 +72,7 @@ export class Enemy extends Entity {
   }
   physics() {
     if (this.gravity) this.vy = Math.min(this.vy + GRAV, 6);
-    const sv = this.vx; if (this.slowT > 0) this.vx *= 0.6;                                // caltrops: half the ground covered per step
+    const sv = this.vx; if (this.slowT > 0) this.vx *= 0.6;                                // slowed: half the ground covered per step
     moveX(this, this.g.room); if (this.slowT > 0 && this.vx !== 0) this.vx = sv; moveY(this, this.g.room); if (this.flashT > 0) this.flashT--; if (this.hurtT > 0) this.hurtT--;
   }
   update() {
@@ -140,40 +140,6 @@ class Skeleton extends Enemy {
   draw(ctx, cx, cy) { this.spr(ctx, 'skeleton_w', this.wind > 0 ? 0 : Math.floor(this.t / 8) % 8, cx, cy); }
 }
 
-// ------------------------------------------------------------------------------------------------ HAUNTED ARMOR
-export class Armor extends Enemy {
-  constructor(g, x, y, o) { super(g, x, y, 16, 40, o); this.hp = this.maxHp = 34; this.dmg = 14; this.xp = 20; this.kbRes = 0.85; this.state = 'idle'; this.st = 0; this.cool = 0; this.name = 'armor'; this.heavy = true; this.deathFx = COLORS.ice; }
-  modifyDamage(d, dir) {
-    const front = (this.dir === -dir) && this.state !== 'wind' && this.state !== 'strike';   // hit in the face while guarding
-    if (front && this.state !== 'idle') { A.sfx('block'); this.g.fx.sparks(this.x + this.dir * 10, this.y - 24, 8, COLORS.white, 3, { dir: this.dir > 0 ? 0 : Math.PI }); return Math.max(1, Math.round(d * 0.35)); }
-    return Math.max(1, Math.round(d));
-  }
-  ai(g) {
-    const p = g.player, d = Math.abs(this.dx()); this.st++; if (this.cool > 0) this.cool--;
-    if (this.state === 'idle') { this.vx = 0; if (d < 125 && Math.abs(p.y - this.y) < 50) { this.state = 'walk'; A.sfx('gear'); g.fx.ring(this.x, this.y - 36, 14, COLORS.ice[0], 16, 0.3); } return; }
-    if (this.state === 'walk') {
-      this.face(); if (d > 30 && groundAhead(this, g.room, 6) && !wallAhead(this, g.room, 3)) this.vx = approach(this.vx, this.dir * 0.5, 0.05); else this.vx = approach(this.vx, 0, 0.1);
-      if (this.t % 24 === 0 && Math.abs(this.vx) > 0.2) A.sfx('step');
-      if (d < 40 && this.cool === 0) { this.state = 'wind'; this.st = 0; this.vx = 0; }
-    } else if (this.state === 'wind') { this.vx = 0; if (this.st > 24) { this.state = 'strike'; this.st = 0; A.sfx('slash'); } }
-    else if (this.state === 'strike') {
-      if (this.st === 2) { const hb = { x: this.dir > 0 ? this.x + 4 : this.x - 44, y: this.y - 46, w: 40, h: 44 }; g.fx.sparks(this.x + this.dir * 30, this.y - 20, 8, COLORS.white, 3); if (overlap(hb, p.hurtbox)) p.hurt(this.dmg, this.x); }
-      if (this.st > 12) { this.state = 'rec'; this.st = 0; }
-    } else if (this.state === 'rec') { this.vx = 0; if (this.st > 22) { this.state = 'walk'; this.cool = 40; } }
-  }
-  draw(ctx, cx, cy) {
-    let id = 'armor_idle', f = Math.floor(this.t / 12) % 4;
-    if (this.state === 'walk') { id = 'armor_walk'; f = Math.floor(this.t / 7) % 6; }
-    else if (this.state === 'wind') { id = 'armor_attack'; f = this.st < 12 ? 0 : 1; }
-    else if (this.state === 'strike') { id = 'armor_attack'; f = this.st < 6 ? 2 : 3; }
-    else if (this.state === 'rec') { id = 'armor_attack'; f = 4; }
-    if (this.hurtT > 5) { id = 'armor_hurt'; f = 0; }
-    this.spr(ctx, id, f, cx, cy); const hx = this.x + this.dir * 3 - cx, hy = this.y - 47 - cy;
-    if (this.state !== 'idle') this.g.fx.glow(this.x + this.dir * 4, this.y - 47, 9, [0.3, 0.9, 1], 0.5);
-    this.g.fx.light(this.x, this.y - 24, 38, 0.35);
-  }
-}
-
 // ------------------------------------------------------------------------------------------------ GHOST (phasing)
 class Ghost extends Enemy {
   constructor(g, x, y, o) { super(g, x, y + 14, 18, 28, o); this.hp = this.maxHp = 14; this.dmg = 8; this.xp = 12; this.gravity = false; this.state = 'drift'; this.st = 0; this.phase = rand(TAU); this.timer = 180 + rand(120); this.kbRes = 0.4; this.name = 'ghost'; this.deathFx = COLORS.blue; this.sheet = o.green ? 'ghostg' : 'ghost'; }
@@ -193,7 +159,7 @@ class Ghost extends Enemy {
       this.vx = this.vy = 0; if (this.st === 10) { g.fx.ring(this.x, this.cy, 56, COLORS.blue[0], 26, 0.14); if (dist(this.x, this.cy, p.x, p.y - 16) < 56) p.hurt(6, this.x); }
       if (this.st > 36) { this.state = 'drift'; this.timer = 220 + rand(120); }
     }
-    g.fx.glow(this.x, this.cy, 20, [0.4, 0.7, 1], 0.28 * this.alpha); g.fx.light(this.x, this.cy, 34, 0.35 * this.alpha);
+    g.fx.glow(this.x, this.cy, 20, [0.4, 0.7, 1], 0.28 * this.alpha); g.fx.light(this.x, this.cy, 34, 0.35 * this.alpha, [0.4, 0.7, 1]);
   }
   physics() { this.x += this.vx; this.y += this.vy; if (this.flashT > 0) this.flashT--; if (this.hurtT > 0) this.hurtT--; }   // passes through walls
   draw(ctx, cx, cy) {
@@ -413,4 +379,4 @@ Object.assign(FrostWyrm.prototype, { key: 'frostwyrm', variant: 'frost', fx: COL
 class EmberWyrm extends Wyrm {}
 Object.assign(EmberWyrm.prototype, { key: 'emberwyrm', variant: 'ember', fx: COLORS.fire, glowC: [1, 0.5, 0.2], spits: true });
 
-export const ENEMY_TYPES = { bat: Bat, zombie: Zombie, skeleton: Skeleton, armor: Armor, ghost: Ghost, wraith: Wraith, fireskull: FireSkull, hound: Hound, ghoul: Ghoul, wizard: Wizard, wyrm: Wyrm, frostwyrm: FrostWyrm, emberwyrm: EmberWyrm };
+export const ENEMY_TYPES = { bat: Bat, zombie: Zombie, skeleton: Skeleton, ghost: Ghost, wraith: Wraith, fireskull: FireSkull, hound: Hound, ghoul: Ghoul, wizard: Wizard, wyrm: Wyrm, frostwyrm: FrostWyrm, emberwyrm: EmberWyrm };

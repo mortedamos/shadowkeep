@@ -10,12 +10,16 @@ const isLevelTrack = id => /^(zone\d+|save|boss\w*)$/.test(id);
 
 export const Audio_ = {
   ctx: null, master: null, sfxGain: null, noiseBuf: null,
-  settings: { music: 0.7, sfx: 0.8, muted: false, hints: true, cloak: true },     // hints = show boss attack icons + names
+  settings: { music: 0.7, sfx: 0.8, muted: false, hints: true, cloak: true, hair: true },     // hints = show boss attack icons + names
   tracks: {},          // id -> { file, type }
   available: null,     // Map (lowercase name -> real name) of the files in music/, when they can be listed (a local server, or music/files.json)
   cur: null, outgoing: [], want: null, failed: new Set(), duck: 1, duckTarget: 1, indoor: 1, indoorTarget: 1, stingEl: null, lastSfx: {}, unlocked: false, blurred: false,
 
+  // While the game is being tested (the page opened with ?nopause, or ?mute) it makes no sound at all - unless the test is of the music (?music).  The player's own saved MUTE setting is left alone.
+  forceMute: false,
+  get silent() { return this.settings.muted || this.forceMute; },
   async init() {
+    try { const q = new URLSearchParams(location.search); this.forceMute = (q.has('nopause') || q.has('mute')) && !q.has('music'); } catch {}
     try { Object.assign(this.settings, JSON.parse(localStorage.getItem('shadowkeep.audio') || '{}')); } catch {}
     try {
       const txt = await (await fetch('music/TRACKLIST.txt', { cache: 'no-cache' })).text();
@@ -61,7 +65,7 @@ export const Audio_ = {
     for (const o of [this.cur, ...this.outgoing]) if (o) o.el.play().catch(() => {});
     if (this.stingEl) this.stingEl.play().catch(() => {});
   },
-  applyVolumes() { if (this.sfxGain) this.sfxGain.gain.value = this.settings.muted ? 0 : this.settings.sfx; },
+  applyVolumes() { if (this.sfxGain) this.sfxGain.gain.value = this.silent ? 0 : this.settings.sfx; },
   setVolume(kind, v) { this.settings[kind] = Math.max(0, Math.min(1, v)); this.applyVolumes(); this.save(); },
   toggleMute() { this.settings.muted = !this.settings.muted; this.applyVolumes(); this.save(); },
 
@@ -104,12 +108,12 @@ export const Audio_ = {
   sting(id) {
     if (this.blurred) return;
     const url = this.resolve(id); if (!url) return;
-    const el = new window.Audio(url); el.volume = this.settings.muted ? 0 : this.settings.music; this.stingEl = el;
+    const el = new window.Audio(url); el.volume = this.silent ? 0 : this.settings.music; this.stingEl = el;
     this.duckTarget = 0.1; const done = () => { if (this.stingEl === el) { this.duckTarget = 1; this.stingEl = null; } };
     el.addEventListener('ended', done); el.addEventListener('error', done); el.play().catch(done);
   },
   update(dt) {
-    const mv = this.settings.muted ? 0 : this.settings.music; this.duck += (this.duckTarget - this.duck) * Math.min(1, dt * 0.08); this.indoor += (this.indoorTarget - this.indoor) * Math.min(1, dt * 0.05);
+    const mv = this.silent ? 0 : this.settings.music; this.duck += (this.duckTarget - this.duck) * Math.min(1, dt * 0.08); this.indoor += (this.indoorTarget - this.indoor) * Math.min(1, dt * 0.05);
     const step = dt / 60;
     if (this.cur) { const c = this.cur; c.vol = Math.min(1, c.vol + step / Math.max(0.05, c.fadeTime)); c.el.volume = Math.max(0, Math.min(1, c.vol * mv * this.duck * this.indoor)); }
     for (let i = this.outgoing.length - 1; i >= 0; i--) {
@@ -135,7 +139,7 @@ export const Audio_ = {
     for (const [m, v, d] of [[1, 1, 1], [2.01, 0.5, 0.7], [2.76, 0.4, 0.5], [5.4, 0.2, 0.3]]) this.tone(f * m, f * m * 0.998, dur * d, 'sine', vol * v, delay);
   },
   sfx(name, o = {}) {
-    if (!this.ctx || this.ctx.state !== 'running' || this.settings.muted || this.blurred) return;
+    if (!this.ctx || this.ctx.state !== 'running' || this.silent || this.blurred) return;
     const now = performance.now(); const gap = { step: 90, hit: 30, coin: 30 }[name] ?? 24; if (now - (this.lastSfx[name] || 0) < gap) return; this.lastSfx[name] = now;
     const f = this.S[name]; if (f) f.call(this, o);
   },
