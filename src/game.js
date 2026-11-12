@@ -97,7 +97,7 @@ class Game {
   // -------------------------------------------------------------------------------- state changes
   toTitle(first = false) {
     this.state = 'title'; this.save = null; this.boss = null; this.cutscene = null; this.playerFrozen = false; this.trans = null; this.room = null; this.title = new TitleScreen(this);
-    this.fx.reset(); this.fx.setAmbient(0.0, [0, 0, 0], 0.5); this.fx.setAmbientFx('rain'); this.fx.setStorm(true, 0.004); this.fx.setCamera(0, 0); this.fx.setShake(0, 0); A.play('title', { fade: 1.5 });
+    A.setIndoor(false, true); this.fx.reset(); this.fx.setAmbient(0.0, [0, 0, 0], 0.5); this.fx.setAmbientFx('rain'); this.fx.setStorm(true, 0.004); this.fx.setCamera(0, 0); this.fx.setShake(0, 0); A.play('title', { fade: 1.5 });
   }
   newGame(seed) {
     if (seed === undefined) { const q = new URLSearchParams(location.search).get('seed'); seed = q !== null && /^d{1,9}$/.test(q) ? +q : randomSeed(); }
@@ -130,7 +130,7 @@ class Game {
     for (let ty = 0; ty < def.h; ty++) for (let tx = 0; tx < def.w; tx++) { const v = tiles[ty * def.w + tx]; if ((v === 4 || v === 5 || v === 6) && S.flags[`b_${id}_${tx}_${ty}`]) tiles[ty * def.w + tx] = 0; }
     const prevZone = this.zone; this.room = new Room({ ...def, tiles }); S.visited[id] = true; this.zone = def.zone;
     this.enemies = []; this.projectiles = []; this.pickups = []; this.props = []; this.popups = []; this.boss = null; this.delayed = []; this.fx.reset(); this.flames = roomFlames(def);
-    this.fx.setAmbient(def.ambient, def.tint, def.vig); this.fx.setAmbientFx(def.weather); this.fx.setStorm(def.storm, 0.0035);
+    this.fx.setAmbient(def.ambient, def.tint, def.vig); this.fx.setAmbientFx(def.weather); A.setIndoor(def.indoor); this.fx.setStorm(def.storm, 0.0035);
     this.fx.setFog(def.fog, def.horizon + 4, FOG_COL[def.theme] || FOG_COL.default, def.fogH);          // rolling ground fog in the damp, dead places
     const bossDone = !!S.flags['boss_' + id];
     for (let si = 0; si < def.spawns.length; si++) {

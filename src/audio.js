@@ -3,6 +3,7 @@
 const EXTS = ['.mp3', '.ogg', '.wav', '.m4a', '.flac', '.opus'];
 // A level whose own track has not been made yet plays one of these instead, chosen at random each time (never the same one twice in a row, if there is another).
 // The final boss, and a second boss theme, fall back to the ordinary boss track first.  Short stings and the title / intro / ending never fall back.
+const INDOOR_VOL = 0.4;          // the background music's volume inside a building: 60% quieter
 const GENERAL = ['general_track_1', 'general_track_2', 'general_track_3', 'general_track_4'];
 const FALLBACK_FIRST = { boss_final: ['boss'], boss2: ['boss'] };
 const isLevelTrack = id => /^(zone\d+|save|boss\w*)$/.test(id);
@@ -12,7 +13,7 @@ export const Audio_ = {
   settings: { music: 0.7, sfx: 0.8, muted: false, hints: true, cloak: true },     // hints = show boss attack icons + names
   tracks: {},          // id -> { file, type }
   available: null,     // Map (lowercase name -> real name) of the files in music/, when they can be listed (a local server, or music/files.json)
-  cur: null, outgoing: [], want: null, failed: new Set(), duck: 1, duckTarget: 1, stingEl: null, lastSfx: {}, unlocked: false, blurred: false,
+  cur: null, outgoing: [], want: null, failed: new Set(), duck: 1, duckTarget: 1, indoor: 1, indoorTarget: 1, stingEl: null, lastSfx: {}, unlocked: false, blurred: false,
 
   async init() {
     try { Object.assign(this.settings, JSON.parse(localStorage.getItem('shadowkeep.audio') || '{}')); } catch {}
@@ -97,6 +98,8 @@ export const Audio_ = {
     this.cur = { id, real: pk.real, el, vol: 0, fadeTime: fade };
     if (!this.blurred) el.play().catch(() => { /* blocked until first gesture; unlock() retries */ });       // while unfocused it starts when focus returns
   },
+  // Inside a building (a house, a shed, a hut...) the background music drops by 60%; stepping back outside lifts it to where it was.  It glides rather than jumps (instant = true at once, e.g. on the title screen).
+  setIndoor(on, instant = false) { this.indoorTarget = on ? INDOOR_VOL : 1; if (instant) this.indoor = this.indoorTarget; },
   stop(fade = 1.0) { this.want = null; if (this.cur) { this.outgoing.push({ ...this.cur, fadeTime: fade }); this.cur = null; } },
   sting(id) {
     if (this.blurred) return;
@@ -106,11 +109,11 @@ export const Audio_ = {
     el.addEventListener('ended', done); el.addEventListener('error', done); el.play().catch(done);
   },
   update(dt) {
-    const mv = this.settings.muted ? 0 : this.settings.music; this.duck += (this.duckTarget - this.duck) * Math.min(1, dt * 0.08);
+    const mv = this.settings.muted ? 0 : this.settings.music; this.duck += (this.duckTarget - this.duck) * Math.min(1, dt * 0.08); this.indoor += (this.indoorTarget - this.indoor) * Math.min(1, dt * 0.05);
     const step = dt / 60;
-    if (this.cur) { const c = this.cur; c.vol = Math.min(1, c.vol + step / Math.max(0.05, c.fadeTime)); c.el.volume = Math.max(0, Math.min(1, c.vol * mv * this.duck)); }
+    if (this.cur) { const c = this.cur; c.vol = Math.min(1, c.vol + step / Math.max(0.05, c.fadeTime)); c.el.volume = Math.max(0, Math.min(1, c.vol * mv * this.duck * this.indoor)); }
     for (let i = this.outgoing.length - 1; i >= 0; i--) {
-      const o = this.outgoing[i]; o.vol -= step / Math.max(0.05, o.fadeTime); o.el.volume = Math.max(0, Math.min(1, o.vol * mv));
+      const o = this.outgoing[i]; o.vol -= step / Math.max(0.05, o.fadeTime); o.el.volume = Math.max(0, Math.min(1, o.vol * mv * this.indoor));
       if (o.vol <= 0) { o.el.pause(); o.el.removeAttribute('src'); this.outgoing.splice(i, 1); }
     }
     if (this.stingEl) this.stingEl.volume = mv;

@@ -34,7 +34,7 @@ export class B {
     this.def = {
       id, name, zone, w, h, theme: o.theme || ZONES[zone].theme, bg: o.bg || null, tiles: new Uint8Array(w * h), spawns: [], decos: [], exits: [], doors: [], seals: [],
       horizon: (o.horizon !== undefined ? o.horizon : h - 2) * 16, fog: o.fog || 0, weather: o.weather || null, storm: !!o.storm, ambient: o.ambient === undefined ? 0.3 : o.ambient,
-      tint: o.tint || [0.015, 0.01, 0.05], music: o.music || ZONES[zone].music, boss: o.boss || null, save: !!o.save, map: o.map || { x: 0, y: 0 }, vig: o.vig === undefined ? 0.5 : o.vig,
+      tint: o.tint || [0.015, 0.01, 0.05], music: o.music || ZONES[zone].music, boss: o.boss || null, save: !!o.save, indoor: !!o.indoor, map: o.map || { x: 0, y: 0 }, vig: o.vig === undefined ? 0.5 : o.vig,
     };
     this.w = w; this.h = h;
   }
