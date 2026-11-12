@@ -1,0 +1,12 @@
+Art added after the first release, with the license shown on each OpenGameArt page (retrieved while building this project):
+
+* Gothicvania Town, Gotthicvania Swamp, Mountain at Dusk Background (ansimuz): CC0 / public domain.
+* Haunted Forest Trees (ETTiNGRiNDER): CC0 / public domain.
+* Castlevania-esque Tilemap (Stone and Bricks) by Chloe Wolfe: CC-BY 4.0 - https://creativecommons.org/licenses/by/4.0/
+  https://opengameart.org/content/castlevania-esque-tilemap-stone-and-bricks
+* Bosses and Monsters Spritesheets (Ars Notoria) by Balmer, collaborator Redshrike: CC-BY 3.0 - https://creativecommons.org/licenses/by/3.0/
+  https://opengameart.org/content/bosses-and-monsters-spritesheets-ars-notoria
+* Super Dead Gunner: Cyber-tooth (enemy) by Emcee Flesher: OGA-BY 3.0 (or CC0) - https://opengameart.org/content/oga-by-30-faq
+  https://opengameart.org/content/super-dead-gunner-cyber-tooth-enemy
+
+Where attribution is required it is given in CREDITS.md.

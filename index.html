@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SHADOWKEEP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='%23c23b2a' d='M2 14V6l2-2v3h2V3l2-2 2 2v4h2V4l2 2v8z'/%3E%3C/svg%3E">
+<style>
+  html, body { margin: 0; height: 100%; background: #040207; overflow: hidden; }
+  #wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+  #stage { position: relative; background: #000; box-shadow: 0 0 60px #000; }
+  #stage canvas { position: absolute; left: 0; top: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+  #fx, #top { pointer-events: none; }
+  #boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+          color: #b58a4a; font: 14px/1.6 Georgia, serif; text-align: center; padding: 24px; background: #040207; z-index: 5; transition: opacity .5s; }
+  #boot.done { opacity: 0; pointer-events: none; }
+  #boot b { color: #e6c27a; font-size: 22px; letter-spacing: 6px; }
+  #boot code { background: #1a1020; padding: 2px 8px; border-radius: 3px; color: #e8d9b5; }
+  #bar { width: 220px; height: 6px; background: #1a1020; margin-top: 18px; border: 1px solid #4a3320; }
+  #bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg,#7a2418,#e6a23a); }
+</style>
+<script type="importmap">{ "imports": { "three": "./lib/three/three.module.js" } }</script>
+</head>
+<body>
+<div id="wrap"><div id="stage"><canvas id="game" width="384" height="216"></canvas><canvas id="fx"></canvas><canvas id="top" width="384" height="216"></canvas></div></div>
+<div id="boot"><b>SHADOWKEEP</b><div id="bootmsg">Gathering the dead&hellip;</div><div id="bar"><i id="barfill"></i></div></div>
+<script>
+  // Friendly guidance if the page is opened straight from disk (browsers block ES modules on file://).
+  if (location.protocol === 'file:') {
+    document.getElementById('bootmsg').innerHTML =
+      'Browsers will not run this game straight from a file (it is made of ES modules).<br>Put the folder on any web host - GitHub Pages works - or, to try it here, double-click <code>play.bat</code><br>(or run <code>node server.js</code>) and open <code>http://localhost:8080</code>.';
+    document.getElementById('bar').style.display = 'none';
+  }
+  window.addEventListener('error', e => {
+    const m = document.getElementById('bootmsg');
+    if (m && !document.getElementById('boot').classList.contains('done')) m.innerHTML = 'Something went wrong:<br><code>' + (e.message || e) + '</code>';
+  });
+</script>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>

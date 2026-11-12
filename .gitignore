@@ -1,0 +1,29 @@
+# What is published (GitHub Pages) is only what the game needs to RUN:
+#   index.html, credits.txt, .nojekyll, src/, lib/, assets/ (the art the game loads + licence texts), music/ (tracks, TRACKLIST.txt, files.json)
+# Everything below stays on the author's computer.
+
+# --- the art packs exactly as downloaded, and art that is not used ---------------------------------------------------------------
+# (several of these packs forbid redistributing them, and the Sidescroller's Dungeon download has no licence file.  The game only
+#  uses the pieces cut out of them into assets/env/ and assets/sprites/ - see CREDITS.md.)
+assets/sprites/source/
+assets/source/
+assets/archive/
+
+# --- local play and development tools (not needed to play online) ------------------------------------------------------------
+server.js
+play.bat
+play.ps1
+tools/
+
+# --- editor / assistant settings, and general clutter ----------------------------------------------------------------------------
+.claude/
+.vscode/
+.idea/
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# lets the generator tests run under Node (the browser ignores it)
+src/package.json

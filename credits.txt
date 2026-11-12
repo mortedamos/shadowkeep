@@ -1,0 +1,82 @@
+; SHADOWKEEP - the credits shown by CREDITS on the title screen.
+;
+; This is a plain text file: edit it freely, save, and reload the game.
+;   # TITLE         a gold heading
+;   ## Subheading   a smaller, paler heading
+;   some words      ordinary text (it wraps to fit the screen)
+;   a blank line    a gap
+;   ---             a thin line
+;   ; a note         lines that start with a semicolon are NOT shown
+; (The game draws everything in capital letters.)
+; Longer licence texts and links are in CREDITS.md and in assets/credits/.
+
+# SHADOWKEEP
+A gothic adventure
+
+---
+
+# ART
+## Luis Zuno (Ansimuz) - CC0
+Gothicvania Patreon's Collection
+Gothicvania Church Pack
+Gothicvania Cemetery Pack
+Gothicvania Town
+Gotthicvania Swamp
+Mountain at Dusk Background
+(OpenGameArt.org)
+
+The hero, the monsters, the castle and the village are mostly his work.
+
+## ETTiNGRiNDER - CC0
+Haunted Forest Trees
+
+## Chloe Wolfe - CC BY 4.0
+Castlevania-esque Tilemap (Stone and Bricks)
+The village streets and brickwork.
+Cropped and rearranged for use in the game.
+
+## Balmer, with Redshrike - CC BY 3.0
+Bosses and Monsters Spritesheets (Ars Notoria)
+The acolyte, the archmage, the gnu knight, the Cinder Warden and the Mire Mother.
+Cropped and rearranged for use in the game.
+
+## Emcee Flesher - OGA-BY 3.0
+Super Dead Gunner: Cyber-tooth
+The bone, frost and ember wyrms.
+Sliced and re-assembled in code.
+
+## Anokolisa
+The moonlit graveyard set.
+
+## Szadi art - public domain
+Pixel Platformer Set 1
+The sickle-fighting zealot and the sparkling gem.
+
+## The Sidescroller's Dungeon - Tileset
+Pillars, banners, urns, crates, doors and torches.
+; (no licence file came with this pack: check its itch.io page before a public release, and credit its author here)
+
+Some sprites are recoloured while the game loads.
+
+---
+
+# FONTS
+## SIL Open Font Licence 1.1
+Pirata One - Rodrigo Fuenzalida and Nicolas Massi
+Almendra Bold - Ana Sanfelippo
+
+---
+
+# CODE
+three.js - MIT licence (threejs.org)
+Game code, shaders, level generation and all sound effects were written for this project.
+Some creatures, props and projectiles are drawn in code.
+
+---
+
+# MUSIC
+Made for this game.
+
+---
+
+Thank you for playing.

@@ -1,0 +1,249 @@
+=====================================================================
+  SHADOWKEEP  -  MUSIC TRACK LIST  (with Suno prompts + leitmotifs)
+=====================================================================
+
+HOW THIS WORKS
+--------------
+1. Create each track below and save it in THIS folder (music/) using the
+   FILE NAME shown. The game loads this very file at startup and plays
+   whatever it finds - tracks that don't exist yet are simply skipped
+   (the game stays quiet instead of crashing), so you can add them one
+   at a time and just refresh the browser.
+2. Formats: .mp3, .ogg or .wav. If "title.mp3" is missing the game also
+   tries "title.ogg" and "title.wav", so use whichever you prefer.
+3. LOOP tracks repeat forever - end them so they loop cleanly (the end
+   should flow back into the start).  STING tracks play once.
+4. Want different file names?  Edit the FILE NAME column below - the game
+   reads it.  Keep the ID column unchanged (the code refers to the IDs).
+   File names may contain spaces and brackets, so you can point a track at a
+   Suno download as-is, e.g. change the FILE NAME cell of the title line to:
+       Tolling Church Organ - usesuno.com(1).mp3
+   (copy the name exactly).  Refresh the browser after changing this file.
+5. Mix level: aim for roughly -14 LUFS / peaks under -1 dB.  The game has
+   its own volume slider (Pause menu).
+
+LINE FORMAT  (lines starting with # are comments and are ignored by the game)
+------------------------------------------------------------------
+ID | FILE NAME | TYPE | WHERE IT PLAYS | MOOD / DIRECTION
+#   SUNO STYLE:   paste into Suno's "Style of Music" box. The leitmotif NOTES are written
+#                 into this line (Suno v4.5 / v5 allow ~1000 characters here).
+#   SUNO SHORT:   the same idea in under 200 characters, for older Suno versions whose
+#                 style box is capped at 200.
+#   SUNO LYRICS:  paste into the Lyrics box (structure tags only - these are instrumentals)
+#   MOTIFS:       which leitmotifs appear in the track (see below)
+
+
+=====================================================================
+  THE LEITMOTIFS  -  the musical DNA that ties the whole score together
+=====================================================================
+Every track quotes at least one of these five short themes, re-orchestrated
+for the mood of the room. Home key is D MINOR (ending resolves to D MAJOR).
+Suno can't read sheet music, so every STYLE prompt spells the notes out in words
+(and the order of the notes, up/down) - but you will get much better consistency
+if you also follow the WORKFLOW below.
+
+  M1  "THE KEEP"  (the castle's theme)
+      Four slow, heavy notes descending:   D - C - Bb - A   (then a rest, then D again).
+      Home instrument: PIPE ORGAN with low strings.  It's the bass line / countermelody of
+      almost every zone and returns at double speed in the boss fights.
+
+  M2  "THE STRANGER"  (the hero's theme)
+      Rising and lonely:   A - D - F - E   (up a fourth, up a minor third, down a half step).
+      Home instrument: SOLO CELLO (or French horn).  Quiet and questioning at first; each
+      zone gives it a more confident voice; at the final boss it is a full brass declaration.
+
+  M3  "THE TOLLING"  (bells - the castle's heartbeat)
+      Three bell strikes, low - high - low:   D - A - D, spaced widely like a funeral bell.
+      Always a different bell: church bell (graveyard), glass bells (chapel), clock chimes
+      (underworks), muted/distorted (throne).
+
+  M4  "THE CURSE"  (the villain / danger)
+      A tritone stab (D against Ab) followed by a slow chromatic crawl downward:
+      Ab - G - Gb - F.  Low brass, organ clusters, or detuned strings.  Whenever a boss or
+      the Shadow Lord is near, this motif is under the music.
+
+  M5  "DAWN"  (ending only)
+      THE KEEP turned upside-down and into the major key:   D - E - F# - A,  rising, warm,
+      finally resolving.  The Stranger (M2) plays along with it in D major.  Save this for
+      the last track so it lands.
+
+  TRANSPOSITION CHEAT SHEET  (the prompts below already use these)
+      D minor (home) ....... M1 D-C-Bb-A     M2 A-D-F-E       M3 D-A-D
+      G minor (Great Hall) . M1 G-F-Eb-D     M2 D-G-Bb-A      (waltz, 3/4)
+      D dorian (Chapel) .... M1 D-C-B-A      M2 A-D-F-E       (B natural, not Bb)
+      D major (save/stings/ending) .... M2 A-D-F#-E (up a fourth, up a major third, down a
+                            whole step)   M1-as-lullaby D-C#-B-A   M5 D-E-F#-A
+
+SUNO WORKFLOW FOR CONSISTENT THEMES
+-----------------------------------
+  1. Generate TITLE first (get a take where the 4-note organ theme M1 is
+     clear and the cello answer M2 is audible).  Re-roll until it's right -
+     this track is the "seed" for everything else.
+  2. For every other track, use Suno's audio-upload / Cover / Extend
+     features (names vary by version) with the title track (or a finished
+     zone track) as the reference, set the audio-influence HIGH for
+     close variations (intro, save, ending) and LOW/MEDIUM for new styles
+     (bosses, underworks).
+  3. Keep the same key and tempo family wherever possible: 60 / 90 / 120 /
+     150 BPM (all multiples of 30) makes motifs line up when you crossfade.
+  4. Suno can't loop perfectly: ask for a strong final chord on the tonic
+     (the prompts do), then trim the file at a bar line and add a short
+     fade/crossfade in any audio editor so the loop point is seamless.
+  5. Generate 3-4 takes per track and keep the one where the motif is
+     clearest.  Add "instrumental" / turn on Suno's instrumental toggle for
+     everything below.
+  6. Prompts avoid artist and game names on purpose (Suno rejects them).
+     If your Suno version only takes 200 characters of style, use the SUNO SHORT line.
+  7. Suno follows note names loosely.  If a take plays the wrong notes, keep the take's
+     mood, then fix the theme by Extending/Covering the TITLE track, or hum/play the four
+     notes into Suno's audio upload as the reference.
+
+
+=====================================================================
+  MENUS
+=====================================================================
+title        | title.mp3                    | LOOP | Title screen                     | Slow gothic pipe organ over distant thunder and wind. Ominous but with a faint thread of hope. Around 60-70 BPM, minor key.
+#   SUNO STYLE:  instrumental, gothic cathedral pipe organ, solo cello, low strings, distant thunder and wind, slow 66 bpm, D minor, ominous cinematic dark fantasy. Main theme on pipe organ: four slow descending notes D, C, Bb, A, then a rest, then D again, heavy and inevitable. A solo cello answers with a lonely rising call A, D, F, E (up a fourth, up a minor third, down a half step). Ends with three low bell tolls D, A, D (low, high, low) and a final D minor chord.
+#   SUNO SHORT:  instrumental, gothic pipe organ, solo cello, thunder, 66 bpm, D minor. Organ theme D-C-Bb-A descending, cello answer A-D-F-E, three bell tolls D-A-D
+#   SUNO LYRICS: [Instrumental] [Intro: wind and distant thunder] [Main Theme: slow four-note descending organ motif, heavy and inevitable] [Answer: lonely solo cello rises, up a fourth then a minor third] [Outro: three low bell tolls, ends on D minor chord]
+#   MOTIFS:      M1 The Keep (organ, lead)  |  M2 The Stranger (cello answer)  |  M3 Tolling (outro bells)
+#   NOTE:        THE SEED TRACK - generate this first and use it as the reference for the rest.
+
+intro        | intro.mp3                    | LOOP | New-game story crawl             | Sparse and quiet: a lone cello or choir pad, rain. Builds slightly toward the end of the crawl. Can be a calmer variation of the title theme.
+#   SUNO STYLE:  instrumental, sparse solo cello, soft choir pad, steady rain, slow 60 bpm, D minor, melancholy, lonely, quiet cinematic underscore. The solo cello plays the lonely rising call A, D, F, E (up a fourth, up a minor third, down a half step), alone and unhurried. Late in the track a faint pipe organ whispers the four-note descending castle theme D, C, Bb, A. One soft bell toll on D at the very end.
+#   SUNO SHORT:  instrumental, solo cello, soft choir pad, rain, 60 bpm, D minor. Cello call A-D-F-E alone, faint organ D-C-Bb-A late, one bell toll on D
+#   SUNO LYRICS: [Instrumental] [Intro: rain, single sustained cello note] [Theme: solo cello plays the rising lonely motif, up a fourth, up a minor third, down a step] [Build: faint organ whispers the descending four-note castle theme] [Outro: soft low bell toll, fades]
+#   MOTIFS:      M2 The Stranger (cello, lead)  |  M1 The Keep (faint organ, late)  |  M3 Tolling (single bell)
+#   NOTE:        Cover/variation of TITLE with audio-influence HIGH.
+
+
+=====================================================================
+  ZONES (exploration)  -  one theme per zone, each ~2-3 minutes looping
+=====================================================================
+zone1        | zone1_graveyard.mp3          | LOOP | Zone 1 - Graveyard Approach      | Stormy, windswept night. Driving minor-key strings and harpsichord arpeggios, a tolling bell now and then. Classic action-horror energy, 120-135 BPM.
+#   SUNO STYLE:  instrumental, driving gothic action soundtrack, staccato strings, fast harpsichord arpeggios, church bell, stormy night, 128 bpm, D minor, energetic, dark, 16-bit era feel. Opens with three church bell tolls D, A, D (low, high, low). Strings play the heroic melody A, D, F, E (up a fourth, up a minor third, down a half step) over the harpsichord. Pipe organ plays the descending castle theme D, C, Bb, A in long bass notes underneath, especially in the bridge. Ends on a D minor chord.
+#   SUNO SHORT:  instrumental, gothic action, staccato strings, harpsichord, church bell, 128 bpm, D minor. Bells D-A-D, strings melody A-D-F-E, organ bass D-C-Bb-A
+#   SUNO LYRICS: [Instrumental] [Intro: three church bell tolls, low high low] [Main Theme: fast harpsichord arpeggios, strings play the rising lonely cello motif as a heroic melody] [Bridge: organ plays the descending four-note castle theme as bass] [Main Theme repeats, louder] [Outro: ends on D minor chord]
+#   MOTIFS:      M3 Tolling (church bell intro)  |  M2 The Stranger (strings, heroic lead)  |  M1 The Keep (organ bass in bridge)
+#   NOTE:        The Stranger's theme sounds BRAVE here - the hero is just arriving.
+
+zone2        | zone2_great_hall.mp3         | LOOP | Zone 2 - The Great Hall          | Grand and decayed. Baroque organ and harpsichord, stately and dark, waltz-like feel possible (3/4). Candle-lit melancholy, 100-115 BPM.
+#   SUNO STYLE:  instrumental, baroque gothic waltz in 3/4, pipe organ, harpsichord, string quartet, stately decayed grandeur, 108 bpm, G minor, candlelit melancholy. The strings play the waltz melody as the four-note descending castle theme moved to G minor: G, F, Eb, D. A solo cello adds a rising counter-line D, G, Bb, A (up a fourth, up a minor third, down a half step). The bridge has an organ swell and a ghostly chromatic descent G, Gb, F, E. Ends on a G minor chord.
+#   SUNO SHORT:  instrumental, baroque gothic waltz 3/4, organ, harpsichord, strings, 108 bpm, G minor. Waltz melody G-F-Eb-D, cello counter-line D-G-Bb-A
+#   SUNO LYRICS: [Instrumental] [Intro: harpsichord, slow] [Main Theme: elegant waltz, strings play the descending four-note castle theme as the melody] [Variation: solo cello adds the rising lonely motif over the waltz] [Bridge: organ swell, ghostly chromatic descent] [Outro: ends on tonic chord]
+#   MOTIFS:      M1 The Keep (waltz melody - the castle in its glory)  |  M2 The Stranger (cello counter-line)  |  M4 The Curse (chromatic descent in bridge)
+#   NOTE:        Here THE KEEP is the lead - the hall remembers when it was beautiful.
+
+zone3        | zone3_moonlit_chapel.mp3     | LOOP | Zone 3 - Moonlit Chapel          | Eerie and sacred. Choir pads, glass-like bells, a haunting solo vocal or flute. Beautiful but unsettling, 70-90 BPM.
+#   SUNO STYLE:  instrumental, ethereal sacred choir pads, glass bells, celesta, haunting solo flute, long reverb, slow 78 bpm, D dorian, eerie, beautiful, moonlit. Opens with three glass bell tolls D, A, D (low, high, low). A solo flute plays the fragile rising call A, D, F, E (up a fourth, up a minor third, down a half step). A wordless choir sings the four-note descending castle theme D, C, B natural, A (dorian color). A brief dissonant choir cluster of D against Ab in the bridge, then calm again. Fades out on bells.
+#   SUNO SHORT:  instrumental, sacred choir pads, glass bells, solo flute, 78 bpm, D dorian. Bells D-A-D, flute A-D-F-E, wordless choir D-C-B-A
+#   SUNO LYRICS: [Instrumental] [Intro: glass bell tolls, low high low] [Theme: solo flute plays the rising lonely motif, up a fourth, up a minor third, down a step] [Choir: wordless choir sings the descending four-note castle theme] [Bridge: dissonant choir cluster, then calm] [Outro: fades on bells]
+#   MOTIFS:      M3 Tolling (glass bells)  |  M2 The Stranger (flute - the hero's theme made fragile)  |  M1 The Keep (wordless choir)  |  M4 The Curse (brief choir cluster)
+
+zone4        | zone4_underworks.mp3         | LOOP | Zone 4 - The Underworks          | Clockwork and machinery. Ticking percussion, brass drones, pipes and pistons, metallic stabs under a tense bass-driven melody. 125-140 BPM.
+#   SUNO STYLE:  instrumental, industrial gothic, clockwork ticking percussion, brass drones, pipe organ, metallic hits, steam hiss, driving bass, 132 bpm, D minor, tense, mechanical. Opens with three clock chimes D, A, D over ticking. Pounding bass and low brass play the four-note descending castle theme D, C, Bb, A like a machine. Staccato strings play the rising call A, D, F, E (up a fourth, up a minor third, down a half step) over the pistons. The bridge grinds with metallic tritone stabs, D against Ab. Ends on a clock chime and a D minor chord.
+#   SUNO SHORT:  instrumental, industrial gothic, ticking clockwork, brass, organ, 132 bpm, D minor. Clock chimes D-A-D, brass D-C-Bb-A, strings A-D-F-E
+#   SUNO LYRICS: [Instrumental] [Intro: clock chimes, three strikes low high low, ticking] [Main Theme: pounding bass and pistons, low brass plays the descending four-note castle theme] [Lead: staccato strings play the rising lonely motif over machinery] [Bridge: gears grind, metallic stabs] [Outro: clock chime, ends on tonic]
+#   MOTIFS:      M3 Tolling (clock chimes)  |  M1 The Keep (low brass, machine-like)  |  M2 The Stranger (staccato strings)  |  M4 The Curse (metallic stabs)
+
+zone5        | zone5_shadow_approach.mp3    | LOOP | Zone 5 - Approach to the Throne  | Dread. Low strings, slow pulsing bass, a distorted echo of the Great Hall theme. Tension rising, 80-100 BPM.
+#   SUNO STYLE:  instrumental, dark ambient orchestral dread, low strings, slow pulsing bass, detuned pipe organ, choir drones, distorted bell, rising tension, 90 bpm, D minor, ominous cinematic. Opens with muffled distorted bell tolls D, A, D. A warped, detuned organ plays the slow descending castle theme D, C, Bb, A. Low brass plays a tritone stab D against Ab, then a slow chromatic crawl down Ab, G, Gb, F. Near the end a single wavering cello plays the rising call A, D, F, E. The pulse never stops; ends unresolved on D.
+#   SUNO SHORT:  instrumental, dark orchestral dread, low strings, detuned organ, distorted bell, 90 bpm, D minor. Bells D-A-D, organ D-C-Bb-A, brass crawl Ab-G-Gb-F
+#   SUNO LYRICS: [Instrumental] [Intro: distorted, muffled bell tolls, low high low] [Theme: detuned organ plays the descending four-note castle theme, slow and warped] [Tension: low brass plays a tritone stab then slow chromatic crawl down] [Hope: a single cello plays the rising lonely motif, wavering] [Outro: pulse continues, ends unresolved on D]
+#   MOTIFS:      M3 Tolling (distorted bell)  |  M1 The Keep (warped organ)  |  M4 The Curse (dominant)  |  M2 The Stranger (a last, wavering cello line)
+
+
+zone6        | zone6_burning_village.mp3    | LOOP | Zone 6 - The Burning Village (the FIRST level, before the graveyard) | Panic and fire. Fast, frantic strings and war drums, a crackling fire texture, alarm bells clanging out of rhythm. Urgent, human, tragic. 140-150 BPM.
+#   SUNO STYLE:  instrumental, frantic gothic action, fast staccato strings, pounding war drums, clanging alarm bells out of time, crackling fire, urgent tragic, 144 bpm, D minor, burning village under attack, cinematic. Opens with panicked bell tolls D, A, D, D, A, D (too fast, uneven). The strings play the rising lonely call A, D, F, E (up a fourth, up a minor third, down a half step) as a desperate run. Low brass plays the descending castle theme D, C, Bb, A under it like a siege horn. A short bridge drops to a single choir voice over the fire, then the drums slam back in. Ends on a D minor chord with a falling bell.
+#   SUNO SHORT:  instrumental, frantic gothic action, staccato strings, war drums, alarm bells, crackling fire, 144 bpm, D minor. Bells D-A-D, strings A-D-F-E, brass D-C-Bb-A
+#   SUNO LYRICS: [Instrumental] [Intro: panicked alarm bells, fire crackle] [Main Theme: fast staccato strings play the rising lonely motif as a desperate run, war drums] [Brass: siege horn plays the descending castle theme] [Bridge: single choir voice over the fire, then drums return] [Outro: falling bell, ends on tonic]
+#   MOTIFS:      M3 Tolling (alarm bells)  |  M2 The Stranger (strings, desperate and fast)  |  M1 The Keep (low brass siege horn)
+#   NOTE:        Optional: until this file exists the village is simply silent.  Boss fights use the normal boss track.
+
+zone7        | zone7_weeping_swamp.mp3      | LOOP | Zone 7 - The Weeping Swamp (between the graveyard and the great hall) | Damp, slow and creeping. Low bowed double bass, bubbling water, distant frogs and a sad solo bassoon or oboe; unsettling lullaby. 70-85 BPM.
+#   SUNO STYLE:  instrumental, dark swamp ambience with melody, low bowed double bass, bassoon, oboe, dripping water, bubbling mud, distant croaking, slow 76 bpm, D phrygian, creeping, damp, uneasy lullaby. Opens with three muffled bell tolls D, A, D under water. A solo bassoon plays the rising lonely call A, D, F, E very slowly. A wordless female voice hums the descending castle theme D, C, Bb, A like a drowned lullaby. The bridge adds a swell of detuned strings and a tritone D against Ab, then settles. Ends unresolved on D.
+#   SUNO SHORT:  instrumental, dark swamp ambience, bowed bass, solo bassoon, water drips, 76 bpm, D phrygian. Bells D-A-D, bassoon A-D-F-E, hummed D-C-Bb-A
+#   SUNO LYRICS: [Instrumental] [Intro: muffled bells under water, drips] [Theme: solo bassoon plays the rising lonely motif, slow] [Lullaby: wordless humming of the descending four-note castle theme] [Bridge: detuned string swell, tritone, settles] [Outro: unresolved on D]
+#   MOTIFS:      M3 Tolling (muffled bells)  |  M2 The Stranger (bassoon)  |  M1 The Keep (hummed lullaby)  |  M4 The Curse (tritone in bridge)
+#   NOTE:        Optional: until this file exists the swamp is simply silent.
+
+=====================================================================
+  SPECIAL ROOMS
+=====================================================================
+save         | save_sanctuary.mp3           | LOOP | Save rooms (candle altars)       | A safe haven. Soft harp or music-box with warm pads. Calm and restful - the only gentle music in the castle. 60-75 BPM.
+#   SUNO STYLE:  instrumental, gentle music box, soft harp, warm string pads, calm, restful safe haven, lullaby, 66 bpm, D major, tender, minimal. The music box plays the lonely rising call now in major: A, D, F#, E (up a fourth, up a major third, down a whole step), gentle and slow. A soft harp plays the descending castle theme as a lullaby in major: D, C#, B, A. One muted bell toll on D at the end. Ends on a warm D major chord.
+#   SUNO SHORT:  instrumental, music box, soft harp, warm pads, lullaby, 66 bpm, D major. Music box A-D-F#-E, harp lullaby D-C#-B-A, one muted bell toll
+#   SUNO LYRICS: [Instrumental] [Intro: single music box note] [Theme: music box plays the rising lonely motif, up a fourth, up a minor third, down a step, now in a major key, gentle] [Variation: harp adds the descending four-note castle theme as a soft lullaby] [Outro: muted single bell toll, ends on a warm D major chord]
+#   MOTIFS:      M2 The Stranger (music box, major-key)  |  M1 The Keep (soft harp lullaby)  |  M3 Tolling (muted bell)
+#   NOTE:        The only major-key music until the ending - a little promise of the Dawn.
+
+
+=====================================================================
+  BOSSES
+=====================================================================
+boss         | boss_battle.mp3              | LOOP | Regular boss fights (4 bosses)   | Fast, aggressive, pounding. Pipe organ + double-time drums + choir hits. Needs a strong main hook. 150-170 BPM.
+#   SUNO STYLE:  instrumental, epic gothic metal-orchestral boss battle, pipe organ, pounding double-time drums, aggressive strings, choir hits, 160 bpm, D minor, intense, fast. Opens with a tritone organ stab, D against Ab, and a drum fill. The organ plays the four-note descending castle theme D, C, Bb, A at double speed as the main riff. Fierce defiant strings play the rising call A, D, F, E (up a fourth, up a minor third, down a half step). The bridge has choir hits and a chromatic crawl down Ab, G, Gb, F. Ends on a D minor power chord.
+#   SUNO SHORT:  instrumental, gothic metal-orchestral boss battle, organ, drums, strings, choir, 160 bpm, D minor. Organ riff D-C-Bb-A fast, strings A-D-F-E, tritone stab D+Ab
+#   SUNO LYRICS: [Instrumental] [Intro: tritone organ stab, drum fill] [Main Theme: relentless drums, organ plays the descending four-note castle theme at double speed] [Lead: strings play the rising lonely motif, fierce and defiant] [Bridge: choir hits and chromatic crawl] [Main Theme returns] [Outro: ends on D minor power chord]
+#   MOTIFS:      M4 The Curse (opening stab + bridge)  |  M1 The Keep (double-speed organ)  |  M2 The Stranger (defiant strings)
+
+boss2        | boss_battle_2.mp3            | LOOP | Second boss theme (NOT wired in yet - meant for the Phantom Stable + Foundry bosses) | Ritual and relentless instead of flashy: war drums, a driving low-string ostinato, a chanting male choir and tolling bells. Heavier and slower-burning than boss_battle, 150 BPM, intensity builds mid-track.
+#   SUNO STYLE:  instrumental, dark gothic ritual boss battle, war drums, driving low string ostinato, chanting male choir, tolling bells, detuned pipe organ, brass stabs, 150 bpm, D minor, relentless, menacing, heavy, cinematic. Opens with three heavy bell tolls D, A, D (low, high, low) over a drum roll. Cellos and basses lock into a driving ostinato built on the chromatic crawl Ab, G, Gb, F, repeating every bar, with a tritone brass stab D against Ab on the downbeat. A deep male choir chants the four-note descending castle theme D, C, Bb, A, slow and enormous, over the ostinato. Midway the intensity builds: a solo horn, then full strings, cry out the rising hero's call A, D, F, E (up a fourth, up a minor third, down a half step), wounded but defiant, fighting against the crawl. Ends on a hard D minor chord and one last bell toll.
+#   SUNO SHORT:  instrumental, dark ritual boss battle, war drums, string ostinato, male choir chant, bells, 150 bpm, D minor. Ostinato Ab-G-Gb-F, choir D-C-Bb-A, horn A-D-F-E
+#   SUNO LYRICS: [Instrumental] [Intro: three heavy bell tolls, low high low, drum roll] [Verse: driving low-string ostinato on the chromatic crawl, tritone brass stab on every downbeat] [Chant: deep male choir chants the descending four-note castle theme, slow and enormous] [Build: solo horn, then full strings, cry out the rising lonely motif, defiant] [Main Theme returns, louder] [Outro: ends on a hard D minor chord, one last bell toll]
+#   MOTIFS:      M4 The Curse (the ostinato + the tritone stabs - here it IS the engine of the track)  |  M1 The Keep (male choir chant)  |  M2 The Stranger (horn, then strings - the hero fighting back)  |  M3 Tolling (opening bells + the last toll)
+#   NOTE:        Same key and tempo family as boss_battle (D minor, 150/160 BPM) so the two crossfade cleanly. Use boss_battle as the Suno reference with audio-influence LOW so it gets new rhythm and color but keeps the motifs. When you add the file, tell me and I'll wire it to the zone 2 and zone 4 bosses.
+
+general_track_1 | general_track_1.mp3       | LOOP | Stand-in: any level / boss whose own track is missing (one of 1-4 is chosen at random) | Moody, atmospheric, loopable; nothing tied to one zone
+general_track_2 | general_track_2.mp3       | LOOP | Stand-in (see above)             | 
+general_track_3 | general_track_3.mp3       | LOOP | Stand-in (see above)             | 
+general_track_4 | general_track_4.mp3       | LOOP | Stand-in (see above)             | 
+boss_final   | boss_shadow_lord.mp3         | LOOP | Final boss - The Shadow Lord     | The big one. Full orchestra + organ + choir, two sections (a menacing first half and a frantic second half that loops back). 150-180 BPM.
+#   SUNO STYLE:  instrumental, epic dark orchestral finale, full orchestra, pipe organ, powerful choir, thundering drums, brass fanfare, 168 bpm, D minor, apocalyptic, climactic, two parts. Intro: distorted bell tolls D, A, D and a tritone stab D against Ab. Part 1, menacing: slow heavy organ and low brass play the descending castle theme D, C, Bb, A while a choir sings the chromatic crawl down Ab, G, Gb, F. Part 2, frantic: double-time drums, racing strings and choir, and full brass plays the heroic rising call A, D, F, E as a bold declaration over the organ theme. Ends on a D minor chord.
+#   SUNO SHORT:  instrumental, epic dark orchestral finale, organ, choir, drums, brass, 168 bpm, D minor. Bells D-A-D, organ D-C-Bb-A, choir crawl Ab-G-Gb-F, brass A-D-F-E
+#   SUNO LYRICS: [Instrumental] [Intro: distorted bell tolls, low high low, tritone stab] [Part 1 - Menace: slow heavy organ and low brass play the descending four-note castle theme, choir sings the curse motif] [Part 2 - Frantic: double-time drums, strings and choir race, full brass plays the rising lonely motif as a heroic declaration] [Climax: all motifs together] [Outro: ends on D minor chord]
+#   MOTIFS:      ALL FIVE except Dawn: M3 Tolling (intro)  |  M4 The Curse (Part 1)  |  M1 The Keep (Part 1 and under Part 2)  |  M2 The Stranger (BRASS - the full heroic version, Part 2)
+#   NOTE:        This is the payoff for the whole score - the Stranger's theme finally sounds like a hero.
+
+
+=====================================================================
+  STINGS & ENDINGS  (play once)
+=====================================================================
+sting_item     | sting_item_get.mp3         | STING | Picking up a rare item           | 2-4 seconds. Bright rising bell/harp flourish.
+#   SUNO STYLE:  instrumental, short fanfare sting, bright harp glissando, glass bells, magical sparkle, 3 seconds, D major, rewarding, no drums. The harp climbs the first three notes of the hero's call, A, D, F#, then lands on a bright D major chord.
+#   SUNO SHORT:  instrumental, 3 second sting, harp glissando, glass bells, D major. Rising notes A-D-F# then a bright chord
+#   SUNO LYRICS: [Instrumental] [Short sting: rising harp flourish and glass bells ending on a bright chord]
+#   MOTIFS:      M2 The Stranger (first three notes, rising: A - D - F#)
+#   NOTE:        Generate 3 seconds only; trim to length.
+
+sting_ability  | sting_ability_get.mp3      | STING | Gaining a new ability/relic      | 5-8 seconds. Triumphant, mystical choir swell with shimmering bells.
+#   SUNO STYLE:  instrumental, mystical triumphant sting, soaring wordless choir swell, shimmering bells, harp, brass, 6 seconds, D major, awe, power awakening. Brass plays the hero's call in major, A, D, F#, E (up a fourth, up a major third, down a whole step), over the choir swell and shimmering bells, ending on a bright held D major chord.
+#   SUNO SHORT:  instrumental, 6 second mystical triumphant sting, choir swell, bells, brass, D major. Brass call A-D-F#-E, bright held chord
+#   SUNO LYRICS: [Instrumental] [Sting: wordless choir swells, brass plays the rising lonely motif in major key, up a fourth, up a minor third, shimmering bells, ends on a bright held chord]
+#   MOTIFS:      M2 The Stranger (brass, major key - it grows stronger every time you find a relic)
+
+sting_victory  | sting_boss_defeated.mp3    | STING | Boss defeated                    | 6-10 seconds. Heroic brass/organ fanfare resolving to silence.
+#   SUNO STYLE:  instrumental, heroic victory fanfare, brass, pipe organ, timpani roll, choir, 8 seconds, D major, triumphant, relieved, cathartic. After a timpani roll the brass fanfare plays the hero's call A, D, F#, E; the organ answers with the castle theme turned upward, D, E, F#, A; it resolves to a held D major chord, then silence.
+#   SUNO SHORT:  instrumental, 8 second heroic victory fanfare, brass, organ, timpani, D major. Brass A-D-F#-E, organ answer D-E-F#-A, held chord, silence
+#   SUNO LYRICS: [Instrumental] [Sting: timpani roll, brass fanfare plays the rising lonely motif, organ plays the descending castle theme turned upward, resolves to a held D major chord, then silence]
+#   MOTIFS:      M2 The Stranger (brass)  |  M5 Dawn (a preview: the castle theme turned upward)
+
+sting_gameover | sting_game_over.mp3        | STING | Game over screen                 | 4-8 seconds. A slow, mournful descending organ or choir phrase.
+#   SUNO STYLE:  instrumental, mournful organ and choir sting, slow, funeral bell, 5 seconds, D minor, defeat, somber, fading reverb. A slow organ plays the descending castle theme D, C, Bb, A; a distorted funeral bell tolls D, A, D (low, high, low); it ends on a hollow chord of D and Ab fading into silence.
+#   SUNO SHORT:  instrumental, 5 second mournful organ and choir sting, funeral bell, D minor. Organ D-C-Bb-A, bell D-A-D, hollow chord D+Ab fading out
+#   SUNO LYRICS: [Instrumental] [Sting: slow organ plays the descending four-note castle theme, distorted funeral bell tolls low high low, ends on a hollow chord fading to silence]
+#   MOTIFS:      M1 The Keep (the castle claims you)  |  M3 Tolling (funeral bell)  |  M4 The Curse (final hollow chord)
+
+ending       | ending_dawn.mp3            | LOOP  | Ending - the sun returns         | The dawn after the long night. Warm strings and piano, the title theme finally resolving to major. Gentle and cathartic.
+#   SUNO STYLE:  instrumental, warm cinematic strings, soft piano, gentle harp, sunrise, birdsong, cathartic, hopeful, slow 72 bpm, D major, peaceful resolution, emotional. Opens with one warm bell toll on D. The piano plays the castle theme turned upward in major: D, E, F#, A, rising and warm. A solo cello answers with the hero's call in major, A, D, F#, E, then is joined by the full strings. At the climax bells ring joyfully D, A, D. Gentle fade, ends on a warm D major chord.
+#   SUNO SHORT:  instrumental, warm strings, soft piano, harp, sunrise, hopeful, 72 bpm, D major. Piano D-E-F#-A rising, cello A-D-F#-E, joyful bells D-A-D
+#   SUNO LYRICS: [Instrumental] [Intro: single warm bell toll, birdsong] [Theme: piano plays the four-note castle theme turned upward in major, D - E - F# - A] [Answer: solo cello plays the rising lonely motif in major, joined by full strings] [Climax: all strings swell, bells ring joyfully] [Outro: gentle fade, ends on warm D major chord]
+#   MOTIFS:      M5 Dawn (THE KEEP inverted to major - the finale)  |  M2 The Stranger (cello, in major, at last at peace)  |  M3 Tolling (a bell that finally rings in joy)
+#   NOTE:        Cover of TITLE with audio-influence HIGH and the key flipped to major - the same song, healed.
+
+
+# ------------------------------------------------------------------
+# OPTIONAL IDEAS (not wired up yet - add to the game later if you like)
+# ------------------------------------------------------------------
+# shop / merchant theme, secret-room jingle, map screen, credits roll, a second
+# "hard mode" boss theme, ambient rain/wind bed loops for the outdoor zones.

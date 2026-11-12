@@ -1,0 +1,518 @@
+{
+ "ghost_idle": {
+  "file": "sprites/ghost_idle.png",
+  "n": 7,
+  "w": 64,
+  "h": 80
+ },
+ "ghost_appear": {
+  "file": "sprites/ghost_appear.png",
+  "n": 6,
+  "w": 64,
+  "h": 48
+ },
+ "ghost_vanish": {
+  "file": "sprites/ghost_vanish.png",
+  "n": 7,
+  "w": 64,
+  "h": 64
+ },
+ "ghost_shriek": {
+  "file": "sprites/ghost_shriek.png",
+  "n": 4,
+  "w": 64,
+  "h": 80
+ },
+ "fireskull": {
+  "file": "sprites/fireskull.png",
+  "n": 8,
+  "w": 96,
+  "h": 112
+ },
+ "hound_idle": {
+  "file": "sprites/hound_idle.png",
+  "n": 6,
+  "w": 64,
+  "h": 32
+ },
+ "hound_walk": {
+  "file": "sprites/hound_walk.png",
+  "n": 12,
+  "w": 64,
+  "h": 32
+ },
+ "hound_run": {
+  "file": "sprites/hound_run.png",
+  "n": 5,
+  "w": 67,
+  "h": 32
+ },
+ "hound_jump": {
+  "file": "sprites/hound_jump.png",
+  "n": 6,
+  "w": 65,
+  "h": 48
+ },
+ "wolf_run": {
+  "file": "sprites/wolf_run.png",
+  "n": 7,
+  "w": 32,
+  "h": 32
+ },
+ "skeleton_walk": {
+  "file": "sprites/skeleton_walk.png",
+  "n": 8,
+  "w": 44,
+  "h": 52
+ },
+ "skeleton_rise": {
+  "file": "sprites/skeleton_rise.png",
+  "n": 6,
+  "w": 44,
+  "h": 52
+ },
+ "zombie_walk": {
+  "file": "sprites/zombie_walk.png",
+  "n": 8,
+  "w": 44,
+  "h": 52
+ },
+ "zombie_rise": {
+  "file": "sprites/zombie_rise.png",
+  "n": 6,
+  "w": 44,
+  "h": 52
+ },
+ "wraith": {
+  "file": "sprites/wraith.png",
+  "n": 4,
+  "w": 37,
+  "h": 65
+ },
+ "wraith_halo": {
+  "file": "sprites/wraith_halo.png",
+  "n": 4,
+  "w": 37,
+  "h": 65
+ },
+ "hellcat": {
+  "file": "sprites/hellcat.png",
+  "n": 4,
+  "w": 96,
+  "h": 53
+ },
+ "death_small": {
+  "file": "sprites/death_small.png",
+  "n": 5,
+  "w": 44,
+  "h": 52
+ },
+ "ghoul_burning": {
+  "file": "sprites/ghoul_burning.png",
+  "n": 8,
+  "w": 57,
+  "h": 60
+ },
+ "wizard_idle": {
+  "file": "sprites/wizard_idle.png",
+  "n": 5,
+  "w": 81,
+  "h": 66
+ },
+ "wizard_cast": {
+  "file": "sprites/wizard_cast.png",
+  "n": 10,
+  "w": 81,
+  "h": 66
+ },
+ "fireball": {
+  "file": "sprites/fireball.png",
+  "n": 3,
+  "w": 26,
+  "h": 26
+ },
+ "death_big": {
+  "file": "sprites/death_big.png",
+  "n": 9,
+  "w": 81,
+  "h": 66
+ },
+ "beast_idle": {
+  "file": "sprites/beast_idle.png",
+  "n": 6,
+  "w": 55,
+  "h": 67
+ },
+ "beast_breath": {
+  "file": "sprites/beast_breath.png",
+  "n": 4,
+  "w": 64,
+  "h": 64
+ },
+ "beast_burn": {
+  "file": "sprites/beast_burn.png",
+  "n": 6,
+  "w": 74,
+  "h": 160
+ },
+ "nightmare_idle": {
+  "file": "sprites/nightmare_idle.png",
+  "n": 4,
+  "w": 128,
+  "h": 96
+ },
+ "nightmare_gallop": {
+  "file": "sprites/nightmare_gallop.png",
+  "n": 4,
+  "w": 144,
+  "h": 96
+ },
+ "angel_idle": {
+  "file": "sprites/angel_idle.png",
+  "n": 8,
+  "w": 122,
+  "h": 117
+ },
+ "angel_attack": {
+  "file": "sprites/angel_attack.png",
+  "n": 3,
+  "w": 122,
+  "h": 117
+ },
+ "demon_idle": {
+  "file": "sprites/demon_idle.png",
+  "n": 6,
+  "w": 160,
+  "h": 144
+ },
+ "demon_attack": {
+  "file": "sprites/demon_attack.png",
+  "n": 11,
+  "w": 240,
+  "h": 192
+ },
+ "demon_attack_nb": {
+  "file": "sprites/demon_attack_nb.png",
+  "n": 8,
+  "w": 192,
+  "h": 176
+ },
+ "hero_idle": {
+  "file": "sprites/hero_idle.png",
+  "n": 4,
+  "w": 38,
+  "h": 48
+ },
+ "hero_run": {
+  "file": "sprites/hero_run.png",
+  "n": 12,
+  "w": 66,
+  "h": 48
+ },
+ "hero_jump": {
+  "file": "sprites/hero_jump.png",
+  "n": 5,
+  "w": 61,
+  "h": 77
+ },
+ "hero_attack": {
+  "file": "sprites/hero_attack.png",
+  "n": 6,
+  "w": 96,
+  "h": 48
+ },
+ "hero_crouch": {
+  "file": "sprites/hero_crouch.png",
+  "n": 3,
+  "w": 48,
+  "h": 48
+ },
+ "hero_hurt": {
+  "file": "sprites/hero_hurt.png",
+  "n": 3,
+  "w": 48,
+  "h": 48
+ },
+ "hero_jump_attack": {
+  "file": "sprites/hero_jump_attack.png",
+  "n": 6,
+  "w": 84,
+  "h": 80
+ },
+ "ars_andromalius_r0": {
+  "file": "sprites/ars_andromalius_r0.png",
+  "n": 8,
+  "w": 57,
+  "h": 88
+ },
+ "ars_andromalius_r1": {
+  "file": "sprites/ars_andromalius_r1.png",
+  "n": 8,
+  "w": 57,
+  "h": 88
+ },
+ "ars_andromalius_r2": {
+  "file": "sprites/ars_andromalius_r2.png",
+  "n": 8,
+  "w": 57,
+  "h": 88
+ },
+ "ars_mage1_r0": {
+  "file": "sprites/ars_mage1_r0.png",
+  "n": 4,
+  "w": 85,
+  "h": 94
+ },
+ "ars_mage1_r1": {
+  "file": "sprites/ars_mage1_r1.png",
+  "n": 4,
+  "w": 85,
+  "h": 94
+ },
+ "ars_mage2_r0": {
+  "file": "sprites/ars_mage2_r0.png",
+  "n": 4,
+  "w": 122,
+  "h": 110
+ },
+ "ars_mage2_r1": {
+  "file": "sprites/ars_mage2_r1.png",
+  "n": 4,
+  "w": 122,
+  "h": 110
+ },
+ "ars_mage3_r0": {
+  "file": "sprites/ars_mage3_r0.png",
+  "n": 4,
+  "w": 87,
+  "h": 110
+ },
+ "ars_mage3_r1": {
+  "file": "sprites/ars_mage3_r1.png",
+  "n": 4,
+  "w": 87,
+  "h": 110
+ },
+ "ars_gnu_r0": {
+  "file": "sprites/ars_gnu_r0.png",
+  "n": 5,
+  "w": 120,
+  "h": 100
+ },
+ "ars_gnu_r1": {
+  "file": "sprites/ars_gnu_r1.png",
+  "n": 5,
+  "w": 120,
+  "h": 100
+ },
+ "ars_gnu_r2": {
+  "file": "sprites/ars_gnu_r2.png",
+  "n": 5,
+  "w": 120,
+  "h": 100
+ },
+ "ars_gnu_r3": {
+  "file": "sprites/ars_gnu_r3.png",
+  "n": 5,
+  "w": 120,
+  "h": 100
+ },
+ "ars_shadow_r0": {
+  "file": "sprites/ars_shadow_r0.png",
+  "n": 4,
+  "w": 80,
+  "h": 70
+ },
+ "ars_shadow_r1": {
+  "file": "sprites/ars_shadow_r1.png",
+  "n": 4,
+  "w": 80,
+  "h": 70
+ },
+ "ars_shadow_r2": {
+  "file": "sprites/ars_shadow_r2.png",
+  "n": 4,
+  "w": 80,
+  "h": 70
+ },
+ "ars_shadow_r3": {
+  "file": "sprites/ars_shadow_r3.png",
+  "n": 4,
+  "w": 80,
+  "h": 70
+ },
+ "ars_shadow_r4": {
+  "file": "sprites/ars_shadow_r4.png",
+  "n": 4,
+  "w": 80,
+  "h": 70
+ },
+ "ars_minion_r0": {
+  "file": "sprites/ars_minion_r0.png",
+  "n": 3,
+  "w": 45,
+  "h": 66
+ },
+ "ars_minion_r1": {
+  "file": "sprites/ars_minion_r1.png",
+  "n": 3,
+  "w": 45,
+  "h": 66
+ },
+ "ars_disciple_r0": {
+  "file": "sprites/ars_disciple_r0.png",
+  "n": 4,
+  "w": 45,
+  "h": 51
+ },
+ "ars_disciple_r1": {
+  "file": "sprites/ars_disciple_r1.png",
+  "n": 4,
+  "w": 45,
+  "h": 51
+ },
+ "ars_disciple_r2": {
+  "file": "sprites/ars_disciple_r2.png",
+  "n": 4,
+  "w": 45,
+  "h": 51
+ },
+ "ars_tentacles_r0": {
+  "file": "sprites/ars_tentacles_r0.png",
+  "n": 8,
+  "w": 25,
+  "h": 90
+ },
+ "ars_tentacles_r1": {
+  "file": "sprites/ars_tentacles_r1.png",
+  "n": 8,
+  "w": 25,
+  "h": 90
+ },
+ "ars_tentacles_r2": {
+  "file": "sprites/ars_tentacles_r2.png",
+  "n": 8,
+  "w": 25,
+  "h": 90
+ },
+ "swamp_spider": {
+  "file": "sprites/swamp_spider.png",
+  "n": 4,
+  "w": 32,
+  "h": 21
+ },
+ "swamp_thing": {
+  "file": "sprites/swamp_thing.png",
+  "n": 4,
+  "w": 33,
+  "h": 45
+ },
+ "npc_bearded_idle": {
+  "file": "sprites/npc_bearded_idle.png",
+  "n": 5,
+  "w": 40,
+  "h": 47
+ },
+ "npc_bearded_walk": {
+  "file": "sprites/npc_bearded_walk.png",
+  "n": 6,
+  "w": 40,
+  "h": 47
+ },
+ "npc_hatman_idle": {
+  "file": "sprites/npc_hatman_idle.png",
+  "n": 4,
+  "w": 39,
+  "h": 52
+ },
+ "npc_hatman_walk": {
+  "file": "sprites/npc_hatman_walk.png",
+  "n": 6,
+  "w": 39,
+  "h": 52
+ },
+ "npc_oldman_idle": {
+  "file": "sprites/npc_oldman_idle.png",
+  "n": 8,
+  "w": 34,
+  "h": 42
+ },
+ "npc_oldman_walk": {
+  "file": "sprites/npc_oldman_walk.png",
+  "n": 12,
+  "w": 34,
+  "h": 42
+ },
+ "npc_woman_idle": {
+  "file": "sprites/npc_woman_idle.png",
+  "n": 7,
+  "w": 37,
+  "h": 46
+ },
+ "npc_woman_walk": {
+  "file": "sprites/npc_woman_walk.png",
+  "n": 6,
+  "w": 37,
+  "h": 46
+ },
+ "hero_crouch_slash": {
+  "file": "sprites/hero_crouch_slash.png",
+  "n": 4,
+  "w": 80,
+  "h": 32
+ },
+ "haunted_bust": {
+  "file": "sprites/haunted_bust.png",
+  "n": 6,
+  "w": 32,
+  "h": 96
+ },
+ "cell_door": {
+  "file": "sprites/cell_door.png",
+  "n": 16,
+  "w": 64,
+  "h": 96
+ },
+ "pot_frames": {
+  "file": "sprites/pot_frames.png",
+  "n": 4,
+  "w": 32,
+  "h": 32
+ },
+ "dg_torch": {
+  "file": "sprites/dg_torch.png",
+  "n": 4,
+  "w": 32,
+  "h": 64
+ },
+ "szadi_gem": {
+  "file": "sprites/szadi_gem.png",
+  "n": 5,
+  "w": 8,
+  "h": 9
+ },
+ "reaper_idle": {
+  "file": "sprites/reaper_idle.png",
+  "n": 6,
+  "w": 32,
+  "h": 32
+ },
+ "reaper_run": {
+  "file": "sprites/reaper_run.png",
+  "n": 7,
+  "w": 32,
+  "h": 32
+ },
+ "reaper_attack": {
+  "file": "sprites/reaper_attack.png",
+  "n": 8,
+  "w": 32,
+  "h": 32
+ },
+ "reaper_dead": {
+  "file": "sprites/reaper_dead.png",
+  "n": 4,
+  "w": 32,
+  "h": 32
+ }
+}
