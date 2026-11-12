@@ -50,6 +50,27 @@ export const Touch = {
     });
   },
 
+  // The size of one control unit, and - on a phone held sideways - how much room the game gives up to the controls.  The picture stays 16:9, so there are two ways to make room, and the one that leaves
+  // the bigger picture wins: (a) a gutter at each side, about three quarters of the controls' width, so the controls only overlap the edges of the picture a little (a wide phone); or
+  // (b) the picture sits at the top and the controls take a strip along the bottom (a squarer tablet, which has the height to spare).  Returns { l, r, h }: the gutters, and the height left for the picture.
+  layout() {
+    const root = this.root; if (!root) return { l: 0, r: 0, h: innerHeight };
+    const w = innerWidth, h = innerHeight, land = w > h * 1.2, vmin = Math.min(w, h), clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+    const u = land ? clamp(Math.min(vmin * 0.125, w * 0.072), 36, 56) : clamp(Math.min(vmin * 0.15, w * 0.082), 38, 96);
+    this.u = u; this.land = land; root.style.setProperty('--u', u + 'px');
+    let l = 0, r = 0, ah = h, below = false;
+    if (this.on && land) {
+      const full = Math.min(w / W, h / H);
+      if ((h - full * H) / 2 < u * 3.9) {                                                                                              // (a screen with room in its black bands has nothing to give up)
+        let gl = u * 2.7, gr = u * 3.55; const keep = Math.max(w * 0.45, h * 0.62 * W / H);                 // (the picture never gets smaller than 62% of the screen's height: a small phone lets the controls overlap a bit more)
+        if (w - gl - gr < keep) { const k = Math.max(0.4, (w - keep) / (gl + gr)); gl *= k; gr *= k; }
+        const sA = Math.min((w - gl - gr) / W, h / H), sB = Math.min(w / W, (h - u * 4) / H);
+        if (sB > sA * 1.02) { below = true; ah = h - u * 4; } else { l = gl; r = gr; }
+      }
+    }
+    const wrap = document.getElementById('wrap'); wrap.style.paddingLeft = l + 'px'; wrap.style.paddingRight = r + 'px'; wrap.style.alignItems = below ? 'flex-start' : ''; this.below = below; return { l, r, h: ah };
+  },
+
   show(v, manual = false) {
     if (v === this.on) return; this.on = v; this.manual = v && manual; Input.touchOn = v; this.root.style.display = v ? 'block' : 'none'; document.body.classList.toggle('touch', v);
     if (!v) { for (const f of this.rels) f(); Input.releaseTouch(); } this.mode = ''; if (this.game && this.game.resize) this.game.resize();

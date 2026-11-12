@@ -60,7 +60,8 @@ class Game {
 
   // -------------------------------------------------------------------------------- sizing / loop
   resize() {
-    let s = Math.min(innerWidth / W, innerHeight / H); const fl = Math.floor(s); if (fl >= 1 && s - fl < 0.4) s = fl;
+    const gut = Touch.layout();                                                            // (on a phone held sideways the game gives up some width to the on-screen controls)
+    let s = Math.min((innerWidth - gut.l - gut.r) / W, gut.h / H); const fl = Math.floor(s); if (fl >= 1 && s - fl < 0.4 && !Input.touchOn) s = fl;                  // (a desktop window snaps down to a whole scale for the crispest pixels; a phone needs every pixel it can get)
     const st = document.getElementById('stage'); st.style.width = Math.floor(W * s) + 'px'; st.style.height = Math.floor(H * s) + 'px';
     const devW = Math.floor(W * s) * (window.devicePixelRatio || 1), K = clamp(Math.ceil(devW / W - 0.02), 2, Input.touchOn ? 3 : 5);                // (a phone gets at most 3x: the sharper canvas is not worth the heat)
     if (K !== this.K || this.canvas.width !== W * K) { this.K = K; this.canvas.width = W * K; this.canvas.height = H * K; }
