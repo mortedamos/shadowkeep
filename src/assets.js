@@ -20,6 +20,9 @@ const ENV = [
   // Anokolisa 'Final' (moonlit graveyard), The Sidescroller's Dungeon tiles (32px art)
   'moon_sky', 'moon_tombs', 'moon_foliage1', 'moon_foliage2', 'dg_pillar_1', 'dg_pillar_2', 'dg_pillar_3', 'dg_pillar_4', 'dg_arch', 'dg_door', 'dg_crates', 'dg_urn_1', 'dg_urn_2', 'dg_urn_3', 'dg_banner_1', 'dg_banner_2', 'dg_banner_3', 'dg_banner_4', 'dg_banner_5', 'dg_banner_6',
   'town_sky', 'town_mid', 'town_house_1', 'town_house_2', 'town_house_3', 'town_barrel', 'town_crates', 'town_crate', 'town_lamp', 'town_cart', 'town_well', 'town_sign', 'crypt_tilemap',
+  'gy_stone', 'gy_stone_old', 'gy_lily', 'gy_daisy', 'gy_rose', 'gy_posy', 'gy_wreath', 'gy_fence_a', 'gy_fence_b', 'gy_fence_c', 'gy_angel', 'gy_st1', 'gy_st3', 'gy_st4', 'gy_st5', 'gy_st6', 'gy_st7', 'gy_st8', 'orloj', 'orloj_small', 'orloj_calendar', 'gear_a', 'gear_b', 'gear_c', 'gear_d', 'gear_e',          // gear_*: strips of the Animated Gears pack (heosphorus, itch.io), packed by tools/pack-gears.ps1
+           // orloj: the Prague astronomical clock, pixelated by tools/pixelate-orloj.ps1
+           // Graveyard 400 Assets (worldswithoutend): her gravestones and the flowers at their feet (trimmed and shrunk to game size by buildGraveyard)
   'sp_tank', 'sp_vent', 'sp_valve', 'sp_clock', 'sp_lamp', 'sp_furnace', 'sp_tesla',          // Steampunk Pixel Art Mega Pack (32x32): the Clockwork Dungeon's props
 ];
 
@@ -42,7 +45,7 @@ const META = {
 Object.assign(META, { vampire_idle: { ay: 0.9 }, vampire_run: { ay: 0.9 }, vampire_atk: { ay: 0.9 }, vampire_jump: { ay: 0.9 }, vampire_hurt: { ay: 0.9 }, vampire_dead: { ay: 0.9 } });
 // Some Ars Notoria cells leave empty rows under the feet (the gnu 7-9, the archmage 7); `dy` pushes them down (those rows + 2: enemies are drawn 1px high, and the feet should dip 1px into the floor) so the creature stands ON the ground instead of hovering over it.
 // (an entry here replaces the "Ars sheets face left" default, so each says face: -1 itself)
-Object.assign(META, { ars_gnu_r0: { face: -1, dy: 11 }, ars_gnu_r1: { face: -1, dy: 11 }, ars_gnu_r2: { face: -1, dy: 10 }, ars_gnu_r3: { face: -1, dy: 9 }, ars_mage2_r0: { face: -1, dy: 9 }, ars_mage2_r1: { face: -1, dy: 9 } });
+Object.assign(META, { ars_gnu_r0: { face: 1, dy: 11 }, ars_gnu_r1: { face: 1, dy: 11 }, ars_gnu_r2: { face: -1, dy: 10 }, ars_gnu_r3: { face: -1, dy: 9 }, ars_mage2_r0: { face: -1, dy: 9 }, ars_mage2_r1: { face: -1, dy: 9 } });
 // the bronze-robed, silver-masked mage (mage 1) fills its whole 85x94 cell: the hem of the robe is the bottom row
 Object.assign(META, { ars_mage1_r0: { face: -1, dy: 2 }, ars_mage1_r1: { face: -1, dy: 2 } });
 // the Gothic Hero (Ansimuz): feet on the bottom row of each cell, faces right.  hero_attack's body sits a little left of the cell centre.
@@ -81,6 +84,7 @@ export async function loadAll(progress = () => {}) {
   buildEvil();                            // the mirror twin: the hero in silver and violet (hero_*_evil)
   buildWhiteCape();                       // the hero's baked red cape -> white (used while the White Cloak option is on)
   buildLady();                            // the ghost who walks behind him
+  buildGraveyard();                       // her stones and flowers, trimmed and shrunk
   drawProcedural(addSheet, SHEET, IMG);   // custom pixel art: bat, icons, props
   buildEnchants();                        // enchanted sword variants (needs the hero sheets)
 }
@@ -146,6 +150,21 @@ function buildLady() {
   addSheet('ghost_lady', c, s.n, s.w, s.h, { face: s.face, ax: s.ax, ay: s.ay, dx: s.dx, dy: s.dy });
 }
 
+// The Graveyard pack's pieces come on 128x128 canvases with the object small in the middle: cut each to its own outline and shrink it (smoothly) to its height in game pixels.
+const GY_HEIGHT = { gy_stone: 32, gy_stone_old: 28, gy_lily: 14, gy_daisy: 9, gy_rose: 13, gy_posy: 8, gy_wreath: 14, gy_fence_a: 27, gy_fence_b: 27, gy_fence_c: 27, gy_angel: 46, gy_st1: 42, gy_st3: 54, gy_st4: 32, gy_st5: 28, gy_st6: 50, gy_st7: 38, gy_st8: 22 };          // (the statues: 1 hooded mourner, 2 angel [gy_angel, gilded], 3 knight, 4 kneeling mourner, 5 gargoyle, 6 robed woman, 7 seated mourner, 8 owl)
+function buildGraveyard() {
+  for (const [name, h] of Object.entries(GY_HEIGHT)) {
+    const im = IMG[name]; if (!im) continue;
+    const c = canvasOf(im.width, im.height), g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    const d = g.getImageData(0, 0, c.width, c.height).data; let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+    for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) if (d[(y * c.width + x) * 4 + 3] > 24) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); }
+    if (x1 < 0) continue;
+    const sw = x1 - x0 + 1, sh = y1 - y0 + 1, k = h / sh, o = canvasOf(Math.max(1, Math.round(sw * k)), h), og = o.getContext('2d');
+    og.imageSmoothingEnabled = true; og.imageSmoothingQuality = 'high'; og.drawImage(c, x0, y0, sw, sh, 0, 0, o.width, o.height); IMG[name] = o;
+    if (name === 'gy_angel') { const id = og.getImageData(0, 0, o.width, o.height), p = id.data; for (let i = 0; i < p.length; i += 4) { if (p[i + 3] < 8) continue; const L = (0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2]) / 255, k = 0.3 + 1.0 * L; p[i] = Math.min(255, 238 * k + 8); p[i + 1] = Math.min(255, 188 * k); p[i + 2] = Math.min(255, 82 * k); } og.putImageData(id, 0, 0); }          // (the mourning angel is gilded: the Orloj's golden angels)
+  }
+}
+
 function buildRecolors() {
   // bone-white skeleton (the original is brown-red like the zombie)
   recolor('skeleton_walk', 'skeleton_w', (h, s, l) => [0.11, s * 0.28, Math.min(0.95, l * 1.35 + 0.12)]);
@@ -206,7 +225,7 @@ function hairPixels(W, lift = false) {
   span(13, -9, W + 2, x => (x <= -8 ? 4 : x >= W + 1 ? 4 : hs(x, 13) > 0.5 ? 3 : 2));
   for (let x = -8; x <= W + 1; x++) if (hs(x, 14) > 0.35) put(x, 14, hs(x, 15) > 0.5 ? 4 : 3);           // the ragged lower edge
   for (let x = -7; x <= W; x++) if (hs(x, 16) > 0.7) put(x, 15, 4);
-  for (let x = 0; x <= W; x++) out.delete(x + ',7');                                                  // (the lower face - nose, mouth, chin - stays clear: no cloth in front at row 7)
+  for (const [k, v] of [...out]) if (v[1] >= 7 && v[0] >= 0) out.delete(k);                          // (the lower face - nose, mouth, chin - stays clear: below the brim the cloth hangs only BEHIND the face, never across or under it)
   return [...out.values()];
 }
 function buildHair() {

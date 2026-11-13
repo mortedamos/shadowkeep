@@ -3,7 +3,7 @@
 A gothic-fantasy, side-scrolling action-adventure for the browser, in the spirit of *Castlevania* and *Bloodstained*.
 You are a nameless cloaked stranger with a sword, exploring a haunted castle: platforming, secrets, power-ups,
 nine zones laid out as a branching map, ten bosses (one of them optional), throwable items, waystone travel, and a three.js effects layer (fire, flickering candles, lightning, auras, mist). Text is set in two
-free gothic typefaces (Pirata One and Almendra, with Blackletter ExtraBold for the title and Fraktur Handschrift for the gravestones) rather than a pixel font. The hero is Ansimuz's Gothic Hero (the hooded-warrior set is archived in `assets/archive/`), draped in an
+free gothic typefaces (Pirata One and Almendra, with Blackletter ExtraBold for the title and Eroded Motta for the gravestones) rather than a pixel font. The hero is Ansimuz's Gothic Hero (the hooded-warrior set is archived in `assets/archive/`), draped in an
 experimental animated **white cloak** (a cloth hung from both shoulders that drapes behind him; Options > White Cloak turns it off, or start with `?cloak=0`).
 
 ## Play it
@@ -51,14 +51,14 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
 
 ## The story
 
-*Prague, Bohemia, 1619.* The Stranger - we never learn his name - is found kneeling at a grave on a hill above the city, in the rain: the grave of a woman who was his wife, his sister, his lover (the game never says). She died to the
+*Prague, Bohemia, 1541* - the year of the great fire of Prague. The Stranger - we never learn his name - is found kneeling at a grave on a hill above the city, in the rain: the grave of a woman who was his wife, his sister, his lover (the game never says). She died to the
 **Shadowkeep**, the castle that rose out of the countryside, took the **sun** and let the things of the shadow-realm walk the earth. As he kneels the city far below begins to burn. He rises, draws the sword **Silberzahn**
 ("the silver tooth") and goes down to it. Under his white cloak there is armour: a soldier's, or a monster-hunter's.
 
 * **An opening scene** (once, at the start of a new game; any key skips it): rain, a tolling bell, the grave with a blue candle on it, the title card, the glow of fire rising over the roofs. It is a real room - **the Hill Above Prague**, west of Market Street - with a tablet of its own.
   Its music is the `intro` track.
 * **Her ghost walks behind him** - pale, translucent, her lower half fading into nothing. She is invisible except in an **arcane (blue) light**: a waystone, a will-o'-the-wisp, a blue seal-flame, the candle on her grave, the **Ignis Fatuus**
-  lantern (own it, and she is always there). **Every tablet and gravestone is her voice**, written in her own handwriting (the Fraktur Handschrift font, in mixed case: the round s ends a word, the long s sits elsewhere - set `LONG_S` in `src/font.js` to change that): advice about the road ahead, and what it is to be a ghost. She shows for a while whenever one speaks. (Signposts are only signs.)
+  lantern - which is HER: the pale blue wisp you carry once the Mire Mother falls follows where the ghost used to float, and from then on the ghost is no longer seen. **Every tablet and gravestone is her voice** (the stones are a headstone from the Graveyard 400 Assets pack, with flowers at their feet), lettered in the Eroded Motta font, in mixed case (it has no colon, so colons become dashes): advice about the road ahead, and what it is to be a ghost. She shows for a while whenever one speaks. (Signposts are only signs.)
 * **Every boss speaks to the Stranger before the fight** (once), and some say a last word as they fall; the Shadow Lord's come just before the sun rises. The ending returns to the grave.
 * **Alchemy, as Prague loved it.** The sun is the **Azoth**, the light that wakes it. The spells are **Sulphur** and **Vitriol**; the feather is **Aether**, the dash **Quicksilver**; the containers are the **Elixir Vitae** and the **Quintessence**;
   the whetstone is **Sal Martis**; the boss rewards are the **Salamander Mantle**, the **Ignis Fatuus Lantern**, the **Speculum Shard**, the **Perpetuum**, the **Aqua Regia** and the **Shoes of Hermes**; holy water is **Aqua Vitae**, the bandage **Panacea**.
@@ -70,13 +70,13 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
 * **9 zones in a branching castle - one look per zone.** The story is set in **Bohemia**; you begin in its capital, **Prague**. A level never mixes tilesets; each look gets its own level.
   It is a graph, not a corridor: after the Graveyard the way splits at **the Three Roads** (a crossroads with a waystone) into the **Weeping Mire** (a door high on a ledge - it needs the Double Jump), which runs on into **the Cistern**,
   the **Great Hall**, and the **Moonlit Chapel** (its door is sealed until the masters of the Hall and of the Cistern are dead). The Chapel leads to a second crossroads, **the Crossing Hall**, where the way splits again into **the Crypts**
-  (barricaded: burn it), **the Clockwork Dungeon** (its door stands beyond a gulf: it needs the Dash) and the **Shadow Throne** (sealed by crystal - Thunder - and by the Crimson Count and the Hierophant). Every door at a
+  (barricaded: burn it) and the **Shadow Throne** (sealed by crystal - Thunder - and by the Crimson Count and the Hierophant). The **Clockwork Dungeon** is not on the crossroads at all: its way in is back in **Prague** - a locked door high above Smouldering Lane (it needs the **Key of Tin** from the top of the Bone Stair, and the double jump) leads up **the Orloj Tower** (Smouldering Lane is a tall street, and the tower itself - a pixelated picture of the real Prague Orloj tower - rises behind that door), where the great astronomical clock hangs in a shaft of turning cogwheels (with a few faded, animated gear clusters from the Animated Gears pack among them) and swinging pendulums, and the door to the Clockwork Dungeon stands on the landing beside it. You must go back for it. Every door at a
   crossroads has a signpost, every branch ends in a door that drops you back at its crossroads, and the order in which you do the branches is yours. `tools/test-world.mjs` proves, for every castle, that it can be finished
   and that each of those locks really needs its key. Open room edges (marked by a small arrow on the screen edge), **doors** (UP) and fade transitions connect the rooms; the zone name appears when you cross into a new one.
   The map draws every line from where its doorway really is (a tower is entered at its foot and left at its top, so it is plainly a way through), a gold mark where the way is a door, and a dotted line for the one-way doors that
   bring you back to a crossroads; unexplored doorways show as short stubs. Up / Down scroll it as well as Left / Right.
-* **Prague is calm at dusk - until the Cinder Warden arrives.** The village starts as a violet dusk with the monsters already loose; as you reach the east end of Market Street a short scene plays (you cannot move or strike, and the monsters
-  freeze): the Warden steps out of the dark, hurls three torches that set the houses alight one by one, turns to look at you, and strides away. From then on Prague burns.
+* **Prague is calm at dusk - until the Cinder Warden arrives.** The village starts as a violet dusk with the monsters already loose; as you start up Smouldering Lane, the first street beyond the Waystone Square, a short scene plays (you cannot move or strike, and the monsters
+  freeze): the Warden steps out of the dark, hurls three torches that set the houses alight one by one, turns to look at you, and vanishes in flame. From then on Prague burns (Market Street too).
 * **Moving gears.** The Clockwork Dungeon has brass-and-iron rooms and a background of gears behind gears, from ones half a hero tall to ones the size of the room. In **the Great Gear** you cross a pit on the *teeth* of three great turning
   wheels: every tooth on a wheel's upper side is a moving one-way platform that carries you with it - ride one up, over and down, and hop to the next.
 * **Flowing water.** In the Cistern streams of water run along the floor and **carry the hero** the way they flow (wading: fully; in the air: a little), under waterfalls; the Drowned Warden keeps the gate at the end, and leaves the **Aqua Regia**:
@@ -87,11 +87,11 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
   stains the cloak), the **Mire Mother** the **Ignis Fatuus Lantern** (a wisp follows you - it lights the dark, clears the fog around you and draws loot from much further off), the optional **Reflection** the **Speculum Shard** (your sword
   turns arrows, bones, orbs and thrown items back at their throwers, faster and now hurting them) and the **Hierophant** the **Perpetuum** (your dash recharges twice as fast). The other bosses already give a power (double jump, dash, Ember,
   Thunder, the Aqua Regia, the Azoth). The containers they used to carry are now on a high ledge in Prague, in a hidden cell in the Portrait Gallery and in two new locked vaults (below).
-* **Keys and locked doors.** Six doors are **locked** - a padlock and chains are drawn over them, in the colour of their key - and lead to optional **vaults** (the Gravekeeper's, the Steward's, the Verger's, the Count's Treasury, the
-  Ferryman's and the Engineer's) with a chest inside. Each key is found earlier in the same zone: in a chest in a hidden cell of the Iron Gate, at the top of the Belfry Stairs, in a chest in the Nave, at the top of the Bone Stair, in a cell
+* **Keys and locked doors.** Six doors are **locked** - a padlock and chains are drawn over them, in the colour of their key - and lead to optional **vaults** (the Gravekeeper's, the Steward's, the Verger's, the
+  Ferryman's and the Engineer's) with a chest inside - and to the **Orloj Tower**, which is not optional.  (The Count's Treasury, once locked, is open.) Each key is found earlier in the same zone: in a chest in a hidden cell of the Iron Gate, at the top of the Belfry Stairs, in a chest in the Nave, at the top of the Bone Stair, in a cell
   of Mire Edge, in a barricaded cell of the Escapement. Walk up to a locked door and press
-  Up: without its key it tells you which one it needs; with it the door opens for good (the key is used up). Vaults are optional, so no key can ever lock you out of the game - `tools/test-world.mjs` proves every key is
-  reachable and every vault is shut without its key.
+  Up: without its key it tells you which one it needs; with it the door opens for good (the key is used up). Vaults are optional, and the Key of Tin lies on the way through the Crypts, so no key can ever lock you out of the game - `tools/test-world.mjs` proves every key is
+  reachable and every locked door is shut without its key.
 * **The pause screen shows what you have found:** the four powers (dim and unnamed until you find them), the Shoes of Hermes, the Aqua Regia and the rest once found, and the keys you carry. (They are no longer on the main screen.)
 * **Breakable things glow faintly** - barrels and crates (in the colour of what they hold), cracked walls (lilac), barricades (embers) and crystals (ice); statues, which hold treasure, glow a little more.
 * **Scenery stands on the ground.** On levels drawn over a parallax picture nothing hangs in the air: wall torches become braziers on the floor (fewer of them, clear of doors), barred windows are gone, and every framed portrait - painted
@@ -196,7 +196,7 @@ src/
   procart.js        code-drawn pixel art: bat, icons, props
   audio.js          music manager + synthesized sound effects      ui.js   HUD, menus, map, story screens
   touch.js          the on-screen controls for phones and tablets (HTML buttons that hold the same actions as the keys)
-  font.js           gothic text: Pirata One + Almendra (+ Blackletter for the title, Fraktur Handschrift for her gravestones) drawn as vector text on the hi-res canvas (bitmap fallback if the fonts are missing)
+  font.js           gothic text: Pirata One + Almendra (+ Blackletter for the title, Eroded Motta for her gravestones) drawn as vector text on the hi-res canvas (bitmap fallback if the fonts are missing)
   assets.js input.js util.js decor.js viewer.js     decor.js also draws the bookcases and barred windows in code, and animates the torches
 assets/             sprites + environment art (+ sprites.json frame manifest, original licenses), fonts/ (the two gothic TTFs)
                     (assets/sprites/source/ holds the art packs as downloaded - keep that folder out of anything you publish, see CREDITS.md)

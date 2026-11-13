@@ -13,7 +13,7 @@ import { TILE } from './world.js';
 import { validateRoom, checkSpawns, roomOf, surfaces } from './validate.js';
 import { mulberry32 } from './util.js';
 
-export const GEN_VERSION = 5;
+export const GEN_VERSION = 7;
 const MAX_TRY = 60;
 
 // ------------------------------------------------------------------------------------------------ seeded random helpers
@@ -50,7 +50,10 @@ const SPEC = {
   v0: { kind: 'authored', zone: 6, name: 'The Hill Above Prague' },
   v1: { kind: 'authored', zone: 6, name: 'Market Street' },
   tv: { kind: 'teleport', zone: 6, name: 'Waystone Square', outdoor: true, opts: LOOK[6] },
-  v2: { kind: 'corridor', zone: 6, name: 'Smouldering Lane', w: [72, 86], outdoor: true, opts: LOOK[6],
+  // The ORLOJ TOWER: a locked door high on a ledge in Smouldering Lane (it needs the Key of Tin and the double jump) leads in.  The great astronomical clock hangs in the middle of the shaft; the door to the Clockwork Dungeon is on the landing beside it.
+  ot: { kind: 'tower', zone: 8, name: 'The Orloj Tower', areaLabel: 'The Orloj Tower', parent: 'v2', orloj: true, w: [30, 34], h: [40, 46], top: [11, 13], opts: { ...LOOK[8], ambient: 0.36 }, abilities: ['djump'],
+    mods: [{ t: 'tablet', id: 'tab18', text: 'THE CLOCK STILL KEEPS PRAGUE\'S HOUR. THE APOSTLES STILL WALK IN THEIR WINDOWS, AND THE SUN IS STILL ON ITS DIAL. IT IS THE ONLY SUN LEFT.' }], candles: [3, 3], barrels: [1, 1], mix: { skeleton: [1, 2], ghost: [1, 1], fireskull: [2, 2], bat: [2, 2], sorcerer: [1, 1] } },
+  v2: { kind: 'corridor', zone: 6, name: 'Smouldering Lane', tall: 26, w: [90, 104], outdoor: true, opts: LOOK[6],
     mods: [{ t: 'door', to: 'sv', kind: 'wood' }, { t: 'door', to: 'hv4', kind: 'house' }, { t: 'djLedge', kind: 'atkup', id: 'v2_atk' }, { t: 'djLedge', kind: 'hpup', id: 'v2_hp' }, { t: 'tablet', id: 'tab9', near: 'start', text: 'THE BELLS WERE THE FIRST TO FALL SILENT. THE PRIEST BARRED THE CHAPEL DOOR AND PRAYED. IT DID NOT HELP.' }],
     candles: [3, 5], barrels: [1, 2], mix: { zombie: [2, 3], skeleton: [1, 2], hound: [1, 1], bat: [1, 2], fireskull: [1, 1], villager: [2, 3] } },
   v3: { kind: 'tower', zone: 6, name: 'The Bell Tower', w: [28, 32], h: [34, 38], top: [8, 10], opts: { ...LOOK[6], ambient: 0.4 },
@@ -148,7 +151,7 @@ const SPEC = {
     opts: { ...LOOK[9], ambient: 0.28, boss: 'drowned', music: 'boss' } },
   sq: { kind: 'sanctuary', zone: 9, name: 'Dry Sanctuary', parent: 'q1' },
   // ======== ZONE 8 - THE CLOCKWORK DUNGEON (the Brazen Hierophant's works: brass, pipes and steam, with gears behind gears)
-  tk: { kind: 'teleport', zone: 8, name: 'Cogwheel Landing', opts: LOOK[8] },
+  tk: { kind: 'teleport', zone: 8, name: 'Cogwheel Landing', areaLabel: 'The Clockwork Dungeon', opts: LOOK[8] },
   k1: { kind: 'corridor', zone: 8, name: 'The Escapement', w: [80, 94], opts: { ...LOOK[8], fog: 0.12 }, abilities: ['djump', 'dash', 'ember'],
     mods: [{ t: 'door', to: 'sk', kind: 'wood' }, { t: 'door', to: 'vk', kind: 'crypt', key: 'key_gear' }, { t: 'cell', gate: 'barricade', chest: true, kind: 'key', id: 'key_gear' }, { t: 'djLedge', kind: 'atkup', id: 'k1_atk' }, { t: 'tablet', id: 'tab16', near: 'start', text: 'THE LORD\'S ENGINEER BUILT A MACHINE TO HOLD THE SUN BELOW THE HILLS. IT HAS NOT STOPPED TURNING SINCE, AND NEITHER HAS HE.' }],
     candles: [2, 3], barrels: [2, 3], mix: { skeleton: [1, 2], sorcerer: [1, 2], zealot: [1, 2], hound: [1, 1], bat: [1, 2], fireskull: [1, 2], emberwyrm: [1, 1] } },
@@ -166,10 +169,11 @@ const SPEC = {
   // ======== ZONE 4 - THE CRYPTS (ruled by the Crimson Count; it was the clockwork Underworks - the rooms are the same, the dead have moved in)
   tu: { kind: 'teleport', zone: 4, name: 'Waystone Charnel', opts: LOOK[4] },
   u1: { kind: 'corridor', zone: 4, name: 'The Ossuary', w: [70, 82], opts: { ...LOOK[4], fog: 0.45 },
-    mods: [{ t: 'door', to: 's5', kind: 'wood' }, { t: 'door', to: 'vu', kind: 'crypt', key: 'key_crypt' }, { t: 'djLedge', kind: 'hpup', id: 'u1_hp' }, { t: 'tablet', id: 'tab7', near: 'start', text: 'HERE THE LORD LAID HIS HOUSEHOLD TO REST. THEY WERE PROMISED SLEEP. THE COUNT HAS BEEN WAKING THEM, ONE BY ONE.' }],
+    mods: [{ t: 'door', to: 's5', kind: 'wood' }, { t: 'door', to: 'vu', kind: 'crypt' }, { t: 'djLedge', kind: 'hpup', id: 'u1_hp' }, { t: 'tablet', id: 'tab7', near: 'start', text: 'HERE THE LORD LAID HIS HOUSEHOLD TO REST. THEY WERE PROMISED SLEEP. THE COUNT HAS BEEN WAKING THEM, ONE BY ONE.' }],
     candles: [3, 4], barrels: [2, 3], mix: { skeleton: [2, 2], ghost: [2, 3], wraith: [1, 2], fireskull: [1, 2], bat: [1, 2], wyrm: [1, 1] } },
-  u2: { kind: 'tower', zone: 4, name: 'The Bone Stair', w: [28, 32], h: [36, 42], top: [9, 11], opts: { ...LOOK[4], ambient: 0.45 },
-    topItem: { kind: 'key', id: 'key_crypt' }, candles: [3, 4], barrels: [1, 2], mix: { skeleton: [1, 2], ghost: [2, 2], wraith: [1, 1], fireskull: [2, 3], bat: [2, 2], wyrm: [1, 1] } },
+  u2: { kind: 'tower', zone: 4, name: 'The Bone Stair', w: [28, 32], h: [36, 42], top: [9, 11], opts: { ...LOOK[4], ambient: 0.45, dark: true },          // (DARK: only the wisp shows the way)
+    mods: [{ t: 'tablet', id: 'tab17', text: 'IT IS VERY DARK HERE. DO NOT BE AFRAID OF IT. I WILL GO AHEAD OF YOU.' }],
+    topItem: { kind: 'key', id: 'key_crypt' }, candles: [1, 1], barrels: [1, 2], mix: { skeleton: [1, 2], ghost: [2, 2], wraith: [1, 1], fireskull: [2, 3], bat: [2, 2], wyrm: [1, 1] } },
   u3: { kind: 'arena', zone: 4, name: "The Count's Crypt", w: [44, 50], boss: 'vampire', reward: 'thunder', plats: 2, rise: 3, seal: 'left', abilities: ['djump'], candles: [2, 2], decor: 'torch',
     opts: { ...LOOK[4], ambient: 0.22, tint: [0.07, 0, 0.04], vig: 0.6, boss: 'vampire', music: 'boss' } },
   s5: { kind: 'sanctuary', zone: 4, name: 'Crypt Sanctuary', parent: 'u1' },
@@ -185,7 +189,7 @@ const SPEC = {
   s4: { kind: 'sanctuary', zone: 5, name: 'Last Sanctuary', parent: 't1' },
   ta: { kind: 'interior', zone: 5, name: 'The Hidden Study', parent: 't1', look: 'study', theme: 'hall', ambient: 0.5, tint: [0.03, 0.0, 0.05], npc: { kind: 'oldman', title: 'THE LORD\'S SCRIBE', text: 'I WROTE DOWN EVERYTHING HE DID, AND NEVER ONCE LOOKED UP. NOW I CANNOT STOP LOOKING. HE IS ABOVE US. TAKE THIS, STRANGER - AND WHEN YOU MEET HIM, DO NOT LET HIM SPEAK.', again: 'I HAVE NO MORE PAGES. ONLY THE ONES I CANNOT BURN.', gifts: ['it_holy', 'it_holy', 'heart'], sells: { item: 'holy', price: 50 } } },
 };
-const ORDER = ['v0', 'v1', 'tv', 'v2', 'v3', 'vb', 'sv', 'tg', 'g1', 'g2', 'g4', 'vg', 'g3', 's1', 'hub1', 'tw', 'w1', 'w2', 'vw', 'w3', 'wb', 'sw', 'tq', 'q1', 'q2', 'q3', 'qb', 'sq', 'th', 'h1', 'h2', 'vh', 'h4', 'h3', 's2', 'tc', 'c1', 'c2', 'vc', 'c3', 's3', 'dc', 'hub2', 'tu', 'u1', 'vu', 'u2', 'u3', 's5', 'tk', 'k1', 'vk', 'k2', 'k3', 'kb', 'sk', 'tt', 't1', 't2', 's4', 'hv1', 'hv2', 'hv3', 'hv4', 'ga', 'wa', 'ha', 'ta', 'mr'];
+const ORDER = ['v0', 'v1', 'tv', 'v2', 'v3', 'vb', 'ot', 'sv', 'tg', 'g1', 'g2', 'g4', 'vg', 'g3', 's1', 'hub1', 'tw', 'w1', 'w2', 'vw', 'w3', 'wb', 'sw', 'tq', 'q1', 'q2', 'q3', 'qb', 'sq', 'th', 'h1', 'h2', 'vh', 'h4', 'h3', 's2', 'tc', 'c1', 'c2', 'vc', 'c3', 's3', 'dc', 'hub2', 'tu', 'u1', 'vu', 'u2', 'u3', 's5', 'tk', 'k1', 'vk', 'k2', 'k3', 'kb', 'sk', 'tt', 't1', 't2', 's4', 'hv1', 'hv2', 'hv3', 'hv4', 'ga', 'wa', 'ha', 'ta', 'mr'];
 // The castle is a GRAPH, not a road.  Each chain is a run of rooms joined edge to edge (a's right end opens into b's left end); the chains meet at two crossroads (hub1, hub2), whose doors are signed:
 //   village - graveyard - hub1 -+- the Mire (a door high on a ledge: needs the double jump) ---------+
 //                               +- the Great Hall ------------------------------------------------+-- back to hub1; the Chapel door has two sigils: the Hall's and the Mire's boss
@@ -206,23 +210,28 @@ const LINKS = CHAINS.flatMap(c => c.slice(1).map((id, i) => [c[i], 'R', id, 'L']
 // the crossroads' doors (two-way): hub a, its door tag ta, the first room of the branch b, the tag of that room's door tb; mod = how the door is built (see genCorridor), lock = boss flags it needs
 const PAIRS = [
   { a: 'hub1', ta: 'hall', b: 'th', tb: 'in', kind: 'wood', mod: 'door', label: 'THE GREAT HALL', hint: 'A GRAND ROAD, AND A DANGEROUS ONE.' },
-  { a: 'hub1', ta: 'mire', b: 'tw', tb: 'in', kind: 'crypt', mod: 'djDoor', label: 'THE WEEPING MIRE', hint: 'THE DOOR IS HIGH. ONLY A WINGED LEAP WILL REACH IT.' },
-  { a: 'hub1', ta: 'chapel', b: 'tc', tb: 'in', kind: 'crypt', mod: 'door', label: 'THE MOONLIT CHAPEL', hint: 'IT OPENS ONLY WHEN THE MASTERS OF THE HALL AND OF THE FLOODED GATE ARE DEAD.', lock: ['boss_h4', 'boss_qb'] },
+  { a: 'hub1', ta: 'mire', b: 'tw', tb: 'in', kind: 'crypt', mod: 'djDoor', label: 'THE WEEPING MIRE', hint: 'THE DOOR IS HIGH. ONLY A WINGED LEAP WILL REACH IT. THE MIRE LEADS ON TO THE CISTERN, WHERE THE FLOODED GATE IS.' },
+  { a: 'hub1', ta: 'chapel', b: 'tc', tb: 'in', kind: 'crypt', mod: 'door', label: 'THE MOONLIT CHAPEL', hint: 'IT OPENS ONLY WHEN THE MASTERS OF THE GREAT HALL AND OF THE FLOODED GATE ARE DEAD. THE FLOODED GATE IS IN THE CISTERN, BEYOND THE MIRE.', lock: ['boss_h4', 'boss_qb'] },
   { a: 'hub2', ta: 'crypts', b: 'tu', tb: 'in', kind: 'crypt', mod: 'cellDoor', gate: 'barricade', label: 'THE CRYPTS', hint: 'THE WAY IS BARRICADED. FIRE WILL CLEAR IT.' },
-  { a: 'hub2', ta: 'clockwork', b: 'tk', tb: 'in', kind: 'crypt', mod: 'gapDoor', label: 'THE CLOCKWORK DUNGEON', hint: 'THE DOOR STANDS BEYOND A GULF. ONLY A DASH WILL CARRY YOU ACROSS.' },
-  { a: 'hub2', ta: 'throne', b: 'tt', tb: 'in', kind: 'crypt', mod: 'cellDoor', gate: 'crystal', label: 'THE SHADOW THRONE', hint: 'CRYSTAL SEALS THE WAY, AND TWO SIGILS MUST BURN: THE COUNT AND THE CLOCKWORK LORD.', lock: ['boss_u3', 'boss_kb'] },
+  // the Clockwork Dungeon is entered through the Orloj Tower, in PRAGUE: a locked door high on a ledge (a double jump) in Smouldering Lane...
+  { a: 'v2', ta: 'orloj', b: 'ot', tb: 'in', kind: 'crypt', mod: 'djDoor', key: 'key_crypt', wide: true, label: 'THE ORLOJ TOWER', hint: 'THE DOOR IS HIGH, AND LOCKED. IT NEEDS THE KEY OF TIN.' },
+  // ...and from the landing beside the clock, the way on into the Clockwork Dungeon
+  { a: 'ot', ta: 'clockwork', b: 'tk', tb: 'in', kind: 'crypt', side: 'R' },
+  { a: 'hub2', ta: 'throne', b: 'tt', tb: 'in', kind: 'crypt', mod: 'cellDoor', gate: 'crystal', label: 'THE SHADOW THRONE', hint: 'CRYSTAL SEALS THE WAY, AND TWO SIGILS MUST BURN: THE COUNT OF THE CRYPTS AND THE LORD OF THE CLOCKWORK DUNGEON.', lock: ['boss_u3', 'boss_kb'] },
 ];
 // one-way doors: the far end of a branch drops you at its crossroads' door  [room, its door tag, hub, the hub door it arrives at]
-const RETURNS = [['qb', 'out', 'hub1', 'mire'], ['h3', 'out', 'hub1', 'hall'], ['u3', 'out', 'hub2', 'crypts'], ['kb', 'out', 'hub2', 'clockwork']];
+const RETURNS = [['qb', 'out', 'hub1', 'mire'], ['h3', 'out', 'hub1', 'hall'], ['u3', 'out', 'hub2', 'crypts'], ['kb', 'out', 'ot', 'clockwork']];
 // what each boss gives (and what each door asks for): the order in which things can be done.  tools/test-world.mjs proves from this table that every castle can be finished.
 export const PROGRESS = {
   gives: { g3: 'djump', h4: 'dash', c3: 'ember', u3: 'thunder', t2: 'dawn', qb: 'tide' },
-  doors: { mire: { needs: ['djump'] }, hall: {}, chapel: { bosses: ['h4', 'qb'] }, crypts: { needs: ['ember'] }, clockwork: { needs: ['dash'] }, throne: { needs: ['thunder'], bosses: ['u3', 'kb'] } },
+  doors: { mire: { needs: ['djump'] }, hall: {}, chapel: { bosses: ['h4', 'qb'] }, crypts: { needs: ['ember'] }, orloj: { needs: ['djump'], key: 'key_crypt' }, clockwork: {}, throne: { needs: ['thunder'], bosses: ['u3', 'kb'] } },
 };
 // some neighbouring areas are joined by a DOOR at each end (UP) instead of an open edge: 'a>b' = a's far-right door leads to b's far-left door.  (Only when both are generated rooms: the hand-built classic ones keep their open edges.)
 const DOOR_LINK = { 'v2>v3': 'wood', 'g1>g2': 'crypt', 'w1>w2': 'wood', 'h1>h2': 'wood', 'c1>c2': 'wood', 'u1>u2': 'wood', 'k1>k2': 'wood', 'q1>q2': 'wood' };          // (consecutive rooms of a chain that are joined by doors instead)
 // abilities the player owns when coming BACK through a zone (they've beaten that zone's boss by then)
 const BACK = { 9: ['djump'], 8: ['djump', 'dash', 'ember'], 6: [], 1: ['djump'], 7: ['djump'], 2: ['djump', 'dash'], 3: ['djump', 'dash', 'ember'], 4: ['djump', 'dash', 'ember', 'thunder'], 5: ['djump', 'dash', 'ember', 'thunder', 'dawn'] };
+// Everything after the Gatekeeper (who gives the double jump) is built for a hero who HAS it - Prague and the Graveyard (zones 6 and 1) are not.  Such a room's baseline abilities include the double jump.
+const hasDJ = spec => (spec.abilities || []).includes('djump') || ![6, 1].includes(spec.zone);
 const GATE = { barricade: TILE.BARRICADE, crystal: TILE.CRYSTAL, crack: TILE.CRACK };
 // haunted portraits lurk among the pictures in the castle's halls: more in the Portrait Gallery and the Shadow Throne, a chance of one elsewhere indoors
 for (const id of ['h1', 'h2', 'h3', 'c1', 'c2', 'c3', 'u1', 'u2', 't1']) if (SPEC[id] && SPEC[id].mix) SPEC[id].mix.portrait = id === 'h2' ? [3, 4] : id === 't1' ? [1, 1] : [0, 1];
@@ -268,8 +277,19 @@ function populate(b, W, H, spec, r, S, seen, g, hasCeiling, pads) {
   return { used, ground };
 }
 
+// statues (the Graveyard pack: 1 hooded mourner, 3 knight, 4 kneeling mourner, 5 gargoyle, 6 robed woman, 7 seated mourner, 8 owl; the angel, 2, stands at the Orloj Tower): which stand in which places, and about one flat column in N gets one.
+// They are scenery behind the hero, set from a hash of the column so the random stream (and so every castle) stays as it was.
+const STATUES = { graveyard: [['gy_st1', 'gy_st3', 'gy_st4', 'gy_st6', 'gy_st7', 'gy_st8'], 14], hall: [['gy_st3', 'gy_st6', 'gy_st1', 'gy_st7'], 20], chapel: [['gy_st1', 'gy_st4', 'gy_st6', 'gy_st7', 'gy_st8'], 20], throne: [['gy_st3', 'gy_st5', 'gy_st1'], 22], underworks: [['gy_st5', 'gy_st1', 'gy_st4', 'gy_st8'], 24], cistern: [['gy_st5', 'gy_st8'], 40], swamp: [['gy_st4', 'gy_st7'], 40], village: [['gy_st1', 'gy_st6'], 42] };
 function decorate(b, W, spec, r, g, ceilRows, flatCols) {
   const th = spec.theme || ZONES[spec.zone].theme;
+  const stat = STATUES[th]; if (stat) { const set = stat[0], last = []; for (const x of flatCols) if (((x * 83492791 + 17) >>> 0) % stat[1] === 0) {          // (never the same statue as either of the last two in the room)
+    let i = (((x * 2654435761) >>> 0) >>> 13) % set.length; for (let t = 0; t < set.length && set.length > 2 && last.includes(i); t++) i = (i + 1) % set.length; if (set.length === 2 && i === last[last.length - 1]) i = 1 - i; last.push(i); if (last.length > 2) last.shift();
+    b.d('img', x, g[x], { img: set[i], back: true });
+  } }
+  if (th === 'swamp' || th === 'graveyard') for (const x of flatCols) {          // small foreground flowers, now and then, bigger than life and in front of the hero's feet (a hash of the column: the random stream is untouched)
+    if (((x * 40503 + 17) >>> 0) % 37 === 0) b.d('img', x, g[x], { img: ['gy_daisy', 'gy_posy', 'gy_lily'][((x * 7) >>> 0) % 3], fore: true, scale: 1.4, sink: 5 });
+    if (th === 'swamp' && ((x * 2654435761) >>> 0) % 23 < 3) b.d('img', x, g[x], { img: ['gy_lily', 'gy_posy', 'gy_daisy'][((x * 2654435761) >>> 0) % 3] });          // and wild ones on the ground
+  }
   if (th === 'swamp') {          // Gothicvania Swamp: huge twisted trees behind, ferns and vines on the ground, the odd headstone
     let last = -99; for (let i = 0; i < Math.round(W / 9) && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 14) continue; last = x; b.d('img', x, g[x], { img: 'swamp_trees', back: true, sink: 3 }); }
     last = -9; for (let i = 0; i < Math.round(W / 4) && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 6) continue; last = x; const im = r.chance(0.6) ? 'swamp_props' : r.pick(['cemetery_stone-1', 'cemetery_stone-3', 'cemetery_bush-small']); b.d('img', x, g[x], { img: im, back: false, sink: im === 'swamp_props' ? 4 : 1 }); }          // (the vine sheet's pictures end 1-4px above the bottom of the image: sunk so they stand IN the ground)
@@ -286,6 +306,7 @@ function decorate(b, W, spec, r, g, ceilRows, flatCols) {
     const props = [['sp_lamp', 4], ['sp_tank', 3], ['sp_vent', 3], ['sp_valve', 3], ['sp_clock', 2], ['sp_furnace', 2], ['sp_tesla', 1]];
     let last = -9; for (let i = 0; i < Math.round(W / 6) && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 5) continue; last = x; const k = r.wpick(props); b.d('img', x, g[x], { img: k, scale: 1.6, back: i % 3 !== 0 }); }
     for (let i = 0, n = r.i(2, 3); i < n && flatCols.length; i++) { const x = r.pick(flatCols); b.d('brazier', x, g[x]); }
+    for (const x of flatCols) { const h = ((x * 2654435761) >>> 0) % 61; if (h < 2) b.d('animgear', x, g[x] - 5 - (h % 3), { img: ['gear_a', 'gear_b', 'gear_c', 'gear_d', 'gear_e'][((x * 7) >>> 0) % 5], scale: 0.75 + 0.15 * (x % 3), rate: (x % 2 ? 0.45 : -0.45), phase: x, a: 0.3 }); }          // (a few turning accents from the Animated Gears pack, behind everything)
     return;
   }
   if (th === 'village') {         // a street of burning houses (drawn behind the tiles), with lamps, carts, barrels and braziers along it
@@ -302,6 +323,7 @@ function decorate(b, W, spec, r, g, ceilRows, flatCols) {
     let last = -9; const n = Math.round(W / 6);
     for (let i = 0; i < n && flatCols.length; i++) { const x = r.pick(flatCols); if (Math.abs(x - last) < 4) continue; last = x; const k = r.wpick(kinds.map(k => [k, k[1]])); b.d('img', x, g[x], { img: k[0], back: k[2] }); }
     if (flatCols.length) { const x = r.pick(flatCols.slice(0, Math.max(1, flatCols.length >> 1))); b.d('img', x, g[x], { img: 'cemetery_statue', back: false }); }
+    for (const x of flatCols) { const h = ((x * 2654435761) >>> 0) % 23; if (h < 4) b.d('img', x, g[x], { img: ['gy_lily', 'gy_daisy', 'gy_rose', 'gy_posy'][h] }); }          // wild flowers among the graves (from a hash of the column: the random stream is untouched)
     return;
   }
   const xs = []; for (let x = r.i(7, 11); x < W - 5; x += r.i(10, 15)) xs.push(x);
@@ -331,7 +353,8 @@ function decorate(b, W, spec, r, g, ceilRows, flatCols) {
 // ------------------------------------------------------------------------------------------------ CORRIDOR
 function genCorridor(id, spec, r) {
   // DECK: a tall room with TWO floors - a staircase of one-way platforms climbs to an upper floor over the middle of the room (its standing row is DK) and another staircase comes down at the far end
-  const outdoor = !!spec.outdoor, DECK = !!spec.deck, DY = DECK ? 12 : 0, H = 14 + DY, BASE = 12 + DY, DK = 13, PAD = 6, ceil = outdoor ? 0 : 2, gyMin = (outdoor ? 8 : 9) + DY;
+  const DJ = hasDJ(spec);                          // (a room entered with the double jump in hand is built for it: wider gaps, taller steps, higher ledges)
+  const outdoor = !!spec.outdoor, DECK = !!spec.deck, DY = DECK ? 12 : (spec.tall || 0), H = 14 + DY, BASE = 12 + DY, DK = 13, PAD = 6, ceil = outdoor ? 0 : 2, gyMin = (outdoor ? 8 : 9) + DY;
   const mods = (spec.mods || []).map(m => ({ ...m })), flatMods = mods.filter(m => ['door', 'djLedge', 'cell', 'gap', 'djDoor', 'cellDoor', 'gapDoor'].includes(m.t)), tablets = mods.filter(m => m.t === 'tablet'), deckDoors = mods.filter(m => m.t === 'deckDoor');
   const target = r.i(spec.w[0], spec.w[1]);
   const g = [], plats = [], ledges = [], doors = [], items = [], cells = [], climbs = [], signs = []; let x = 0, gy = BASE, gapStart = -1, gapEnd = -1;
@@ -343,18 +366,30 @@ function genCorridor(id, spec, r) {
 
   const SEG = {
     flat: () => flat(r.i(2, 5)),
-    step: () => { const up = gy >= BASE ? true : r.chance(0.5), h = r.i(1, 2); if (canStep(up, h)) { step(up, h); flat(r.i(2, 4)); } else flat(3); },
-    pit: () => { flat(2); const w = r.i(2, 3); for (let i = 0; i < w; i++) col(-1); flat(r.i(3, 4)); },
-    bridge: () => { flat(2); const len = r.i(6, 10), x0 = x; for (let i = 0; i < len; i++) col(-1); const n = Math.ceil(len / 4); for (let k = 0; k < n; k++) { const c = Math.round(x0 + (k + 1) * len / (n + 1)), pl = r.i(2, 3); plats.push([c - Math.floor(pl / 2), pl, gy - r.i(0, 1)]); } flat(r.i(3, 4)); },
-    block: () => { const h = r.i(1, 2); if (!canStep(true, h)) return flat(3); flat(2); step(true, h); flat(r.i(2, 4)); step(false, h); flat(r.i(2, 3)); },
+    step: () => { const up = gy >= BASE ? true : r.chance(0.5), h = r.i(1, DJ ? 3 : 2); if (canStep(up, h)) { step(up, h); flat(r.i(2, 4)); } else flat(3); },
+    pit: () => { flat(2); const w = DJ ? r.i(3, 5) : r.i(2, 3); for (let i = 0; i < w; i++) col(-1); flat(r.i(3, 4)); },
+    bridge: () => { flat(2); const len = DJ ? r.i(9, 14) : r.i(6, 10), x0 = x; for (let i = 0; i < len; i++) col(-1); const n = Math.ceil(len / (DJ ? 5 : 4)); for (let k = 0; k < n; k++) { const c = Math.round(x0 + (k + 1) * len / (n + 1)), pl = r.i(2, 3); plats.push([c - Math.floor(pl / 2), pl, gy - r.i(0, DJ ? 2 : 1)]); } flat(r.i(3, 4)); },
+    block: () => { const h = DJ ? r.i(2, 3) : r.i(1, 2); if (!canStep(true, h)) return flat(3); flat(2); step(true, h); flat(r.i(2, 4)); step(false, h); flat(r.i(2, 3)); },
     stairs: () => { const n = r.i(2, 3), up = gy > gyMin + n && r.chance(0.6); for (let i = 0; i < n; i++) { if (!canStep(up, 1)) break; step(up, 1); flat(2); } flat(1); },
-    loot: () => { const len = r.i(3, 5); flat(1); plats.push([x + 1, len, gy - 3]); flat(len + 2); },
+    loot: () => { const len = r.i(3, 5); flat(1); plats.push([x + 1, len, gy - (DJ ? r.i(3, 5) : 3)]); flat(len + 2); },
+    // a CHASM: a wide bottomless pit crossed by small one-way platforms at changing heights (stepping stones - no two more than two rows apart, no gap wider than three)
+    chasm: () => {
+      flat(2); const n = r.i(3, 4), x0 = x, ps = []; let off = r.i(1, 2), row = gy - r.i(0, 1);
+      for (let k = 0; k < n; k++) { const len = r.i(2, 3); if (k) row = Math.max(gy - (DJ ? 4 : 3), Math.min(gy, row + r.pick(DJ ? [-3, -2, -1, 1, 2, 3] : [-2, -1, 1, 2]))); ps.push([off, len, row]); off += len + (DJ ? r.i(3, 5) : r.i(2, 3)); }
+      ps[ps.length - 1][2] = Math.max(ps[ps.length - 1][2], gy - (DJ ? 3 : 2)); const width = off - 1 + r.i(0, 1);
+      for (let i = 0; i < width; i++) col(-1); for (const [o, len, rw] of ps) plats.push([x0 + o, len, rw]); flat(r.i(3, 4));
+    },
+    // a WALL (open air only): four rows high - too tall to jump - with a one-way platform halfway up each face, so you go up in two hops, cross the top and drop down the far side
+    wall: () => {
+      if (!outdoor || gy !== BASE || !canStep(true, 4)) return SEG.block();
+      flat(2); plats.push([x, 3, gy - 2]); flat(3); step(true, 4); flat(2); step(false, 4); plats.push([x, 3, gy - 2]); flat(3 + r.i(0, 1));          // (a platform on each face: the wall can be crossed both ways)
+    },
   };
-  const WEIGHTS = [['flat', 21], ['step', 18], ['pit', 19], ['bridge', 10], ['block', 13], ['stairs', 10], ['loot', 9]];      // spikes live ONLY at the bottom of pits and gaps (never on open ground, where scenery can hide them)
+  const WEIGHTS = [['flat', 19], ['step', 16], ['pit', 15], ['bridge', 8], ['block', 11], ['stairs', 9], ['loot', 8], ['chasm', 9], ['wall', 7]];      // spikes live ONLY at the bottom of pits and gaps (never on open ground, where scenery can hide them)
   const MOD = {
     door: m => { toBase(); flat(2); const w = r.i(5, 7), x0 = x; flat(w); doors.push({ x: x0 + (w >> 1), gy, to: m.to, kind: m.kind || 'wood', tag: m.tag, destTag: m.destTag, lock: m.lock, hint: m.hint, key: m.key }); if (m.label) signs.push({ x: x0 - 1, text: signText(m) }); flat(2); },
     // a door on a high ledge: only the double jump gets you up to it
-    djDoor: m => { toBase(); flat(2); const padX = x; flat(3); plats.push([padX, 3, gy - 3]); const lx = x, row = gy - 3 - (outdoor ? 5 : 4); ledges.push([lx, 6, row]); flat(8); doors.push({ x: lx + 3, gy: row, to: m.to, kind: m.kind || 'crypt', tag: m.tag, destTag: m.destTag, lock: m.lock, hint: m.hint, needs: 'djump' }); if (m.label) signs.push({ x: padX - 1, text: signText(m) }); },
+    djDoor: m => { toBase(); flat(2); const padX = x; flat(3); plats.push([padX, 3, gy - 3]); const lx = x, row = gy - 3 - (outdoor ? 5 : 4), LW = m.wide ? 10 : 6; ledges.push([lx, LW, row]); flat(LW + 2); doors.push({ x: lx + (LW >> 1), gy: row, to: m.to, kind: m.kind || 'crypt', tag: m.tag, destTag: m.destTag, lock: m.lock, hint: m.hint, needs: 'djump', key: m.key }); if (m.label) signs.push({ x: padX - 1, text: signText(m) }); },
     // a door inside a sealed cell: burn the barricade (or shatter the crystal) to reach it
     cellDoor: m => { toBase(); flat(2); const xs = x + 4, x0 = x; flat(14); cells.push({ ...m, xs, gy, door: true }); if (m.label) signs.push({ x: x0 - 1, text: signText(m) }); },          // (the sign stands before the cell's steps, which fill the first four columns)
     // a door beyond the dash gulf
@@ -375,7 +410,7 @@ function genCorridor(id, spec, r) {
   while (x < tEnd - PAD) SEG[r.wpick(WEIGHTS)]();
   if (DECK) MOD.climb('R'); toBase(); flat(PAD);
 
-  const W = x, b = new B(id, spec.name, spec.zone, W, H, { ...spec.opts, theme: spec.theme, ...(DECK ? { horizon: BASE } : {}) });
+  const W = x, b = new B(id, spec.name, spec.zone, W, H, { ...spec.opts, theme: spec.theme, ...(DECK || spec.tall ? { horizon: BASE } : {}) });
   for (let cx = 0; cx < W; cx++) { if (g[cx] >= 0) b.rect(cx, g[cx], 1, H - g[cx]); else b.put(cx, H - 1, TILE.SPIKE); }
   if (!outdoor) b.ceil(0, W, ceil);
   for (const [px, len, row] of plats) b.plat(px, len, row);
@@ -386,8 +421,25 @@ function genCorridor(id, spec, r) {
     for (let k = 0; k < 3; k++) { b.plat(L.x0 + 1 + k * 4, 4, BASE - 3 - 3 * k); b.plat(R.x0 + 9 - k * 4, 4, BASE - 3 - 3 * k); }          // a staircase of one-way platforms up each end
     b.rect(da, DK, len, 2);
     const feats = r.shuffle(['hole', 'block', 'hole', 'block', 'plat']).slice(0, r.i(2, 4)), nf = Math.min(feats.length, Math.floor((len - 10) / 8)), keepOut = [], holes = [];
+    // A DIVIDER: a wall that runs from above the upper floor right down through it, leaving only a low tunnel along the lower floor.  OVER it by a platform halfway up, or UNDER it: drop through a hole, walk the tunnel, and climb back
+    // through a second hole on a staircase of one-way platforms.  (It needs a flat, clear stretch of the lower floor, and no door on it.)
+    if (len >= 46 && r.chance(0.65)) {
+      const okc = c0 => { for (let c = c0 - 10; c <= c0 + 9; c++) { if (gapStart >= 0 && c >= gapStart - 4 && c <= gapEnd + 4) return false; if (doors.some(d => !d.deck && Math.abs(d.x - c) < 3)) return false; if (climbs.some(q => c >= q.x0 - 2 && c <= q.x0 + 15)) return false; if (cells.some(q => c >= q.xs - 6 && c <= q.xs + 9)) return false; if (ledges.some(([lx, ln]) => c >= lx - 7 && c <= lx + ln)) return false; if (items.some(it => Math.abs(it.tx - c) < 8)) return false; } return true; };
+      const cand = []; for (let c0 = da + 12; c0 <= db - 12; c0++) if (okc(c0)) cand.push(c0);
+      if (cand.length) {
+        const cx = r.pick(cand), wallTop = DK - 4, wallBot = BASE - 4;
+        for (let c = cx - 10; c <= cx + 9; c++) { b.rect(c, DK + 2, 1, BASE - DK - 2, TILE.EMPTY); b.rect(c, BASE, 1, H - BASE); g[c] = BASE; }          // (the lower floor is levelled here: flat, no pit, no spikes)
+        b.rect(cx, wallTop, 2, wallBot - wallTop + 1);                                              // the wall (through the slab, down to the tunnel's roof)
+        b.rect(cx - 6, DK, 3, 2, TILE.EMPTY);                                                       // hole A: drop through to the lower floor
+        b.plat(cx - 2, 2, DK - 2);                                                                  // the way OVER: a platform against the wall's near face...
+        b.rect(cx + 5, DK, 3, 2, TILE.EMPTY);                                                       // hole B: climb back up
+        b.plat(cx + 2, 3, BASE - 3); b.plat(cx + 3, 3, BASE - 6); b.plat(cx + 5, 3, BASE - 9);    // ...and the staircase beneath hole B (the top step is level with the slab's underside)
+        keepOut.push([cx - 10, cx + 10]); b.def.divider = cx;
+      }
+    }
     for (let k = 0; k < nf; k++) {
       const cx = da + 5 + Math.round((len - 10) * (k + 0.5) / nf), f = feats[k];
+      if (keepOut.some(([a, z]) => cx >= a - 4 && cx <= z + 2)) continue;          // (clear of the divider)
       if (f === 'hole') { const w = r.i(2, 3); b.rect(cx, DK, w, 2, TILE.EMPTY); keepOut.push([cx - 2, cx + w + 1]); holes.push([cx, w]); }                   // a gap to jump (fall and you land on the lower floor)
       else if (f === 'block') { const w = r.i(3, 4), h = r.i(1, 2); b.rect(cx, DK - h, w, h); keepOut.push([cx - 2, cx + w + 1]); }
       else { b.plat(cx, 4, DK - 3); keepOut.push([cx - 1, cx + 5]); }
@@ -408,9 +460,10 @@ function genCorridor(id, spec, r) {
     }
   } else if (deckDoors.length) return { ok: false, errs: ['an upper door needs an upper floor'] };
   if (spec.doorL) doors.push({ x: 4, gy: BASE, to: spec.doorL.to, kind: spec.doorL.kind, tag: spec.doorL.tag, destTag: spec.doorL.destTag }); if (spec.doorR) doors.push({ x: W - 5, gy: BASE, to: spec.doorR.to, kind: spec.doorR.kind, tag: spec.doorR.tag, destTag: spec.doorR.destTag });       // doors between areas
-  const meta = { abilities: [...(spec.abilities || [])], back: BACK[spec.zone], entry: { L: { tx: 1, gy: BASE }, R: { tx: W - 2, gy: BASE } }, must: [], items: [], start: { tx: 4, gy: BASE } };
+  const meta = { abilities: [...new Set([...(spec.abilities || []), ...(DJ ? ['djump'] : [])])], back: BACK[spec.zone], entry: { L: { tx: 1, gy: BASE }, R: { tx: W - 2, gy: BASE } }, must: [], items: [], start: { tx: 4, gy: BASE } };
   if (spec.closedLeft) { meta.entry.L = null; b.d('gate', 0, BASE); }
   for (const d of doors) {
+    if (d.tag === 'orloj') b.d('orlojtower', d.x, BASE, {});          // the Orloj Tower itself: it rises from the ground behind the door's ledge (the ledge is its balcony); see orlojtower.js
     b.door(d.x, d.gy, d.to, 3, 12, d.kind); patchDoor(b, d); if (d.deck) meta.must.push({ tx: d.x, gy: d.gy, name: 'upper door' });
     if (d.needs) meta.items.push({ id: 'door_' + d.tag, tx: d.x, gy: d.gy, needs: d.needs });                    // (the validator proves the door is out of reach without it)
     if (d.lock) b.d('sigils', d.x, d.gy, { flags: d.lock });
@@ -466,14 +519,15 @@ function genCorridor(id, spec, r) {
 
 // ------------------------------------------------------------------------------------------------ TOWER (vertical climb)
 function genTower(id, spec, r) {
+  const DJ = hasDJ(spec);
   const W = r.i(spec.w[0], spec.w[1]), H = r.i(spec.h[0], spec.h[1]), floor = H - 2, top = r.i(spec.top[0], spec.top[1]);
   const b = new B(id, spec.name, spec.zone, W, H, { ...spec.opts, horizon: floor }); b.def.interior = true;                  // (a tower is a building: brickwork and narrow windows behind you, never open sky)
   b.floor(0, W, floor).ceil(0, W, 2);
   const plats = []; let prev = { x: r.i(3, 6), len: r.i(5, 6), row: floor - r.i(2, 3) }; plats.push(prev); let dir = 1, guard = 0;
   const add = (nx, len, row) => { prev = { x: Math.max(1, Math.min(W - 2 - len, nx)), len, row }; plats.push(prev); };
   while (prev.row - top > 3 && guard++ < 60) {
-    let rise = r.i(2, 3); if (prev.row - rise < top + 2) rise = Math.max(1, prev.row - (top + 2));
-    const len = r.i(5, 6), gap = r.i(0, 2); let nx;
+    let rise = r.i(2, DJ ? 4 : 3); if (prev.row - rise < top + 2) rise = Math.max(1, prev.row - (top + 2));
+    const len = r.i(5, 6), gap = r.i(0, DJ ? 3 : 2); let nx;
     if (dir > 0) { nx = prev.x + prev.len + gap; if (nx + len > W - 2) dir = -1; }
     if (dir < 0) { nx = prev.x - gap - len; if (nx < 1) { dir = 1; nx = prev.x + prev.len + gap; } }
     add(nx, len, prev.row - rise);
@@ -481,7 +535,11 @@ function genTower(id, spec, r) {
   while (prev.x + prev.len < W - 17 && guard++ < 90) add(prev.x + prev.len + r.i(0, 2), r.i(5, 6), prev.row);       // work over to the right side, under the top ledge
   for (const p of plats) b.plat(p.x, p.len, p.row);
   b.plat(W - 14, 14, top);                                                   // the top landing (one-way, so you can jump up through it)
-  const meta = { abilities: [...(spec.abilities || [])], back: BACK[spec.zone], entry: { L: { tx: 1, gy: floor }, R: { tx: W - 2, gy: top } }, must: [], items: [] };
+  if (spec.orloj) { const sc = 1.45, hpx = 112 * sc; b.d('cog', W / 2 - 8.2, top - 6.5, { r: 40, n: 15, spin: 0.011, a: 0.8 }).d('cog', W / 2 + 7.6, top - 1.5, { r: 30, n: 11, spin: -0.0145, phase: 0.5, a: 0.8 }).d('cog', W / 2 - 6.5, top + 3.5, { r: 22, n: 8, spin: 0.020, a: 0.8 }).d('cog', W / 2 + 6.4, top - 9, { r: 18, n: 7, spin: 0.023, phase: 1, a: 0.8 });
+    b.d('animgear', W / 2 - 11, top - 2, { img: 'gear_b', scale: 1.1, rate: 0.5, a: 0.36 }).d('animgear', W / 2 + 11, top + 6, { img: 'gear_a', scale: 1.2, rate: -0.45, a: 0.36 }).d('animgear', W / 2 - 3, top + 11, { img: 'gear_c', scale: 1.0, rate: 0.5, a: 0.32 });          // (accents from the Animated Gears pack, beside the generated cogs)
+    b.d('img', W / 2 - 0.5, top - 4.2 + hpx / 32, { img: 'orloj', back: true, scale: sc });
+    b.d('pendulum', 4, top - 11, { len: 112, bob: 10, speed: 0.032, swing: 0.3 }).d('pendulum', W - 5, top - 11, { len: 112, bob: 10, speed: 0.032, phase: 3.1, swing: 0.3 }); }          // THE ORLOJ: centred in the shaft, behind everything, its centre a little above the landing where the door to the Clockwork Dungeon stands
+  const meta = { abilities: [...new Set([...(spec.abilities || []), ...(DJ ? ['djump'] : [])])], back: BACK[spec.zone], entry: { L: { tx: 1, gy: floor }, R: { tx: W - 2, gy: top } }, must: [], items: [] };
   if (spec.doorL) { b.door(W - 9, floor, spec.doorL.to, 0, 0, spec.doorL.kind); patchDoor(b, spec.doorL); }                       // the door from the previous area
   if (spec.doorR) { b.door(W - 11, top, spec.doorR.to, 3, 12, spec.doorR.kind || 'crypt'); patchDoor(b, spec.doorR); meta.entry.R = null; }          // a door on the top landing: the way back to a crossroads
   if (spec.topItem) { b.e('upgrade', W - 7, top, { kind: spec.topItem.kind, id: spec.topItem.id }); meta.must.push({ tx: W - 7, gy: top, name: 'top item' }); }
@@ -696,7 +754,7 @@ function checkLinks(rooms) {
 // ------------------------------------------------------------------------------------------------ the map
 // Every chain of the castle is a row of rooms running left to right; a chain starts just right of the crossroads its door leaves from, so the branches fan out above and below the main row.
 // Side rooms (sanctuaries, houses, lairs) hang below their parent.  The map screen draws the lines from where each doorway really is.
-const CHAIN_AT = [[3, 0], [1, 12], [5, 12], [3, 12], [0, 23], [3, 23], [5, 23]];                 // [row, first column] of each chain
+const CHAIN_AT = [[3, 0], [1, 12], [5, 12], [3, 12], [0, 23], [3, 23], [7, 4]];                 // [row, first column] of each chain
 function layoutMap(rooms) {
   const pos = {}, taken = new Set(), key = (x, y) => x + ',' + y;
   CHAINS.forEach((c, ci) => { const [row, col0] = CHAIN_AT[ci]; c.forEach((id, i) => { pos[id] = { x: col0 + i, y: row }; taken.add(key(col0 + i, row)); }); });
@@ -713,7 +771,7 @@ export function buildWorld(seed, opts = {}) {
   const isHand = () => false;                                // (there is no hand-built castle any more: every room but Market Street is generated, whatever the seed)
   const ends = {};                                           // the doors that join neighbouring areas
   for (const [k, kind] of Object.entries(DOOR_LINK)) { const [a, b2] = k.split('>'); (ends[a] ||= {}).doorR = { to: b2, kind }; (ends[b2] ||= {}).doorL = { to: a, kind }; }
-  for (const p of PAIRS) { ((ends[p.a] ||= {}).mods ||= []).push({ t: p.mod, to: p.b, tag: p.ta, destTag: p.tb, kind: p.kind, label: p.label, hint: p.hint, lock: p.lock, gate: p.gate }); (ends[p.b] ||= {}).doorL = { to: p.a, tag: p.tb, destTag: p.ta, kind: p.kind }; }
+  for (const p of PAIRS) { if (p.side === 'R') (ends[p.a] ||= {}).doorR = { to: p.b, tag: p.ta, destTag: p.tb, kind: p.kind }; else ((ends[p.a] ||= {}).mods ||= []).push({ t: p.mod, to: p.b, tag: p.ta, destTag: p.tb, kind: p.kind, label: p.label, hint: p.hint, lock: p.lock, gate: p.gate, key: p.key, wide: p.wide }); (ends[p.b] ||= {}).doorL = { to: p.a, tag: p.tb, destTag: p.ta, kind: p.kind }; }
   for (const [a, ta, b2, tb] of RETURNS) (ends[a] ||= {}).doorR = { to: b2, tag: ta, destTag: tb, kind: 'crypt' };
   for (const id of ORDER) {
     let def = null; const e = ends[id] || {}, spec = { ...SPEC[id], ...e, mods: [...(SPEC[id].mods || []), ...(e.mods || [])] }, hand = SPEC[id].kind === 'authored';
@@ -728,7 +786,7 @@ export function buildWorld(seed, opts = {}) {
       if (!hand) throw new Error('level generator could not build room ' + id + ' for seed ' + seed + ': ' + (report.errors[id] || []).slice(0, 3).join(' | '));
       def = authoredDef(id); report.attempts[id] = MAX_TRY; report.fallbacks.push(id);
     }
-    def.id = id; tidyRoom(def); arrangeCandelabras(def); rooms[id] = def;          // (candelabras are scenery: set them once the room's doors and loot are known)
+    def.id = id; if (SPEC[id].areaLabel) def.areaLabel = SPEC[id].areaLabel; tidyRoom(def); arrangeCandelabras(def); rooms[id] = def;          // (candelabras are scenery: set them once the room's doors and loot are known)
   }
   const linked = new Set();
   for (const k of Object.keys(DOOR_LINK)) {

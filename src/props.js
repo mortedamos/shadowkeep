@@ -22,7 +22,7 @@ export const UPGRADES = {
   mpup: { name: 'QUINTESSENCE', desc: 'MAX MP UP', icon: 'mpup', color: [0.4, 0.7, 1] },
   atkup: { name: 'SAL MARTIS', desc: 'SWORD POWER UP', icon: 'atkup', color: [1, 0.85, 0.4] },
   mantle: { name: 'SALAMANDER MANTLE', desc: 'FIRE HURTS HALF AS MUCH, AND SOOT NEVER STAINS YOUR CLOAK', icon: 'mantle', color: [1, 0.55, 0.25] },
-  lantern: { name: 'IGNIS FATUUS LANTERN', desc: 'A WISP GUIDES YOU: IT LIGHTS THE DARK, CLEARS THE FOG AND DRAWS LOOT TO YOU', icon: 'lantern', color: [0.4, 1, 0.8] },
+  lantern: { name: 'IGNIS FATUUS LANTERN', desc: 'A PALE BLUE WISP, WARM AS A VOICE YOU KNEW. IT FOLLOWS YOU, LIGHTS THE DARK, CLEARS THE FOG AND DRAWS LOOT TO YOU', icon: 'lantern', color: [0.5, 0.72, 1] },
   shard: { name: 'SPECULUM SHARD', desc: 'YOUR SWORD TURNS ARROWS, BONES AND ORBS BACK AT THEIR THROWERS', icon: 'shard', color: [0.8, 0.88, 1] },
   spring: { name: 'PERPETUUM', desc: 'A SPRING THAT NEVER RUNS DOWN: YOUR DASH RECHARGES TWICE AS FAST', icon: 'spring', color: [1, 0.8, 0.4] },
   tide: { name: 'AQUA REGIA', desc: 'A DASH CUTS WHATEVER IT PASSES THROUGH', icon: 'e_ice', color: [0.4, 0.8, 1] },
@@ -124,18 +124,10 @@ export class Statue {
   glowColor() { const d = this.drop || ''; return d === 'heart' ? [255, 130, 150] : d === 'mana' ? [130, 170, 255] : [255, 214, 120]; }
   update(g) {
     this.t++; if (this.shake > 0) this.shake--;
-    if (g && this.t % 20 === 0 && Math.random() < 0.55 && this.x > g.camera.x - 30 && this.x < g.camera.x + 420) {
-      const k = this.glowColor().map(v => v / 255), b = this.box;
-      g.fx.emit({ x: this.x + rand(-b.w * 0.6, b.w * 0.6), y: b.y + rand(b.h * 0.15, b.h * 0.9), vx: rand(-0.05, 0.05), vy: -rand(0.12, 0.3), life: rand(50, 90), s0: rand(4, 6.5), s1: 1.5, c0: k, c1: [1, 1, 0.9], a0: 0.95, a1: 0, kind: 6 });
-    }
+    breakSparkle(g, this.t, this.box, this.glowColor()); breakSparkle(g, this.t + 3, this.box, this.glowColor());          // (a statue holds treasure: twice the sparks)
   }
   draw(ctx, cx, cy) {
     const im = IMG.cemetery_statue, w = Math.round(im.width * STATUE_SC), h = Math.round(im.height * STATUE_SC), sx = this.shake ? Math.round(Math.sin(this.t * 2.4) * 1.5) : 0;
-    { const gc = this.glowColor(), slow = 0.5 + 0.5 * Math.sin(this.t * 0.06 + this.x * 0.37), tw = Math.sin(this.t * 0.37 + this.x) * 0.5 + Math.sin(this.t * 0.91 + this.x * 2.3) * 0.3 + Math.sin(this.t * 1.7 + this.x * 0.7) * 0.2, pulse = Math.max(0, Math.min(1, slow + tw * 0.2)), R = h * (0.85 + 0.1 * pulse + 0.015 * tw), X = this.x - cx, Y = this.y - cy - h * 0.5, gr = ctx.createRadialGradient(X, Y, 2, X, Y, R);
-      ctx.save(); ctx.globalCompositeOperation = 'lighter'; gr.addColorStop(0, 'rgba(' + gc + ',' + (0.32 + 0.1 * pulse).toFixed(3) + ')'); gr.addColorStop(0.55, 'rgba(' + gc + ',' + (0.12 + 0.04 * pulse).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(' + gc + ',0)');
-      ctx.fillStyle = gr; ctx.fillRect(X - R, Y - R, R * 2, R * 2);
-      const hw = Math.round(w * 1.2), hh = Math.round(h * 1.16); ctx.globalAlpha = 0.32 + 0.16 * pulse; ctx.drawImage(haloOf(im, gc), Math.round(X - hw / 2), Math.round(this.y - cy - hh + h * 0.04), hw, hh);          // the glowing rim
-      ctx.restore(); }
     ctx.drawImage(im, Math.round(this.x - cx - w / 2 + sx), Math.round(this.y - cy - h), w, h);
     if (this.hp < this.maxHp) {       // cracks, one more per hit taken
       ctx.save(); ctx.strokeStyle = 'rgba(12,8,22,0.85)'; ctx.lineWidth = 1; const x0 = Math.round(this.x - cx + sx), y0 = Math.round(this.y - cy - h);
@@ -147,13 +139,12 @@ export class Statue {
 }
 
 // ------------------------------------------------------------------------------------------------ barrel / crate (Gothicvania Town art): one hit, one small treat
-// a faint glowing aura round anything breakable (statues glow more - they hold treasure): a soft pulse of light behind it and a thin glowing rim, in the colour of what is inside
-function breakAura(ctx, im, X, Y, w, h, rgb, t, seed) {
-  const pulse = 0.5 + 0.5 * Math.sin(t * 0.05 + seed), R = Math.max(w, h) * (0.85 + 0.08 * pulse), cx = X + w / 2, cy = Y + h * 0.55, k = rgb.join(','), gr = ctx.createRadialGradient(cx, cy, 1, cx, cy, R);
-  gr.addColorStop(0, 'rgba(' + k + ',' + (0.17 + 0.05 * pulse).toFixed(3) + ')'); gr.addColorStop(0.6, 'rgba(' + k + ',0.06)'); gr.addColorStop(1, 'rgba(' + k + ',0)');
-  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
-  if (im) { ctx.globalAlpha = 0.16 + 0.08 * pulse; ctx.drawImage(haloOf(im, rgb), Math.round(X - w * 0.09), Math.round(Y - h * 0.09), Math.round(w * 1.18), Math.round(h * 1.18)); }
-  ctx.restore();
+// Anything breakable gives off little drifting sparks in the colour of what is inside (real particles in the effects layer - no painted glow): big enough to be seen, and a few every second
+function breakSparkle(g, t, b, rgb) {
+  if (!g || t % 7 || Math.random() > 0.34 || b.x + b.w < g.camera.x - 20 || b.x > g.camera.x + 400) return;
+  const k = rgb.map(v => v / 255);
+  g.fx.emit({ x: b.x + rand(0, b.w), y: b.y + rand(b.h * 0.1, b.h * 0.95), vx: rand(-0.1, 0.1), vy: -rand(0.15, 0.42), life: rand(60, 110), s0: rand(7, 10.5), s1: 2, c0: k, c1: [1, 1, 0.92], a0: 1, a1: 0, kind: 6 });
+  if (Math.random() < 0.5) g.fx.emit({ x: b.x + rand(0, b.w), y: b.y + rand(b.h * 0.3, b.h), vx: rand(-0.06, 0.06), vy: -rand(0.08, 0.25), life: rand(40, 80), s0: rand(4, 6), s1: 1.5, c0: [1, 1, 0.95], c1: k, a0: 1, a1: 0, kind: 6 });
 }
 export class Barrel {
   constructor(x, y, o = {}) { this.x = x; this.y = y; this.drop = o.drop; this.dead = false; this.t = 0; this.crate = Math.abs(Math.floor(x / 16)) % 3 === 0; this.broken = 0; }
@@ -162,10 +153,10 @@ export class Barrel {
     if (this.dead || this.broken) return false; this.broken = 1; const wood = [[0.62, 0.42, 0.22], [0.3, 0.18, 0.08]]; A.sfx('break'); g.shake(1, 4);
     g.fx.burst(this.x, this.y - 11, 10, wood, { speed: 1.7, s0: 8 }); g.fx.sparks(this.x, this.y - 11, 9, wood, 2.6, { gy: 0.22 }); if (Math.random() < 0.7) dropItem(g, this.drop || choice(['coin', 'coin', 'heart', 'mana', 'coin']), this.x, this.y - 12); return true;       // (three in ten are empty)
   }
-  update() { this.t++; if (this.broken && ++this.broken > 80) this.dead = true; }
+  update(g) { this.t++; if (this.broken && ++this.broken > 80) this.dead = true; if (!this.broken) { const d = this.drop || ''; breakSparkle(g, this.t, this.box, d === 'heart' ? [255, 130, 150] : d === 'mana' ? [130, 170, 255] : [255, 214, 120]); } }
   draw(ctx, cx, cy) {
     const im = IMG[this.crate ? 'town_crate' : 'town_barrel'], sc = this.crate ? 0.6 : 0.82, w = Math.round(im.width * sc), h = Math.round(im.height * sc), X = Math.round(this.x - cx - w / 2), Y = Math.round(this.y - cy - h);
-    if (!this.broken) { const d = this.drop || ''; breakAura(ctx, im, X, Y, w, h, d === 'heart' ? [255, 130, 150] : d === 'mana' ? [130, 170, 255] : [255, 214, 120], this.t, this.x * 0.37); ctx.drawImage(im, X, Y, w, h); return; }
+    if (!this.broken) { ctx.drawImage(im, X, Y, w, h); return; }
     ctx.save(); ctx.globalAlpha = this.broken > 50 ? Math.max(0, 1 - (this.broken - 50) / 30) : 1;                   // what is left: the bottom third of it, splintered
     const keep = Math.round(im.height * 0.34), kh = Math.round(h * 0.34); ctx.drawImage(im, 0, im.height - keep, im.width, keep, X, Y + h - kh, w, kh); ctx.restore();
   }
@@ -228,8 +219,16 @@ export class Tablet {
   constructor(x, y, o) { this.x = x; this.y = y; this.text = STORY.tablets[o.id] || o.text; this.id = o.id; this.sign = /^sign_/.test(o.id || ''); this.t = 0; this.dead = false; }          // (a signpost is a sign; every gravestone and tablet is her: see story.js)
   get box() { return { x: this.x - 12, y: this.y - 26, w: 24, h: 26 }; }
   update(g) { this.t++; if (this.t % 10 === 0 && !g.save.flags['read_' + this.id]) g.fx.emit({ x: this.x + rand(-5, 5), y: this.y - 18, vx: 0, vy: -rand(0.2, 0.5), life: 40, s0: 5, s1: 1, c0: [0.7, 0.85, 1], a0: 0.8, a1: 0, kind: 6 }); }
-  interact(g) { g.save.flags['read_' + this.id] = true; if (!this.sign) g.ghost.reveal(280); g.showDialog(this.text, this.sign ? {} : { name: STORY.speaker, font: 'hand' });          A.sfx('select'); return true; }          // (her words are in her own handwriting)
-  draw(ctx, cx, cy) { drawSheet(ctx, 'tablet', 0, this.x - cx, this.y - cy); }
+  interact(g) { g.save.flags['read_' + this.id] = true; if (!this.sign) { if (g.save.flags.got_lantern) g.player.lanFlare = 260; else g.ghost.reveal(280); } g.showDialog(this.text, this.sign ? {} : { name: STORY.speaker, font: 'hand' });          A.sfx('select'); return true; }          // (her words are in her own handwriting)
+  draw(ctx, cx, cy) {
+    const x = this.x - cx, y = this.y - cy;
+    if (this.sign || !IMG.gy_stone) { drawSheet(ctx, 'tablet', 0, x, y); return; }          // (a signpost keeps the old board; her stones are the Graveyard pack's headstone, with flowers at its foot)
+    const st = IMG.gy_stone, fl = ['gy_lily', 'gy_rose', 'gy_daisy', 'gy_posy'], h = [...String(this.id)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
+    const put = (name, dx, up) => { const im = IMG[name]; if (im) ctx.drawImage(im, Math.round(x + dx - im.width / 2), Math.round(y - im.height + up)); };
+    put(fl[h % 4], -11 - (h >> 3) % 3, 1); put(fl[(h >> 4) % 4], 11 + (h >> 6) % 3, 1);
+    ctx.drawImage(st, Math.round(x - st.width / 2), Math.round(y - st.height + 1));
+    put(fl[(h >> 9) % 4], -5 + (h >> 11) % 9, 0);
+  }
 }
 
 // ------------------------------------------------------------------------------------------------ chest

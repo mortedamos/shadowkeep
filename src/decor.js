@@ -4,8 +4,9 @@ import { IMG, SHEET, drawSheet } from './assets.js';
 import { extra } from './world.js';
 import { T } from './util.js';
 import { drawFramedPortrait, FH } from './portraitart.js';
+import { orlojTower, TOWER_W, TOWER_H } from './orlojtower.js';
 
-const BACK_KINDS = new Set(['column', 'waterfall', 'portrait']);
+const BACK_KINDS = new Set(['column', 'waterfall', 'portrait', 'cog', 'pendulum', 'animgear', 'orlojtower']);
 // Is this piece of scenery drawn over a hazard (a spike tile)?  Nothing may stand in front of a hazard: the room drops such pieces when it loads.
 export function decoCoversHazard(d, spikes) {
   if (isBack(d)) return false; let x0, y0, w, h;
@@ -16,10 +17,36 @@ export function decoCoversHazard(d, spikes) {
 }
 export const isBack = d => BACK_KINDS.has(d.t) || (d.back && (d.t === 'img' || d.t === 'bookcase' || d.t === 'barwin'));
 
+// a turning brass cogwheel (the Orloj Tower's works): a toothed rim, six spokes and a hub.  r = radius, n = teeth, spin = radians a frame (the sign is the direction), a = its opacity
+function drawCog(g, x, y, r, n, ang, a) {
+  const root = r * 0.86, pal = ['#8a6a2c', '#5d4519', '#33260f', '#b99444'];
+  g.save(); g.translate(x, y); g.rotate(ang); g.globalAlpha = a;
+  g.fillStyle = pal[1]; g.beginPath();
+  for (let i = 0; i < n; i++) { const a0 = i / n * Math.PI * 2, w = Math.PI / n * 0.62; g.lineTo(Math.cos(a0 - w) * root, Math.sin(a0 - w) * root); g.lineTo(Math.cos(a0 - w * 0.7) * r, Math.sin(a0 - w * 0.7) * r); g.lineTo(Math.cos(a0 + w * 0.7) * r, Math.sin(a0 + w * 0.7) * r); g.lineTo(Math.cos(a0 + w) * root, Math.sin(a0 + w) * root); }
+  g.closePath(); g.fill();
+  g.fillStyle = pal[2]; g.beginPath(); g.arc(0, 0, root * 0.78, 0, Math.PI * 2); g.fill();                          // the open centre, with spokes across it
+  g.strokeStyle = pal[0]; g.lineWidth = Math.max(2, r * 0.09); for (let i = 0; i < 6; i++) { const a0 = i / 6 * Math.PI * 2; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a0) * root * 0.8, Math.sin(a0) * root * 0.8); g.stroke(); }
+  g.strokeStyle = pal[0]; g.lineWidth = Math.max(1.5, r * 0.07); g.beginPath(); g.arc(0, 0, root * 0.8, 0, Math.PI * 2); g.stroke();
+  g.fillStyle = pal[3]; g.beginPath(); g.arc(0, 0, Math.max(2, r * 0.16), 0, Math.PI * 2); g.fill();
+  g.strokeStyle = 'rgba(255,235,170,0.4)'; g.lineWidth = 1; g.beginPath(); g.arc(0, 0, r * 0.93, Math.PI * 1.15, Math.PI * 1.5); g.stroke();       // a glint along the rim
+  g.restore();
+}
+
 export function drawDeco(g, d, cx, cy, t, room) {
   const x = Math.round(d.x - cx), y = Math.round(d.y - cy);
   if (x < -150 || x > 540) return;
   switch (d.t) {
+    case 'orlojtower': { const tw = orlojTower(); if (tw) g.drawImage(tw, x - TOWER_W / 2, y - TOWER_H); break; }          // (the tower stands on the ground: y is its foot)
+    case 'animgear': {          // an accent: a cluster of meshing gears from the Animated Gears pack (a strip of 128x128 frames), turning slowly among the generated ones
+      const im = IMG[d.img]; if (!im) break; const n = Math.max(1, Math.round(im.width / 128)), f = (((Math.floor((d.phase || 0) + t * (d.rate || 0.4)) % n) + n) % n), s = Math.round((d.scale || 1) * 128);
+      g.save(); g.globalAlpha = d.a === undefined ? 0.8 : d.a; g.drawImage(im, f * 128, 0, 128, 128, Math.round(x - s / 2), Math.round(y - s / 2), s, s); g.restore(); break; }
+    case 'cog': drawCog(g, x, y, d.r, d.n, (d.phase || 0) + t * d.spin, d.a === undefined ? 0.85 : d.a); break;
+    case 'pendulum': {          // a brass rod on a pivot, with a heavy bob that swings with a slow tick
+      const L = d.len, ang = Math.sin(t * (d.speed || 0.035) + (d.phase || 0)) * (d.swing || 0.42), bx = x + Math.sin(ang) * L, by = y + Math.cos(ang) * L;
+      g.save(); g.strokeStyle = '#7a5c26'; g.lineWidth = 2; g.beginPath(); g.moveTo(x, y); g.lineTo(bx, by); g.stroke();
+      g.fillStyle = '#3a2a10'; g.beginPath(); g.arc(x, y, 4, 0, Math.PI * 2); g.fill();
+      g.fillStyle = '#a07c32'; g.beginPath(); g.arc(bx, by, d.bob || 9, 0, Math.PI * 2); g.fill(); g.fillStyle = '#5d4519'; g.beginPath(); g.arc(bx + 1.5, by + 1.5, (d.bob || 9) * 0.62, 0, Math.PI * 2); g.fill(); g.fillStyle = 'rgba(255,235,170,0.5)'; g.beginPath(); g.arc(bx - 2.5, by - 2.5, (d.bob || 9) * 0.25, 0, Math.PI * 2); g.fill();
+      g.restore(); break; }
     case 'img': { const im = IMG[d.img], sc = d.scale || 1, w = Math.round(im.width * sc), h = Math.round(im.height * sc); g.drawImage(im, Math.round(x - w / 2), y - h + (d.sink || 0), w, h); break; }
     case 'hang': { const im = IMG[d.img], sc = d.scale || 1, w = Math.round(im.width * sc), h = Math.round(im.height * sc); g.drawImage(im, Math.round(x - w / 2), y, w, h); break; }       // hangs from the top edge (banners, a caged skeleton)
     case 'waterfall': {        // a waterfall: d.top = the world y it pours from (it may start above the room), d.y = where it lands, d.w = its width.  Drawn behind the ground and the hero.
@@ -96,9 +123,8 @@ export function drawDeco(g, d, cx, cy, t, room) {
     case 'grave': {          // HER grave: a mound of earth, a worn headstone, a few white flowers, and a candle burning with a blue flame - the one arcane light on the hill, where the ghost shows
       const flick = 0.85 + 0.15 * Math.sin(t * 0.3 + 1.7) + 0.08 * Math.sin(t * 0.8);
       g.fillStyle = '#17110e'; g.beginPath(); g.ellipse(x + 6, y - 1, 28, 7, 0, Math.PI, 0); g.fill(); g.fillStyle = '#2a1f17'; g.beginPath(); g.ellipse(x + 6, y - 1, 25, 5, 0, Math.PI, 0); g.fill();
-      g.fillStyle = '#4a4756'; g.beginPath(); g.moveTo(x - 22, y - 2); g.lineTo(x - 22, y - 28); g.quadraticCurveTo(x - 13, y - 39, x - 4, y - 28); g.lineTo(x - 4, y - 2); g.closePath(); g.fill();
-      g.fillStyle = '#6c697c'; g.fillRect(x - 22, y - 28, 2, 26); g.fillStyle = 'rgba(20,18,30,0.55)'; for (let i = 0; i < 4; i++) g.fillRect(x - 18 + (i % 2), y - 24 + i * 5, 10 - ((i * 3) % 5), 1);          // the lettering, worn smooth
-      for (const [fx, fy] of [[x + 1, y - 5], [x + 4, y - 8], [x + 8, y - 5], [x + 12, y - 7]]) { g.fillStyle = '#4a6a3a'; g.fillRect(fx, fy + 2, 1, 4); g.fillStyle = '#e4e0f2'; g.fillRect(fx - 1, fy, 3, 2); }
+      const st = IMG.gy_stone_old || IMG.gy_stone; if (st) g.drawImage(st, Math.round(x - 13 - st.width / 2), y - 1 - st.height);          // the headstone (Graveyard pack), worn smooth
+      for (const [nm, fx, up] of [['gy_lily', 1, 1], ['gy_rose', 8, 0], ['gy_daisy', 13, 0], ['gy_wreath', 5, 4]]) { const im = IMG[nm]; if (im) g.drawImage(im, Math.round(x + fx - im.width / 2 + 3), y - im.height + up - 1); }          // flowers on the mound
       g.fillStyle = '#ddd5c4'; g.fillRect(x + 17, y - 13, 3, 9); g.fillStyle = '#9a927f'; g.fillRect(x + 19, y - 13, 1, 9);
       g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(x + 18.5, y - 18, 1, x + 18.5, y - 18, 26); gr.addColorStop(0, 'rgba(110,160,255,' + (0.5 * flick).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(110,160,255,0)'); g.fillStyle = gr; g.fillRect(x - 8, y - 44, 54, 54); g.restore();
       g.fillStyle = '#6a98ff'; g.beginPath(); g.moveTo(x + 17, y - 14); g.quadraticCurveTo(x + 15.5, y - 19, x + 18.5, y - 24 * flick + 2); g.quadraticCurveTo(x + 21.5, y - 19, x + 20, y - 14); g.closePath(); g.fill(); g.fillStyle = '#e8f2ff'; g.fillRect(x + 18, y - 18, 1, 3);

@@ -3,7 +3,7 @@ import { W, H, T, clamp, lerp, rand, overlap, dist } from './util.js';
 import { FX, COLORS } from './fx.js';
 import { Input } from './input.js';
 import { Touch } from './touch.js';
-import { loadFonts } from './font.js';
+import { loadFonts, drawText, textWidth } from './font.js';
 import { Audio_ as A } from './audio.js';
 import { ZONES } from './rooms.js';
 import { buildWorld, randomSeed, GEN_VERSION } from './levelgen.js';
@@ -45,7 +45,14 @@ const FOG_COL = { default: [0.64, 0.7, 0.8], graveyard: [0.66, 0.72, 0.84], swam
 const hsl2rgb = h => { const k = h / 60, i = Math.floor(k) % 6, f = k - Math.floor(k); return [[1, f, 0], [1 - f, 1, 0], [0, 1, f], [0, 1 - f, 1], [f, 0, 1], [1, 0, 1 - f]][i]; };          // a full-strength colour from a hue in degrees (the disco lights)
 const ZONE_HP = { 6: 1, 1: 1.1, 7: 1.3, 9: 1.5, 2: 1.7, 3: 2.0, 4: 2.4, 8: 2.8, 5: 3.3 };
 
-class Game {
+// the boss flags a sealed door asks for -> where that master is to be found (the door's dialogue lists the ones that still live)
+const LOCK_HINTS = {
+  boss_h4: 'THE PHANTOM STEED STILL RIDES THE GREAT HALL, THROUGH THE WOODEN DOOR AT THE THREE ROADS.',
+  boss_qb: 'THE DROWNED WARDEN STILL KEEPS THE FLOODED GATE. IT LIES DEEP IN THE CISTERN, BEYOND THE WEEPING MIRE AND ITS MOTHER: TAKE THE HIGH DOOR AT THE THREE ROADS.',
+  boss_u3: 'THE CRIMSON COUNT STILL WAITS IN THE CRYPTS: BURN THE BARRICADE AT THE CROSSING HALL.',
+  boss_kb: 'THE BRAZEN HIEROPHANT STILL WORKS THE CLOCKWORK DUNGEON. ITS ENTRANCE IS IN PRAGUE: A LOCKED DOOR HIGH IN SMOULDERING LANE LEADS UP THE ORLOJ TOWER. YOU NEED THE KEY OF TIN.',
+};
+export class Game {
   async init() {
     this.noAutoPause = new URLSearchParams(location.search).has('nopause');
     this.canvas = document.getElementById('game'); this.ctx = this.canvas.getContext('2d'); this.ctx.imageSmoothingEnabled = false; this.K = 3;
@@ -95,6 +102,12 @@ class Game {
   shake(a, frames) { this.shakeA = Math.max(this.shakeA, a); this.shakeT = Math.max(this.shakeT, frames); }
   addProjectile(p) { this.projectiles.push(p); return p; }
   after(frames, fn) { this.delayed.push({ t: frames, fn }); }
+  // the name of the area a door or an open edge leads to: the zone's name when it is another zone (THE GREAT HALL), else the room's own (WEAVER'S COTTAGE)
+  areaName(id) { const t = this.world.rooms[id]; if (!t) return ''; if (t.areaLabel) return t.areaLabel.toUpperCase(); return (t.zone !== this.room.zone ? ZONES[t.zone].name : t.name).toUpperCase(); }
+  areaLabel(top, name, x, y, align = 'center', color = '#ffe9a0', alpha = 1) {
+    if (!name) return; const w = textWidth(name, 0.9, { outline: true }), lx = align === 'center' ? clamp(x, w / 2 + 4, W - w / 2 - 4) : x;
+    drawText(top, name, Math.round(lx), Math.round(y), { align, color, outline: '#000', scale: 0.9, alpha });
+  }
   showDialog(text, o) { this.dialog = new Dialog(text, o); this.state = 'dialog'; }
   // a short exchange of words: lines = [[speaker, text], ...], each in a box of its own; done() runs when the last box is closed
   talk(lines, done) {
@@ -155,7 +168,7 @@ class Game {
     { const spk = []; for (let ty = 0; ty < def.h; ty++) for (let tx = 0; tx < def.w; tx++) if (tiles[ty * def.w + tx] === TILE.SPIKE) spk.push([tx, ty]); if (spk.length) this.room.decos = def.decos.filter(d => !decoCoversHazard(d, spk)); }          // nothing may stand in front of a hazard
     this.enemies = []; this.projectiles = []; this.pickups = []; this.props = []; this.popups = []; this.boss = null; this.delayed = []; this.fx.reset(); this.fx.setWisps(def.wisps || 0); this.flames = roomFlames(this.room); this.falls = this.room.decos.filter(d => d.t === 'waterfall'); this.mirrorView = def.mirror ? new MirrorView(def.mirror, !!S.flags['boss_' + id]) : null;          // (the Mirror Room: a great mirror - whole until you walk up to it)
     const dusk = def.zone === 6 && !S.flags.village_fire && !def.keepLook;          // Prague before the Cinder Warden's torches: a calm violet dusk, with golden dust in the air - the monsters are loose, but nothing burns yet
-    this.fx.setAmbient(dusk ? Math.max(def.ambient, 0.42) : def.ambient, dusk ? [0.05, 0.03, 0.12] : def.tint, def.vig); this.fx.setAmbientFx(dusk ? 'dust' : def.weather); A.setIndoor(def.indoor); this.fx.setStorm(def.storm, 0.0035);
+    this.fx.setAmbient(dusk ? Math.max(def.ambient, 0.42) : def.ambient, dusk ? [0.05, 0.03, 0.12] : def.tint, def.vig); if (def.dark) this.fx.setDark(); this.fx.setAmbientFx(dusk ? 'dust' : def.weather); A.setIndoor(def.indoor); this.fx.setStorm(def.storm, 0.0035);
     this.fx.setFog(def.fog * (def.theme === 'swamp' ? 0.8 : 1), def.horizon + 4, FOG_COL[def.theme] || FOG_COL.default, def.fogH);          // rolling ground fog in the damp, dead places
     this.room.gears = def.gears ? new Gears(def.gears) : null; this.player.ride = null; this.vents = this.room.decos.filter(d => d.t === 'img' && d.img === 'sp_vent'); this.graves = this.room.decos.filter(d => d.t === 'grave'); this.ghost.snap();
     if (def.disco) { this.room.discoState = { mode: S.flags.disco_done ? 'gone' : 'party', t0: 0 }; A.preload('record_scratch'); }
@@ -229,7 +242,7 @@ class Game {
     }
     if (n.d.lock) {                                          // a door sealed until bosses fall: one sigil for each
       const left = n.d.lock.filter(f => !this.save.flags[f]);
-      if (left.length) { A.sfx('back'); this.showDialog('THE DOOR WILL NOT OPEN. ' + (n.d.lock.length - left.length) + ' OF ' + n.d.lock.length + ' SIGILS BURN. ' + (n.d.lockText || '')); return true; }
+      if (left.length) { A.sfx('back'); this.showDialog('THE DOOR WILL NOT OPEN. ' + (n.d.lock.length - left.length) + ' OF ' + n.d.lock.length + ' SIGILS BURN. ' + (left.map(f => LOCK_HINTS[f]).filter(Boolean).join(' ') || n.d.lockText || '')); return true; }          // (and it says where each master that still lives is to be found)
     }
     A.sfx('door'); this.changeRoom({ room: n.d.room, x: n.d.tx * 16 + 8, y: n.d.tgy * 16, door: true }, 1); return true;
   }
@@ -365,11 +378,11 @@ class Game {
     const r = this.room, S = this.save; if (this.cutscene || this.trans || this.state !== 'play' || !r || r.id !== 'v0' || S.flags.opening_seen) return;
     this.cutscene = { scene: new OpeningScene(this) };
   }
-  // the Cinder Warden sets Prague alight: once, as you reach the east end of Market Street
+  // the Cinder Warden sets Prague alight: once, as you start up Smouldering Lane (the first street beyond the Waystone Square)
   checkVillageScene() {
     const r = this.room, p = this.player, S = this.save;
-    if (this.cutscene || this.trans || this.state !== 'play' || !r || r.id !== 'v1' || S.flags.village_fire || S.flags.boss_vb || p.dead || !p.onGround || this.fade > 0.1) return;
-    if (p.x > r.pw - 12 * T) this.cutscene = { scene: new VillageScene(this) };
+    if (this.cutscene || this.trans || this.state !== 'play' || !r || r.id !== 'v2' || S.flags.village_fire || S.flags.boss_vb || p.dead || !p.onGround || this.fade > 0.1) return;
+    if (p.x > 9 * T) this.cutscene = { scene: new VillageScene(this) };
   }
   updateCutscene() {
     const c = this.cutscene; if (c.scene) { c.scene.update(); return; } c.t++; this.fx.glow(c.x, c.y, 70 + Math.sin(c.t * 0.2) * 8, ABILITIES[c.kind].color, 0.6); this.fx.light(this.player.x, this.player.y - 20, 120, 1);
@@ -418,6 +431,14 @@ class Game {
     if (!still) this.updateProjectiles();
     for (const o of this.pickups) o.update(this); this.pickups = this.pickups.filter(o => !o.dead);
     for (const o of this.props) o.update(this); this.props = this.props.filter(o => !o.dead);
+    if (this.frame % 6 === 0 && this.room) {          // breakable ground gives off sparks too: cracked walls lilac, barricades like embers, crystal icy (real particles, no painted glow)
+      const cx0 = this.camera.x - 16, cx1 = this.camera.x + W + 16, cy0 = this.camera.y - 16, cy1 = this.camera.y + H + 16;
+      for (const [tx, ty, v] of [...(this.room.brk || []), ...(this.room.anim || []).filter(a => a[2] === TILE.CRYSTAL)]) {
+        const x = tx * T, y = ty * T; if (x < cx0 || x > cx1 || y < cy0 || y > cy1 || Math.random() > 0.12) continue;
+        const k = v === TILE.CRACK ? [0.8, 0.76, 1] : v === TILE.BARRICADE ? [1, 0.6, 0.27] : [0.5, 0.86, 1];
+        this.fx.emit({ x: x + rand(1, 15), y: y + rand(2, 15), vx: rand(-0.1, 0.1), vy: -rand(0.12, 0.38), life: rand(55, 100), s0: rand(6.5, 10), s1: 2, c0: k, c1: [1, 1, 0.92], a0: 1, a1: 0, kind: 6 });
+      }
+    }
     if (this.mirrorView) this.mirrorView.update(this);
     this.sealFlames();
     for (const o of this.popups) o.life--; this.popups = this.popups.filter(o => o.life > 0);
@@ -433,7 +454,8 @@ class Game {
       if ((this.frame + i * 5) % 3 === 0) fx.emit({ layer: 'alpha', x: f.x + rand(-f.w / 2, f.w / 2), y: f.y - 3, vx: rand(-0.35, 0.35), vy: -rand(0.15, 0.6), life: rand(36, 70), s0: 10, s1: 30, c0: [0.82, 0.93, 0.97], c1: [0.7, 0.85, 0.92], a0: 0.34, a1: 0, kind: 5, drag: 0.99 });
       if ((this.frame + i * 3) % 4 === 0) fx.emit({ x: f.x + rand(-f.w / 2, f.w / 2), y: f.y - 4, vx: rand(-0.9, 0.9), vy: -rand(0.8, 2.0), gy: 0.1, life: rand(16, 28), s0: 2, s1: 1, c0: [0.85, 0.96, 1], a0: 0.85, a1: 0, kind: 1 });
     }
-    fx.light(p.x, p.y - 20, 54, 0.5); fx.focus = { x: p.x, y: p.y - 20 };
+    if (this.room.dark) fx.light(p.x, p.y - 20, 16, 0.25); else fx.light(p.x, p.y - 20, 54, 0.5);          // (in a dark room he carries almost no light of his own)
+    fx.focus = { x: p.x, y: p.y - 20 };
     this.ghost.update(); for (const d of this.graves || []) fx.light(d.x + 12, d.y - 12, 100, 1.2, [0.4, 0.62, 1]);          // (her grave's candle: the blue light in which she can be seen)
     this.checkExits();
     // camera
@@ -468,7 +490,7 @@ class Game {
     if (this.falls) for (const d of this.falls) drawDeco(ctx, d, cx, cy, t, r);                    // waterfalls: in front of the far trees, behind the ground and the hero
     if (this.mirrorView) this.mirrorView.draw(ctx, cx, cy);                                          // the mirror hangs on the back wall: frame and glass, behind the ground and the hero (the reflection is the boss's, drawn over the glass)
     r.drawTiles(ctx, cx, cy, t);
-    for (const d of r.decos) if (!isBack(d)) drawDeco(ctx, d, cx, cy, t, r);
+    for (const d of r.decos) if (!isBack(d) && !d.fore) drawDeco(ctx, d, cx, cy, t, r);
     drawFlames2D(ctx, this.flames, cx, cy, t);                       // braziers, burning windows, candelabra flames: in the scene, behind the hero
     for (const o of this.props) o.draw(ctx, cx, cy);
     for (const o of this.pickups) o.draw(ctx, cx, cy);
@@ -478,15 +500,26 @@ class Game {
     this.ghost.draw(ctx, cx, cy);                                                                    // (she floats a little behind the hero - and is only seen in a blue light)
     if (this.cutscene && this.cutscene.scene) this.cutscene.scene.drawWorld(ctx, cx, cy);
     p.draw(ctx, cx, cy);
+    for (const d of r.decos) if (d.fore) drawDeco(ctx, d, cx, cy, t, r);                              // the foreground: things the hero walks BEHIND (fences)
     if (r.currents && r.currents.length) drawCurrents(ctx, r.currents, cx, cy, t);                       // (flowing water laps over the hero's legs)
     for (const e of this.enemies) if (e.isBoss) e.drawIntent(ctx, cx, cy);                              // attack icon + name over its head
     for (const o of this.projectiles) o.draw(ctx, cx, cy);
-    if (this.state === 'play' && !this.cutscene && this.fade < 0.05) { const n = this.nearInteractable(); if (n) drawPrompt(top, n.x - cx, n.y - cy, t, n.kind === 'npc' ? 'TALK' : n.kind === 'door' ? 'UP' : (n.o.constructor.name === 'Altar' ? 'SAVE' : n.o.constructor.name === 'Waystone' ? 'TRAVEL' : 'UP')); }
-    if (this.state === 'play' && !this.cutscene && this.fade < 0.05) for (const e of r.exits) {                                // an arrow where the room opens onto the next one, on the edge of the screen
+    if (this.state === 'play' && !this.cutscene && this.fade < 0.05) {
+      const n = this.nearInteractable();
+      if (n) {
+        drawPrompt(top, n.x - cx, n.y - cy, t, n.kind === 'npc' ? 'TALK' : n.kind === 'door' ? 'UP' : (n.o.constructor.name === 'Altar' ? 'SAVE' : n.o.constructor.name === 'Waystone' ? 'TRAVEL' : 'UP'));
+        if (n.kind === 'door') {
+          this.areaLabel(top, this.areaName(n.d.room), n.x - cx, n.y - cy + 14);          // (outside a door: where it leads)
+          const K = n.d.key && !this.save.flags['unlocked_' + n.d.key] ? KEYS.find(k => k.id === n.d.key) : null;          // (and, if it is locked, the key it needs - in the key's own colour, brighter once you carry it)
+          if (K) this.areaLabel(top, K.name, n.x - cx, n.y - cy + 25, 'center', 'rgb(' + K.rgb.join(',') + ')', this.save.flags['has_' + n.d.key] ? 1 : 0.7);
+        }
+      }
+    }
+    if (this.state === 'play' && !this.cutscene && this.fade < 0.05) for (const e of r.exits) {          // (and at the edge of the room, where the way on leads)                                // an arrow where the room opens onto the next one, on the edge of the screen
       if (e.side !== 'L' && e.side !== 'R') continue;
       const L = e.side === 'L', wx = L ? 10 : r.pw - 10, sx = wx - cx, sy = (e.from + e.to + 1) / 2 * T - cy; if (sx < -10 || sx > W + 10 || sy < -10 || sy > H + 10) continue;
       let sealed = false; for (let k = 0; k < 8 && !sealed; k++) for (let row = e.from; row <= e.to; row++) if (r.get(L ? k : r.w - 1 - k, row) === TILE.SEAL) { sealed = true; break; }
-      if (!sealed) drawExitArrow(top, sx, sy, t, L ? -1 : 1);
+      if (!sealed) { drawExitArrow(top, sx, sy, t, L ? -1 : 1); if (Math.abs(p.x - wx) < 80) this.areaLabel(top, this.areaName(e.room), clamp(sx + (L ? 12 : -12), 0, W), sy - 4, L ? 'left' : 'right'); }
     }
     fx.setCamera(cx, cy);
     if (r.spikes && r.spikes.length) { top.globalAlpha = 0.95; for (const [tx, ty] of r.spikes) { const sx = tx * T - cx, sy = ty * T - cy; if (sx < -16 || sx > W || sy < -16 || sy > H) continue; drawSheet(top, 'spikes', 0, sx, sy, { ax: 0, ay: 0 }); } top.globalAlpha = 1; }          // hazards are drawn again above the fog and the dark: they must always be seen

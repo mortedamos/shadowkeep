@@ -1,6 +1,6 @@
 // SHADOWKEEP - THE STORY.  Every word the game speaks is in this one file, so it can be rewritten without touching the code.
 //
-// Prague, Bohemia, 1619.  A hundred years after the great alchemists' court, a castle has come up out of the earth in the countryside and taken the sun.  The monsters of the shadow realm
+// Prague, Bohemia, 1541 - the year of the great fire of Prague, when the Lesser Town and the Castle hill burned.  A castle has come up out of the earth in the countryside and taken the sun.  The monsters of the shadow realm
 // walk.  A man known only as THE STRANGER kneels at a grave on a hill above the city - the grave of someone he loved (his wife? his sister? his lover? the game never says) - and watches
 // Prague begin to burn.  He rises, draws SILBERZAHN, the silver tooth, and goes down to the city to put an end to Shadowkeep.
 //
@@ -11,12 +11,12 @@
 // Shadowkeep is a Great Work gone wrong: its lord means to finish it by locking the Sun - gold, Sol - inside his furnace, the athanor, until all the world is still and incorruptible.
 // The seven metals are the seven planets, so the six keys of the locked vaults are six metals (lead, iron, silver, tin, copper, mercury) and the Sun - gold, the Dawn - is what he stole.
 //
-// Most text is capital letters (the game's font); the gravestones and tablets are written in mixed case, because they are drawn in her own handwriting (Fraktur Handschrift).  Lines for boxes are kept short.
+// Most text is capital letters (the game's font); the gravestones and tablets are written in mixed case, because they are drawn in the face of the stones (Eroded Motta, which has no colon: they become dashes).  Lines for boxes are kept short.
 
 export const STORY = {
   // ---------------------------------------------------------------------------------------------------------------------------------------- the opening scene (scenes.js)
   opening: {
-    title: 'PRAGUE  1619',
+    title: 'PRAGUE  1541',
     sun: 'THE SUN HAS NOT RISEN SINCE SHADOWKEEP CAME OUT OF THE EARTH.',
     fire: 'AND NOW THE CITY BURNS.',
     sword: ['SILBERZAHN', 'THE SILVER TOOTH'],
@@ -25,22 +25,24 @@ export const STORY = {
   // ---------------------------------------------------------------------------------------------------------------------------------------- her: the gravestones and tablets (by id)
   speaker: 'HER VOICE',
   tablets: {
-    tabv0: `There was never a stone big enough for the two of us, was there? Go down to the city, Stranger. I will follow where I can. Look for blue light: that is where I show.`,
+    tabv0: `There was never a stone big enough for the two of us, was there? Go down to the city. I will follow where I can. Look for blue light: that is where I show.`,
     tab0: `The bells rang at dusk, and then the things came down from the hill. Prague has not walked its own streets without fear since. Do not stop to pray. No one is listening.`,
     tab9: `I can still hear the bells. They were the first thing to go silent. The priest barred the chapel door and prayed, and I watched from the steps.`,
     tab10: `Mercy, he calls it: to burn what he cannot protect. He waits in the square below. You will not talk him down. You never could talk anyone down.`,
     tab1: `They say the keep swallowed the sun. I think it is stranger than that. Look at the gate: it is not locked. It is waiting for you.`,
-    tab2: `The dead here do not rest. I know the feeling. Strike them down, Stranger - gently if you can, firmly if you must.`,
+    tab2: `The dead here do not rest. I know the feeling. Strike them down - gently if you can, firmly if you must.`,
     tab11: `They walk the field looking for their homes. I look for mine, too. No one warns you that a ghost can be homesick.`,
     tab12: `The mire takes what the grave refuses. Do not stand still. You hate wet boots, I remember. I will try not to laugh.`,
     tab13: `Something sings beneath the water, and it knows your name. I am almost sure I know it too. Almost. Is that what death is - almost?`,
-    tab14: `The old city drew its water from these vaults. The Vltava remembers every flood. Do not fight the current, Stranger - use it. You have the look of a man about to fight the current.`,
+    tab14: `The old city drew its water from these vaults. The Vltava remembers every flood. Do not fight the current - use it. You have the look of a man about to fight the current.`,
     tab15: `Beyond the last sluice is the gate the water was made to keep. Something older than Prague keeps it now. It will try to drown you. Please do not let it.`,
     tab3: `The hall rang with feasting once. Now the faces on the pillars watch you, and some of them watch back. I am not the only ghost here. I am just the only one who likes you.`,
     tab4: `These stairs climb to the chapel. The bells have not rung since the lord came down. When you reach the top, look back at the city. Just once.`,
     tab5: `Here the faithful prayed, and here they were taken. I used to light candles in a church like this, and never asked for anything for myself. I should have.`,
-    tab6: `The gulf is too wide for any leap. Only quicksilver crosses a gulf like this. Dash, Stranger, and do not look down.`,
+    tab6: `The gulf is too wide for any leap. Only quicksilver crosses a gulf like this. Dash, and do not look down.`,
     tab7: `The lord laid his household to rest here and promised them sleep. Someone keeps waking them. I know what it is to be woken. They are not wicked. They are tired.`,
+    tab18: `The clock still keeps Prague's hour. The apostles still walk in their windows, and the sun is still on its dial. It is the only sun left.`,
+    tab17: `It is very dark here. Do not be afraid of it. I will go ahead of you.`,
     tab16: `An engineer built a machine to hold the sun below the hills. Listen to the gears: the only clock in Prague that still keeps time - and it is keeping the wrong hour.`,
     tab8: `He waits above, the one who took the sun. I will not ask you to turn back. I only ask that you come home afterward. It is a long way down from the hill.`,
   },

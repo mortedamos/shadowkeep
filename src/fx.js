@@ -81,7 +81,7 @@ const WARM = [1, 0.66, 0.34];
 const DFRAG = /* glsl */`
 precision highp float; varying vec2 vUv;
 uniform vec4 uLights[24]; uniform vec3 uLightCol[24]; uniform int uCount;
-uniform float uAmbient; uniform vec3 uTint; uniform float uVig; uniform float uHurt; uniform vec2 uRes; uniform float uPulse;
+uniform float uAmbient; uniform float uMax; uniform vec3 uTint; uniform float uVig; uniform float uHurt; uniform vec2 uRes; uniform float uPulse;
 void main(){
   vec2 px=vec2(vUv.x*uRes.x,vUv.y*uRes.y);   // camera is y-down, so plane v grows downward on screen
   float lit=0.0; vec3 pool=vec3(0.0);
@@ -89,7 +89,7 @@ void main(){
   lit=clamp(lit,0.0,1.0);
   float dark=uAmbient*(1.0-lit);
   vec2 v=vUv*2.0-1.0; float vig=uVig*smoothstep(0.55,1.45,length(v*vec2(0.9,1.1)));
-  dark=clamp(dark+vig*(1.0-lit*0.6),0.0,0.86);
+  dark=clamp(dark+vig*(1.0-lit*0.6),0.0,uMax);
   float hv=uHurt*smoothstep(0.35,1.3,length(v));
   vec3 rgb=uTint*dark+vec3(0.55,0.0,0.02)*hv+min(pool,vec3(1.2))*0.17*step(0.001,uAmbient); float al=dark+hv*(1.0-dark);          // a pool of coloured light round every light (so lights stand out without a dark room)
   gl_FragColor=vec4(rgb,al);
@@ -256,7 +256,7 @@ export class FX {
     // darkness / vignette / hurt overlay (screen space quad that follows the camera)
     this.darkU = {
       uLights: { value: Array.from({ length: 24 }, () => new THREE.Vector4()) }, uLightCol: { value: Array.from({ length: 24 }, () => new THREE.Vector3(1, 0.7, 0.4)) },
-      uCount: { value: 0 }, uAmbient: { value: 0.3 }, uTint: { value: new THREE.Vector3(0.015, 0.01, 0.05) }, uVig: { value: 0.5 }, uHurt: { value: 0 }, uRes: { value: new THREE.Vector2(W, H) }, uPulse: { value: 0 },
+      uCount: { value: 0 }, uAmbient: { value: 0.3 }, uMax: { value: 0.86 }, uTint: { value: new THREE.Vector3(0.015, 0.01, 0.05) }, uVig: { value: 0.5 }, uHurt: { value: 0 }, uRes: { value: new THREE.Vector2(W, H) }, uPulse: { value: 0 },
     };
     this.darkMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.ShaderMaterial({ vertexShader: QVERT, fragmentShader: DFRAG, uniforms: this.darkU, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, ...NORMAL_PM }));
     this.darkMesh.renderOrder = 0; this.darkMesh.frustumCulled = false; this.scene.add(this.darkMesh);
@@ -401,15 +401,17 @@ export class FX {
   // a puff of moving air at (x, y) travelling (vx, vy) px/step: s = strength, r = reach.  The swish of a sword, a dash.  It shoves smoke, embers and fog (and the game leans flames away from it).
   gust(x, y, vx, vy, r = 32, s = 1, life = 26) { this.gusts.push({ x, y, vx, vy, r, s, k: s, life: 0, max: life }); if (this.gusts.length > 6) this.gusts.shift(); }
   // rolling ground fog: density 0 = none; base = world y of the ground line; color = its tint
-  setFog(density, base, color = [0.64, 0.7, 0.8], height = 105) { const u = this.fogU; u.uDensity.value = density || 0; u.uBase.value = base; u.uColor.value.set(color[0], color[1], color[2]); u.uHeight.value = height; }
+  setFog(density, base, color = [0.64, 0.7, 0.8], height = 105) { const u = this.fogU; u.uDensity.value = (density || 0) * 0.9; u.uBase.value = base; u.uColor.value.set(color[0], color[1], color[2]); u.uHeight.value = height; }
 
   // ---- lights / darkness ---------------------------------------
   // A room's `ambient` (0..~0.6, how gloomy it is relative to the others) is lifted onto a floor of darkness: even the lightest room is dim enough that a torch, a candle, a brazier or a lightning flash
   // visibly lights what is around it (before this, a 0.1-0.35 veil made the lights almost invisible).  Lightning and other big flashes pull the veil back for a moment (render()).
   setAmbient(amount, tint = [0.015, 0.01, 0.05], vig = 0.5) {
     const lit = !(amount > 0);                                                                          // 0 = a lit scene (the title screen, the ending): no darkness and no vignette
-    this.ambBase = lit ? 0 : DARK_FLOOR + amount * DARK_SLOPE; this.darkU.uAmbient.value = this.ambBase; this.darkU.uTint.value.set(...tint); this.darkU.uVig.value = lit ? 0 : vig * VIG_SCALE;
+    this.ambBase = lit ? 0 : DARK_FLOOR + amount * DARK_SLOPE; this.darkU.uMax.value = 0.86; this.darkU.uAmbient.value = this.ambBase; this.darkU.uTint.value.set(...tint); this.darkU.uVig.value = lit ? 0 : vig * VIG_SCALE;
   }
+  // a DARK room (def.dark): almost black; only a light - the wisp, a candle, a flame - shows what is round it
+  setDark(level = 1.1) { this.ambBase = level; this.darkU.uAmbient.value = level; this.darkU.uMax.value = 0.975; }
   clearLights() { this.lights.length = 0; }
   light(x, y, r, intensity = 1, col = null) { if (this.lights.length < 24) this.lights.push([x, y, r, intensity, col]); }       // col: the colour of its pool of light (default a warm flame colour)   // world coords; made screen-relative at render time
 

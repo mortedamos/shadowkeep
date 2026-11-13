@@ -1,6 +1,6 @@
 // The woman who walks behind the Stranger.  She is a ghost: pale and see-through, her lower half fading into nothing, floating a step behind him and a little above the ground (she is never
 // quite where she was a moment ago).  She is normally INVISIBLE.  She can only be seen in an arcane light - any BLUE light: a waystone's glow, a will-o'-the-wisp, spectral blue flames, the
-// Ignis Fatuus lantern, the candle on her grave - and she is seen, briefly, whenever a gravestone speaks with her voice.  Her picture is the villager woman's, washed to moonlight and faded
+// the candle on her grave - and she is seen, briefly, whenever a gravestone speaks with her voice.  Her picture is the villager woman's, washed to moonlight and faded
 // from the waist down (assets.js buildLady).
 import { drawSheet } from './assets.js';
 import { W, H } from './util.js';
@@ -25,7 +25,7 @@ export class Ghost {
     return Math.min(1, v);
   }
   draw(ctx, cx, cy) {
-    const g = this.g, p = g.player; if (!g.room || !g.save || p.dead) return;
+    const g = this.g, p = g.player; if (!g.room || !g.save || p.dead || g.save.flags.got_lantern) return;          // (once he carries the wisp - which is her - the ghost is gone)
     const v = this.sense(); this.a += (v - this.a) * (v > this.a ? 0.07 : 0.045); if (this.a < 0.02) return;
     const x = this.x - cx, y = this.y - cy, flick = 0.9 + 0.1 * Math.sin(this.t * 0.21) + 0.05 * Math.sin(this.t * 0.53);
     ctx.save(); ctx.globalCompositeOperation = 'lighter';

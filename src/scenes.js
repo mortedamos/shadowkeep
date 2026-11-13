@@ -2,6 +2,7 @@
 // A scene is started by the game (see Game.stepPlay) by setting game.cutscene = { scene }; it ends itself by clearing game.cutscene.
 import { W, H, T, rand, clamp } from './util.js';
 import { drawText } from './font.js';
+import { isSolid } from './world.js';
 import { STORY } from './story.js';
 import { Input } from './input.js';
 import { Audio_ as A } from './audio.js';
@@ -11,15 +12,17 @@ import { roomFlames } from './decor.js';
 const BAR = 26;                                                        // the letterbox bars, in screen pixels
 
 // ------------------------------------------------------------------------------------------------ the Cinder Warden sets Prague alight
-// Played once, at the east end of Market Street (the last thing you see of the street before you leave it).  The Warden steps out, hurls three torches at the houses - each one that lands
+// Played once, near the start of Smouldering Lane, the first street beyond the Waystone Square.  The Warden steps out, hurls three torches at the houses - each one that lands
 // sets its house burning - turns to look at the hero, and strides off east.  From then on the whole village burns (save flag `village_fire`).
 export class VillageScene {
   constructor(g) {
     this.g = g; this.r = g.room; this.t = 0; this.bars = 0; this.torches = []; this.done = false;
-    this.w = { x: this.r.pw - 2.6 * T, y: 12 * T, dir: -1, vx: 0, on: false, pose: 'idle', st: 0 };
+    const wx = Math.min(this.r.pw - 3 * T, g.player.x + 125); let ty = Math.max(0, Math.floor(g.player.y / T) - 5); while (ty < this.r.h - 1 && !isSolid(this.r.get(Math.floor(wx / T), ty))) ty++;          // (the street is as tall as the Orloj: he stands on the ground wherever it is)
+    this.w = { x: wx, y: ty * T, dir: -1, vx: 0, on: false, pose: 'idle', st: 0 };          // (he steps out of the dark a little way ahead of the hero)
     const best = new Map();                                            // the houses of this street: where the biggest fire of each will burn
     for (const d of this.r.decos) if (d.t === 'blaze' && d.burn) { const b = best.get(d.burn); if (!b || (b.small && !d.small)) best.set(d.burn, d); }
-    const houses = [...best.values()].map(d => ({ key: d.burn, x: d.x, y: d.y })).sort((a, b) => Math.abs(a.x - this.w.x) - Math.abs(b.x - this.w.x));
+    const near = [...best.values()].map(d => ({ key: d.burn, x: d.x, y: d.y })).sort((a, b) => Math.abs(a.x - this.w.x) - Math.abs(b.x - this.w.x));
+    const houses = near.filter(h => Math.abs(h.x - g.player.x) < 185).concat(near.filter(h => Math.abs(h.x - g.player.x) >= 185));          // (those in view first)
     this.throws = [50, 86, 122].slice(0, houses.length).map((t, i) => ({ t, target: houses[i] }));
     g.playerFrozen = true; g.player.invT = 9999; g.player.vx = 0; g.player.dir = 1;
   }
@@ -48,7 +51,8 @@ export class VillageScene {
       if (t < 215) w.pose = 'idle';
       for (const th of this.throws) { if (t >= th.t && t < th.t + 40) { w.pose = 'throw'; w.st = t - th.t; } if (t === th.t + 22) this.launch(th); }
       if (t === 200) { A.sfx('roar'); g.shake(4, 30); fx.flash([1, 0.5, 0.2], 0.2); fx.ring(w.x, w.y - 40, 100, [1, 0.5, 0.2], 36, 0.1); }       // he turns on the hero, and roars
-      if (t >= 215) { w.dir = 1; w.pose = 'walk'; w.vx = 2.2; w.x += w.vx; if (t % 3 === 0) fx.fire(w.x - 12, w.y - rand(0, 34), { scale: 0.6, n: 1 }); if (w.x > r.pw + 50) w.on = false; }
+      if (t >= 215 && t < 246) { w.dir = 1; w.pose = 'walk'; w.vx = 2.2; w.x += w.vx; if (t % 3 === 0) fx.fire(w.x - 12, w.y - rand(0, 34), { scale: 0.6, n: 1 }); }
+      if (t === 246) { w.on = false; A.sfx('boom'); g.shake(3, 14); fx.flash([1, 0.5, 0.2], 0.25); fx.ring(w.x, w.y - 40, 90, [1, 0.5, 0.2], 28, 0.12); for (let i = 0; i < 10; i++) fx.fire(w.x + rand(-20, 20), w.y - rand(0, 70), { scale: 1.0, n: 1 }); fx.sparks(w.x, w.y - 40, 30, [[1, 0.7, 0.3], [1, 0.4, 0.1]], 4, { gy: 0.05 }); }          // he turns to flame and is gone
     }
     for (let i = this.torches.length - 1; i >= 0; i--) {
       const th = this.torches[i]; th.vy += th.grav; th.x += th.vx; th.y += th.vy; th.rot += 0.3; th.t++;
@@ -78,7 +82,7 @@ export class VillageScene {
 
 // ------------------------------------------------------------------------------------------------ the opening: a grave on a hill above Prague
 // Played once, when a new game begins (flag opening_seen).  Rain, a tolling bell, the Stranger kneeling at a grave with a blue candle burning on it - the ghost who walks behind him shows faintly in
-// its light - and the title card PRAGUE 1619.  Then the glow of fire rises over the roofs far below; he lifts his head, rises, draws Silberzahn, turns to the city and walks down to it.
+// its light - and the title card PRAGUE 1541.  Then the glow of fire rises over the roofs far below; he lifts his head, rises, draws Silberzahn, turns to the city and walks down to it.
 export class OpeningScene {
   constructor(g) {
     this.g = g; this.r = g.room; this.t = 0; this.bars = 0; this.kneel = true; this.done = false;

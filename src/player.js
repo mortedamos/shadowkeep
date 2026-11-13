@@ -277,11 +277,13 @@ export class Player extends Entity {
   stepLantern() {
     const g = this.g, fx = g.fx;
     if (!this.S.flags.got_lantern) { fx.lantern = null; this.lan = null; return; }
-    const tx = this.x - this.dir * 15 + Math.sin(this.t * 0.045) * 7, ty = this.y - 48 + Math.sin(this.t * 0.07) * 4;
+    // (the wisp is HER: it floats where the ghost used to, a step behind him, at the height of her head)
+    const tx = this.x - this.dir * 20 + Math.sin(this.t * 0.045) * 6, ty = this.y - 38 + Math.sin(this.t * 0.07) * 4; if (this.lanFlare > 0) this.lanFlare--;          // (lanFlare: a gravestone has spoken - the wisp flares)
     if (!this.lan || Math.hypot(this.lan.x - tx, this.lan.y - ty) > 150) this.lan = { x: tx, y: ty };
     const L = this.lan; L.x += (tx - L.x) * 0.07; L.y += (ty - L.y) * 0.09; fx.lantern = { x: L.x, y: L.y };
-    fx.glow(L.x, L.y, 30, [0.2, 0.9, 0.72], 0.34); fx.glow(L.x, L.y, 12, [0.6, 1, 0.9], 0.7); fx.glow(L.x, L.y, 4.5, [1, 1, 1], 1); fx.light(L.x, L.y, 118, 0.9, [0.35, 1, 0.8]);
-    if (this.t % 4 === 0) fx.emit({ x: L.x + rand(-2, 2), y: L.y + 2, vx: rand(-0.1, 0.1), vy: rand(0.05, 0.3), life: rand(24, 44), s0: 5, s1: 1, c0: [0.5, 1, 0.85], c1: [0.2, 0.6, 0.7], a0: 0.8, a1: 0, kind: 6 });
+    const fl = Math.min(1, (this.lanFlare || 0) / 40);
+    fx.glow(L.x, L.y, 30 + 14 * fl, [0.3, 0.55, 1], 0.34 + 0.3 * fl); fx.glow(L.x, L.y, 12 + 4 * fl, [0.62, 0.8, 1], 0.7); fx.glow(L.x, L.y, 4.5, [1, 1, 1], 1); fx.light(L.x, L.y, 118 + 30 * fl, 0.9 + 0.3 * fl, [0.4, 0.66, 1]);
+    if (this.t % 4 === 0) fx.emit({ x: L.x + rand(-2, 2), y: L.y + 2, vx: rand(-0.1, 0.1), vy: rand(0.05, 0.3), life: rand(24, 44), s0: 5, s1: 1, c0: [0.6, 0.8, 1], c1: [0.25, 0.4, 0.8], a0: 0.8, a1: 0, kind: 6 });
   }
 
   // ------------------------------------------------------------------ cloak stains (see stain.js)

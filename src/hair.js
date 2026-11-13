@@ -33,17 +33,17 @@ export class Hair {
       for (let i = 0; i < NC; i++) {
         const k = j * NC + i;
         if (j <= 1) { this.x[k] = this.px[k] = this.rx[k]; this.y[k] = this.py[k] = this.ry[k]; continue; }          // the crown moves with the head
-        let vx = (this.x[k] - this.px[k]) * (0.89 - 0.05 * free), vy = (this.y[k] - this.py[k]) * (0.89 - 0.05 * free); this.px[k] = this.x[k]; this.py[k] = this.y[k];
-        const st = 0.035 + 0.2 * (1 - free) * (1 - free);                          // stiffer toward the crown
+        let vx = (this.x[k] - this.px[k]) * (0.76 - 0.04 * free), vy = (this.y[k] - this.py[k]) * (0.76 - 0.04 * free); this.px[k] = this.x[k]; this.py[k] = this.y[k];
+        const st = 0.07 + 0.25 * (1 - free) * (1 - free);                          // stiffer toward the crown
         vx += (this.rx[k] - this.x[k]) * st; vy += (this.ry[k] - this.y[k]) * st;
         vy += 0.014 * free;                                                         // (the picture already hangs: just a touch of weight)
-        vx -= o.vx * 0.1 * free;                                                    // the air: against the direction he runs, so it streams back
-        vy -= o.vy * 0.03 * free;                                                   // falling lifts it, rising presses it down
-        vx += Math.sin(t * 0.33 + i * 1.7 + j * 0.9) * 0.05 * free * (0.2 + sp * 1.3);                       // flutter, stronger the faster he goes
-        vy += Math.cos(t * 0.27 + i * 2.1 + j * 0.7) * 0.04 * free * (0.15 + sp + Math.abs(o.vy) * 0.2);
-        vx += Math.sin(t * 0.045 + i * 0.8 + j * 0.4) * 0.016 * free;               // and a slow sway at rest
+        vx -= o.vx * 0.05 * free;                                                    // the air: against the direction he runs, so it streams back
+        vy -= o.vy * 0.012 * free;                                                   // falling lifts it, rising presses it down
+        vx += Math.sin(t * 0.33 + i * 1.7 + j * 0.9) * 0.016 * free * (0.2 + sp * 1.0);                       // flutter, stronger the faster he goes
+        vy += Math.cos(t * 0.27 + i * 2.1 + j * 0.7) * 0.012 * free * (0.15 + sp + Math.abs(o.vy) * 0.15);
+        vx += Math.sin(t * 0.045 + i * 0.8 + j * 0.4) * 0.006 * free;               // and a slow sway at rest
         this.x[k] += vx; this.y[k] += vy;
-        const dx = this.x[k] - this.rx[k], dy = this.y[k] - this.ry[k], d = Math.hypot(dx, dy), md = 1 + 6.5 * free;          // it never strays far from the head
+        const dx = this.x[k] - this.rx[k], dy = this.y[k] - this.ry[k], d = Math.hypot(dx, dy), md = 0.6 + 3 * free;          // it never strays far from the head
         if (d > md) { this.x[k] = this.rx[k] + dx / d * md; this.y[k] = this.ry[k] + dy / d * md; }
       }
     }

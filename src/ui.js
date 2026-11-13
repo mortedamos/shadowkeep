@@ -1,5 +1,5 @@
 // HUD, menus and overlay screens (all drawn with the pixel font on the 384x216 canvas).
-import { W, H, clamp, lerp, fmtTime, easeOut } from './util.js';
+import { W, H, clamp, lerp, fmtTime, easeOut, sentenceCase } from './util.js';
 import { drawText, textWidth, wrapText, handText } from './font.js';
 import { Input } from './input.js';
 import { Touch } from './touch.js';
@@ -106,7 +106,8 @@ export function drawExitArrow(ctx, x, y, t, dir) {
 }
 
 export class Dialog {
-  constructor(text, o = {}) { this.font = o.font || undefined; if (this.font === 'hand') text = handText(text); this.lines = wrapText(text, 300, 1, this.font); this.full = this.lines.join('\n'); this.t = 0; this.done = false; this.closed = false; this.name = o.name || null; this.onClose = o.onClose || null; this.choices = o.choices || null; this.sel = 0; this.choice = -1; this.footer = o.footer || null; }
+  constructor(text, o = {}) { this.font = o.font || (o.name ? 'mixed' : undefined); if (this.font === 'hand') text = handText(text); else if (this.font === 'mixed') text = sentenceCase(text);          // (a named speaker - an NPC, a boss - talks in sentence case; the gravestones in their own face)
+    this.lines = wrapText(text, 300, 1, this.font); this.full = this.lines.join('\n'); this.t = 0; this.done = false; this.closed = false; this.name = o.name || null; this.onClose = o.onClose || null; this.choices = o.choices || null; this.sel = 0; this.choice = -1; this.footer = o.footer || null; }
   update() {
     this.t += 1.2; const skip = Input.pressed.confirm || Input.pressed.back || Input.pressed.attack || Input.pressed.jump;
     if (this.choices && this.t >= this.full.length) {                                       // a question: LEFT / RIGHT (or UP / DOWN) choose, ENTER / SPACE answers, ESC says no
@@ -379,8 +380,8 @@ export class MapScreen {
         const tb = rect(t), side = t.map.x === r.map.x && t.map.y !== r.map.y;
         if (side) {                                                                  // a side room (a house, a sanctuary, a lair): hangs below its parent
           if (t.map.y < r.map.y || !once(r.id, t.id, 'd')) continue;
-          const ax = rb.x + Math.round(clamp(d.x / r.w, 0, 1) * (rb.w - 1)), bx = tb.x + Math.round(clamp(d.tx / t.w, 0, 1) * (tb.w - 1)), ym = Math.round((rb.y + rb.h + tb.y) / 2);
-          path([[ax, rb.y + rb.h - 1], [ax, ym], [bx, ym], [bx, tb.y]], DOOR); mark(ax, rb.y + rb.h - 2); continue;
+          const up = rooms.filter(q => q.map.x === t.map.x && q.map.y < t.map.y).sort((p, q) => q.map.y - p.map.y)[0] || r, ub = rect(up), cx = ub.x + (ub.w >> 1), ym = Math.round((ub.y + ub.h + tb.y) / 2);                    // (one straight line down the column - the rooms stacked under a parent never tangle - with a door mark in the gap)
+          path([[cx, ub.y + ub.h - 1], [cx, tb.y]], DOOR); mark(cx - 1, ym - 1); continue;
         }
         if (!once(r.id, t.id, 'd')) continue;                                        // two neighbours joined by a door at each end instead of an open edge
         const L = rb.x < tb.x, p = L ? [rb, r, d.gy] : [tb, t, d.tgy], q = L ? [tb, t, d.tgy] : [rb, r, d.gy];

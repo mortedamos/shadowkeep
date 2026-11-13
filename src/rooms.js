@@ -35,7 +35,7 @@ export class B {
   constructor(id, name, zone, w, h, o = {}) {
     this.def = {
       id, name, zone, w, h, theme: o.theme || ZONES[zone].theme, bg: o.bg || null, tiles: new Uint8Array(w * h), spawns: [], decos: [], exits: [], doors: [], seals: [],
-      horizon: (o.horizon !== undefined ? o.horizon : h - 2) * 16, fog: o.fog || 0, weather: o.weather || null, storm: !!o.storm, ambient: o.ambient === undefined ? 0.3 : o.ambient,
+      horizon: (o.horizon !== undefined ? o.horizon : h - 2) * 16, fog: o.fog || 0, weather: o.weather || null, storm: !!o.storm, ambient: o.ambient === undefined ? 0.3 : o.ambient, dark: !!o.dark,
       tint: o.tint || [0.015, 0.01, 0.05], music: o.music || ZONES[zone].music, boss: o.boss || null, save: !!o.save, indoor: !!o.indoor, wisps: o.wisps || 0, map: o.map || { x: 0, y: 0 }, vig: o.vig === undefined ? 0.5 : o.vig,
     };
     this.w = w; this.h = h;
@@ -198,9 +198,13 @@ export function arrangeCandelabras(def) {
   // THE HILL ABOVE PRAGUE - where the story begins (story.js; scenes.js OpeningScene): a rain-soaked hill, a grave with a candle burning blue on it, and the city beyond.  (keepLook: it keeps its own dim light and rain.)
   const b = new B('v0', 'The Hill Above Prague', 6, 64, 14, { theme: 'village', weather: 'rain', ambient: 0.3, horizon: 12, tint: [0.05, 0.03, 0.14], vig: 0.6, music: 'intro', map: { x: 0, y: 4 } });
   b.def.keepLook = true; b.floor(0, 64, 12);
+  b.block(22, 11, 1, 1).block(23, 10, 4, 2).block(27, 11, 1, 1);          // a rise in the ground to jump up and over (two tiles high: the first thing to learn to do once the scene is over)
+  for (const [from, to] of [[13, 20], [30, 41], [55, 62]]) for (let x = from, i = 0; x <= to; x += 2.3, i++) b.d('img', x, 12, { img: ['gy_fence_a', 'gy_fence_b', 'gy_fence_a', 'gy_fence_c'][i % 4], fore: true, sink: 3 });          // iron fences in the foreground: he walks behind them
+  b.block(44, 11, 2, 1);                                                    // and a low step a little further on
   b.d('img', 3, 12, { img: 'forest_tree_2', back: true }).d('img', 21, 12, { img: 'forest_tree_4', back: true }).d('img', 33, 12, { img: 'forest_tree_1', back: true }).d('img', 46, 12, { img: 'cemetery_tree-2', back: true }).d('img', 58, 12, { img: 'forest_tree_3', back: true });
-  b.d('img', 6, 12, { img: 'cemetery_stone-1' }).d('img', 17, 12, { img: 'cemetery_stone-3' }).d('img', 27, 12, { img: 'cemetery_stone-2' }).d('img', 30, 12, { img: 'cemetery_bush-small' }).d('img', 38, 12, { img: 'cemetery_stone-4' }).d('img', 42, 12, { img: 'cemetery_stone-1' }).d('img', 54, 12, { img: 'cemetery_bush-small' });
+  b.d('img', 6, 12, { img: 'cemetery_stone-1' }).d('img', 17, 12, { img: 'cemetery_stone-3' }).d('img', 29, 12, { img: 'cemetery_stone-2' }).d('img', 30, 12, { img: 'cemetery_bush-small' }).d('img', 38, 12, { img: 'cemetery_stone-4' }).d('img', 42, 12, { img: 'cemetery_stone-1' }).d('img', 54, 12, { img: 'cemetery_bush-small' });
   b.d('grave', 10, 12);
+  b.d('img', 7, 12, { img: 'gy_st4', back: true }).d('img', 19, 12, { img: 'gy_st1', back: true }).d('img', 25, 10, { img: 'gy_st5' }).d('img', 36, 12, { img: 'gy_st3', back: true }).d('img', 47, 12, { img: 'gy_st7', back: true }).d('img', 44, 11, { img: 'gy_st8' }).d('img', 58, 12, { img: 'gy_st6', back: true });          // statues on the hill (Graveyard pack): a kneeling mourner beside her grave, the others among the stones and behind the fences, a gargoyle on the rise and an owl on the step
   b.tablet(51, 12, '', 'tabv0');
   b.exit('R', 9, 11, 'v1', 1, 12);
   add(b);

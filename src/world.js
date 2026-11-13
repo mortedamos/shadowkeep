@@ -433,14 +433,6 @@ export class Room {
     if (this.dirty) this.prerender();
     const sx = Math.max(0, Math.floor(camX)), sy = Math.max(0, Math.floor(camY)), sw = Math.min(W + 1, this.pw - sx), sh = Math.min(H + 1, this.ph - sy);
     if (sw > 0 && sh > 0) g.drawImage(this.canvas, sx, sy, sw, sh, sx - Math.floor(camX), sy - Math.floor(camY), sw, sh);
-    // the faint aura of everything breakable: cracked walls glow a pale lilac, barricades like embers, crystals icy
-    { g.save(); g.globalCompositeOperation = 'lighter';
-      for (const [tx, ty, v] of [...this.brk, ...this.anim.filter(a => a[2] === TILE.CRYSTAL)]) {
-        const x = tx * T + 8 - Math.floor(camX), y = ty * T + 8 - Math.floor(camY); if (x < -24 || x > W + 24 || y < -24 || y > H + 24) continue;
-        const k = v === TILE.CRACK ? '205,195,255' : v === TILE.BARRICADE ? '255,150,70' : '130,220,255', pulse = 0.5 + 0.5 * Math.sin(t * 0.05 + tx * 0.9 + ty * 0.6), R = 21, gr = g.createRadialGradient(x, y, 1, x, y, R);
-        gr.addColorStop(0, 'rgba(' + k + ',' + (0.21 + 0.07 * pulse).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(' + k + ',0)'); g.fillStyle = gr; g.fillRect(x - R, y - R, R * 2, R * 2);
-      }
-      g.restore(); }
     // grass blades / ledges that poke above the room's top edge are clipped; animated tiles:
     for (const [tx, ty, v] of this.anim) {
       const x = tx * T - Math.floor(camX), y = ty * T - Math.floor(camY); if (x < -16 || x > W || y < -16 || y > H) continue;

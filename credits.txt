@@ -52,6 +52,16 @@ The moonlit graveyard set.
 ## gamecrafterik
 Steampunk Pixel Art Mega Pack v2.1.1 (seven props of the Clockwork Dungeon)
 
+## Free to use
+The Prague Orloj tower photograph (calendar dial) - taken by the project owner
+The Prague Orloj clock picture (pixelated) - the Orloj Tower
+
+## heosphorus
+Animated Gears - Pixel Art Steampunk Machinery (turning gear accents in the Orloj Tower and the Clockwork Dungeon) - heosphorus.itch.io/animated-gears
+
+## worldswithoutend
+Graveyard 400 Assets (two headstones, four flowers, a wreath, three iron fences and eight statues) - worldswithoutend.itch.io/graveyard-2d-game-assets
+
 ## xxg
 xxg_4_free
 The Crimson Count, the vampire lord.
@@ -83,9 +93,9 @@ Almendra Bold - Ana Sanfelippo
 Blackletter ExtraBold - the title
 ; (the font came without a licence file and its copyright notice says all rights reserved: confirm that it may be shipped before a public release)
 
-## Licence and author unknown
-Fraktur Handschrift - the gravestones and tablets
-; (the font file carries no copyright or licence text: confirm where it is from and that it may be shipped before a public release)
+## Licence unknown
+Eroded Motta (lirkiv AC) - the gravestones and tablets
+; (the font file names its author but carries no licence text: confirm that it may be shipped before a public release)
 
 ---
 
