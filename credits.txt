@@ -49,6 +49,9 @@ Sliced and re-assembled in code.
 ## Anokolisa
 The moonlit graveyard set.
 
+## gamecrafterik
+Steampunk Pixel Art Mega Pack v2.1.1 (seven props of the Clockwork Dungeon)
+
 ## xxg
 xxg_4_free
 The Crimson Count, the vampire lord.
@@ -79,6 +82,10 @@ Almendra Bold - Ana Sanfelippo
 ## Typographer Mediengestaltung
 Blackletter ExtraBold - the title
 ; (the font came without a licence file and its copyright notice says all rights reserved: confirm that it may be shipped before a public release)
+
+## Licence and author unknown
+Fraktur Handschrift - the gravestones and tablets
+; (the font file carries no copyright or licence text: confirm where it is from and that it may be shipped before a public release)
 
 ---
 

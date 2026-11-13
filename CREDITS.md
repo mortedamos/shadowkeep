@@ -44,7 +44,10 @@ Not used right now. The pack ships without a formal license file; see `assets/ar
 | Pack | Author | License | Used for |
 |---|---|---|---|
 | ["Final" graveyard set](https://anokolisa.itch.io/) | Anokolisa | free for commercial use, credit optional (shapes / colours changed = no credit owed) | the moonlit graveyard backdrop: moon and clouds, the mausoleum + chapel silhouette, ivy and headstone foliage (drawn at half size) |
-| xxg_4_free (vampire character sheet) | xxg | **no licence file came with the download - confirm the terms with the author before a public release** | the Crimson Count (the optional boss in the Nave's crypt); the painted sheet is cut into strips and scaled down by the build step |
+| Steampunk Pixel Art Mega Pack v2.1.1 (gamecrafterik, itch.io) - seven 32x32 props: boiler, steam vent, valve, clock, lamp post, furnace, tesla tower | gamecrafterik | its README says "royalty-free commercial licence" and the pack is described as AI-assisted - fine to ship, but keep the note; only the props in `assets/env/sp_*.png` are used (the rest sits in `assets/sprites/source/`, which is not published) |
+| Animated Gears (heosphorus, itch.io) | heosphorus | **licence not confirmed** - the pack is in `assets/sprites/source/` but is NOT used: the gears you see are drawn in code (gears.js / world.js) |
+| Metroidvania Kit (in `assets/sprites/source/`) | CC0 (per its page) | not used yet |
+| xxg_4_free (vampire character sheet) | xxg | **no licence file came with the download - confirm the terms with the author before a public release** | the Crimson Count (the boss of the Crypts's crypt); the painted sheet is cut into strips and scaled down by the build step |
 | Pixel Platformer Set 1 | Szadi art | public domain - may be edited, but the pack may not be sold | the sickle-fighter **zealot** and the sparkling diamond |
 | The Sidescroller's Dungeon - Tileset [32x32] | (see the itch.io page of the same name) | **no license file came with the download - check the author's page before any public / commercial release** | the teal pillars, banners, urns, crates, stone arch and wooden door, and the animated torches |
 
@@ -68,13 +71,14 @@ The game does not ship the full-size pictures: `tools/pixelate-portraits.ps1` sh
 | Font | Used for | Source |
 |---|---|---|
 | **Pirata One** (Rodrigo Fuenzalida, Nicolas Massi) | the logo, banners, menus, HUD and floating text | https://fonts.google.com/specimen/Pirata+One |
-| **Almendra Bold** (Ana Sanfelippo) | dialogue, lore tablets, the story crawl and descriptive text | https://fonts.google.com/specimen/Almendra |
+| **Almendra Bold** (Ana Sanfelippo) | dialogue, boss exchanges and descriptive text | https://fonts.google.com/specimen/Almendra |
 
 The font files are in `assets/fonts/`; the licenses are in `assets/credits/license-pirata-one-OFL.txt` and `license-almendra-OFL.txt`.
 
 | Font | Used for | Licence |
 |---|---|---|
 | **Blackletter ExtraBold** (`BLACEB__.TTF`, (c) 2001 Typographer Mediengestaltung) | the game title on the title screen | **no licence file came with it** - the font file says "All rights reserved"; confirm that it may be redistributed before a public release |
+| **Fraktur Handschrift** (`Fraktur Handschrift.ttf`, version 001.057; supplied by the project owner) | her words: every gravestone and tablet (in mixed case, with the round s at the end of a word) | **licence and author unknown** - the font file carries no copyright or licence text and no licence file came with it; confirm where it is from and that it may be redistributed before a public release |
 
 ## Original art made for this project
 

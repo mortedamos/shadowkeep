@@ -171,7 +171,7 @@ export function releaseItem(g, p, id) {            // called mid-animation
     case 'torch': g.addProjectile(new ThrownTorch(g, x, y - 2, d, Math.max(1, Math.round(1 + atk * 0.2)), Math.max(1, Math.round(atk * 0.22)))); A.sfx('cast'); break;
     case 'marrow': g.addProjectile(new MagicArrow(g, x, y, d, Math.max(2, Math.round(2 + atk * 0.42)))); A.sfx('cast'); break;
     case 'holy': g.addProjectile(new HolyFlask(g, x, y - 2, d, Math.max(1, Math.round(1 + atk * 0.12)))); A.sfx('cast'); break;
-    case 'bandage': p.healT = 100; p.healPer = S.maxHp * 0.35 / 100; A.sfx('heal'); g.fx.ring(p.x, p.y - 18, 20, [0.95, 0.95, 0.9], 18, 0.2); g.popup(p.x, p.y - 42, 'BANDAGE', '#f2efe6'); break;
+    case 'bandage': p.healT = 100; p.healPer = S.maxHp * 0.35 / 100; A.sfx('heal'); g.fx.ring(p.x, p.y - 18, 20, [0.95, 0.95, 0.9], 18, 0.2); g.popup(p.x, p.y - 42, 'PANACEA', '#f2efe6'); break;
   }
   if (S.items[id] <= 0) delete S.items[id];
 }

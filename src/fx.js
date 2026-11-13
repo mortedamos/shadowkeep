@@ -237,11 +237,11 @@ class Wisps {
       f.add.add({ x: w.rx, y: w.ry, life: 1, s0: 46 * sc * fl, s1: 46 * sc * fl, c0: [0.38, 0.72, 1], a0: 0.8 * br, a1: 0.8 * br, kind: 0 });          // glow
       f.add.add({ x: w.rx, y: w.ry, life: 1, s0: 14 * sc * fl, s1: 14 * sc * fl, c0: [0.9, 0.98, 1], a0: 1.0 * br, a1: 1.0 * br, kind: 6 });             // core
       if (Math.floor(w.age) % 3 < dt) f.add.add({ x: w.rx + rand(-2, 2), y: w.ry + rand(-2, 2), vx: -w.vx * 0.25 + rand(-0.08, 0.08), vy: -rand(0.05, 0.25), life: rand(34, 60), s0: 9 * sc, s1: 1, c0: [0.3, 0.62, 1], c1: [0.1, 0.2, 0.8], a0: 0.55 * br, a1: 0, kind: 0, drag: 0.98 });     // a fading tail
-      if (dt >= 1 && f.lights.length < 22) f.lights.push([w.rx, w.ry, 78 * (1 - 0.3 * w.z), 0.95 * br, [0.35, 0.62, 1]]);                                                       // it lights the dark
+      if (dt >= 1 && f.lights.length < 22) f.lights.push([w.rx, w.ry, 104 * (1 - 0.3 * w.z), 0.95 * br, [0.35, 0.62, 1]]);                                                       // it lights the dark
     }
   }
   // what the fog shader needs: where mist is cleared [x, y, radius, strength]
-  fog(i) { const w = this.list[i]; if (!w || w.state !== 'live' || w.a < 0.02) return [0, 0, 1, 0]; return [w.rx, w.ry, 92 * (1 - 0.3 * w.z), Math.min(1, w.a * (1 - 0.3 * w.z) * 1.1)]; }
+  fog(i) { const w = this.list[i]; if (!w || w.state !== 'live' || w.a < 0.02) return [0, 0, 1, 0]; return [w.rx, w.ry, 160 * (1 - 0.3 * w.z), Math.min(1, w.a * (1 - 0.3 * w.z) * 1.1)]; }          // (about three times the area it used to clear)
 }
 
 export class FX {
@@ -396,7 +396,7 @@ export class FX {
   // storm: random lightning while a room has weather
   setStorm(on, rate = 0.0025) { this.storm = on ? rate : null; }
 
-  setWisps(n) { this.wisps.set(n); }
+  setWisps(n) { const k = n / 3, f = Math.floor(k); this.wisps.set(f + (Math.random() < k - f ? 1 : 0)); }          // (a third as many as a room asks for: 4 -> 1, sometimes 2)
   // ---- gusts and fog ----------------------------------------------
   // a puff of moving air at (x, y) travelling (vx, vy) px/step: s = strength, r = reach.  The swish of a sword, a dash.  It shoves smoke, embers and fog (and the game leans flames away from it).
   gust(x, y, vx, vy, r = 32, s = 1, life = 26) { this.gusts.push({ x, y, vx, vy, r, s, k: s, life: 0, max: life }); if (this.gusts.length > 6) this.gusts.shift(); }
@@ -463,6 +463,7 @@ export class FX {
     { const F = this.fogU; this.fogMesh.visible = F.uDensity.value > 0.01;
       if (this.fogMesh.visible) { F.uCam.value.set(this.camX + this.shakeX, this.camY + this.shakeY); F.uTime.value = this.time;
         for (let i = 0; i < 6; i++) { const wf = this.wisps.fog(i); F.uW.value[i].set(wf[0], wf[1], wf[2], wf[3]); }
+        if (this.lantern) F.uW.value[5].set(this.lantern.x, this.lantern.y, 150, 0.92);          // (the Marshlight Lantern's wisp)
         for (let i = 0; i < 6; i++) { const g = this.gusts[i]; if (g) { F.uG.value[i].set(g.x, g.y, g.vx, g.vy); F.uGP.value[i].set(g.r, g.k); } else { F.uG.value[i].set(0, 0, 0, 0); F.uGP.value[i].set(1, 0); } } } }
     this.add.mat.uniforms.uTime.value = this.time; this.alpha.mat.uniforms.uTime.value = this.time;
     this.add.upload(); this.alpha.upload();

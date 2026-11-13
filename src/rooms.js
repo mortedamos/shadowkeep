@@ -10,9 +10,11 @@ export const ZONES = {
   1: { name: 'The Graveyard Approach', theme: 'graveyard', music: 'zone1' },
   2: { name: 'The Great Hall', theme: 'hall', music: 'zone2' },
   3: { name: 'The Moonlit Chapel', theme: 'chapel', music: 'zone3' },
-  4: { name: 'The Underworks', theme: 'underworks', music: 'zone4' },
+  4: { name: 'The Crypts', theme: 'underworks', music: 'zone4' },
+  8: { name: 'The Clockwork Dungeon', theme: 'clockwork', music: 'zone8' },
+  9: { name: 'The Cistern', theme: 'cistern', music: 'zone9' },
   5: { name: 'The Shadow Throne', theme: 'throne', music: 'zone5' },
-  6: { name: 'The Burning Village', theme: 'village', music: 'zone6' },
+  6: { name: 'Prague', theme: 'village', music: 'zone6' },
   7: { name: 'The Weeping Swamp', theme: 'swamp', music: 'zone7' },
 };
 // the three Gothicvania Town houses and where their windows are, as [x offset from centre, height above the street, flame size] - the blazes are the fires burning inside
@@ -72,11 +74,11 @@ export class B {
     this.d('img', x, gy, { img, back: true });
     if (enter) this.door(Math.round(x + DOORS[img][0] / 16), gy, enter, 3, 12, 'house');
     if (sign === undefined ? h(9) < 0.4 : sign) { const [dx, up] = DOORS[img]; this.d('img', x + (dx + 8) / 16, gy - (up + 5) / 16, { img: 'town_sign', back: true }); }
-    for (const i of burn) { const [dx, up, sc] = HOUSES[img][i]; this.d('blaze', x + dx / 16, gy - up / 16, { scale: sc }); }
+    for (const i of burn) { const [dx, up, sc] = HOUSES[img][i]; this.d('blaze', x + dx / 16, gy - up / 16, { scale: sc, burn: x }); }          // (burn: the house they belong to - they stay unlit until the village is set alight, see VillageScene)
     const scatter = (list, n, salt) => {
       list.map((_, k) => k).filter(k => gy - list[k][1] / 16 >= 2).sort((a, b) => h(salt + a) - h(salt + b)).slice(0, n).forEach(k => {
         const [dx, up] = list[k], s = salt * 17 + k;
-        this.d('blaze', x + (dx + (h(s) - 0.5) * 10) / 16, gy - (up + (h(s + 0.5) - 0.5) * 8) / 16, { scale: 0.4 + 0.4 * h(s + 0.25), small: true });
+        this.d('blaze', x + (dx + (h(s) - 0.5) * 10) / 16, gy - (up + (h(s + 0.5) - 0.5) * 8) / 16, { scale: 0.4 + 0.4 * h(s + 0.25), small: true, burn: x });
       });
     };
     scatter(sp.roof, 3, 1); scatter(sp.wall, 3, 2); scatter(sp.foot, 2, 3);
@@ -105,8 +107,38 @@ const add = b => { ROOMS[b.def.id] = b.def; return b; };
 const PROP_BOX = { statue: [10, 40], barrel: [11, 24], tablet: [10, 30], chest: [12, 20] };       // [half width, height] in px of what stands on the floor
 const DOOR_HW = 17, DOOR_H = 43;                                                                   // a door sprite is about 33px wide and 43px tall
 export const hidesDoor = (s, d) => { const b = PROP_BOX[s.type]; return !!b && Math.abs((s.x - d.x) * 16) < b[0] + DOOR_HW - 2 && s.y * 16 - b[1] < d.gy * 16 - 4 && s.y * 16 > d.gy * 16 - DOOR_H + 4; };
+// A room drawn over a PARALLAX picture has no wall of its own to hang things on - the picture slides past at a different pace - so anything mounted on a wall would float in the air.  Only things that stand
+// on the ground belong there: a wall torch becomes (at most) a brazier on the floor below it (thinned out, and kept clear of doors, signs and other braziers), a barred window goes, and a framed portrait
+// (a painted one or a haunted one) is hung on a freestanding pillar.  Ceiling banners are fixed to the ceiling slab and stay.  (A tower is a brick shaft that does not slide, so it keeps its wall torches;
+// the disco is lit by its own lights.)
+export function groundScenery(def) {
+  if (def.groundDone) return; def.groundDone = true; if (def.interior || def.disco) return;
+  const W = def.w, H = def.h, at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? 1 : def.tiles[y * W + x]), stand = (x, y) => at(x, y) === TILE.SOLID || at(x, y) === TILE.PLAT;
+  const floorBelow = (tx, y0) => { for (let y = Math.max(0, y0); y < H; y++) if (stand(tx, y)) return y; return -1; };
+  const flat = (tx, fy) => [-1, 0, 1].every(k => stand(tx + k, fy) && at(tx + k, fy - 1) === 0 && at(tx + k, fy - 2) === 0);
+  const lit = def.decos.filter(d => d.t === 'brazier' || d.t === 'column').map(d => ({ x: Math.floor(d.x / 16), y: Math.floor(d.y / 16) }));
+  const USED = new Set(['waystone', 'altar', 'tablet', 'chest', 'statue', 'barrel', 'upgrade']);
+  const clear = tx => !def.doors.some(d => Math.abs(d.x - tx) < 3) && !def.spawns.some(s => USED.has(s.type) && Math.abs(s.x - tx) < 2);
+  const pillars = def.decos.filter(d => d.t === 'img' && /^dg_pillar/.test(d.img)).map(d => Math.floor(d.x / 16));
+  const pillar = (tx, ty) => { if (pillars.some(p => Math.abs(p - tx) < 2)) return null; const fy = floorBelow(tx, ty + 1); if (fy < 0) return null; pillars.push(tx); return { t: 'img', x: tx * 16 + 8, y: fy * 16, img: 'dg_pillar_' + (1 + ((tx * 7 + fy) % 4)), back: true }; };
+  const out = [];
+  for (const d of def.decos) {
+    if (d.t === 'barwin') continue;
+    if (d.t === 'torch' || d.t === 'dgtorch') {
+      const tx = Math.floor(d.x / 16), fy = floorBelow(tx, Math.floor(d.y / 16));
+      if (fy >= 0 && flat(tx, fy) && clear(tx) && !lit.some(q => Math.abs(q.x - tx) < 9 && Math.abs(q.y - fy) < 4)) { lit.push({ x: tx, y: fy }); out.push({ t: 'brazier', x: d.x, y: fy * 16 }); }
+      continue;
+    }
+    if (d.t === 'portrait') { const p = pillar(Math.floor(d.x / 16), Math.floor(d.y / 16)); if (p) out.push(p); }
+    out.push(d);
+  }
+  for (const s of def.spawns) if (s.type === 'portrait') { const p = pillar(s.x, s.y); if (p) out.unshift(p); }
+  def.decos = out;
+}
+
 export function tidyRoom(def) {
   if (def.tidied) return; def.tidied = true;
+  groundScenery(def);
   if (def.boss || def.spawns.some(s => s.type.startsWith('boss_'))) def.spawns = def.spawns.filter(s => s.type !== 'statue');
   const W = def.w, H = def.h, T = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? 1 : def.tiles[y * W + x]), floor = (x, y) => { const v = T(x, y); return (v === TILE.SOLID || v === TILE.PLAT) && T(x, y - 1) === 0 && T(x, y - 2) === 0 && T(x, y - 3) === 0; };
   const spare = (x, y, type, self) => { const b = PROP_BOX[type]; return !(def.doors || []).some(d => hidesDoor({ type, x, y }, d) || (Math.abs(d.gy - y) <= 3 && Math.abs((x - d.x) * 16) < b[0] + DOOR_HW + 6)) && !def.spawns.some(o => o !== self && Math.abs(o.y - y) <= 3 && Math.abs(o.x - x) < 2 && (PROP_BOX[o.type] || o.type === 'altar' || o.type === 'waystone' || o.type === 'itemspawn' || o.type === 'upgrade')); };
@@ -163,7 +195,18 @@ export function arrangeCandelabras(def) {
 // ZONE 1 - THE GRAVEYARD APPROACH
 // =====================================================================================================================
 {
-  // THE BURNING VILLAGE - the opening level.  Gothicvania Town art (ansimuz, CC0) on a cobbled street (Castlevania-esque bricks, Chloe Wolfe, CC-BY 4.0).
+  // THE HILL ABOVE PRAGUE - where the story begins (story.js; scenes.js OpeningScene): a rain-soaked hill, a grave with a candle burning blue on it, and the city beyond.  (keepLook: it keeps its own dim light and rain.)
+  const b = new B('v0', 'The Hill Above Prague', 6, 64, 14, { theme: 'village', weather: 'rain', ambient: 0.3, horizon: 12, tint: [0.05, 0.03, 0.14], vig: 0.6, music: 'intro', map: { x: 0, y: 4 } });
+  b.def.keepLook = true; b.floor(0, 64, 12);
+  b.d('img', 3, 12, { img: 'forest_tree_2', back: true }).d('img', 21, 12, { img: 'forest_tree_4', back: true }).d('img', 33, 12, { img: 'forest_tree_1', back: true }).d('img', 46, 12, { img: 'cemetery_tree-2', back: true }).d('img', 58, 12, { img: 'forest_tree_3', back: true });
+  b.d('img', 6, 12, { img: 'cemetery_stone-1' }).d('img', 17, 12, { img: 'cemetery_stone-3' }).d('img', 27, 12, { img: 'cemetery_stone-2' }).d('img', 30, 12, { img: 'cemetery_bush-small' }).d('img', 38, 12, { img: 'cemetery_stone-4' }).d('img', 42, 12, { img: 'cemetery_stone-1' }).d('img', 54, 12, { img: 'cemetery_bush-small' });
+  b.d('grave', 10, 12);
+  b.tablet(51, 12, '', 'tabv0');
+  b.exit('R', 9, 11, 'v1', 1, 12);
+  add(b);
+}
+{
+  // PRAGUE - the opening level (it burns after the Cinder Warden's scene - see scenes.js).  Gothicvania Town art (ansimuz, CC0) on a cobbled street (Castlevania-esque bricks, Chloe Wolfe, CC-BY 4.0).
   // Flat and forgiving: monsters roam the street, houses burn, and terrified villagers run about (they are harmless - you can't hurt them).
   const b = new B('v1', 'Market Street', 6, 90, 14, { theme: 'village', weather: 'embers', ambient: 0.34, horizon: 12, tint: [0.16, 0.05, 0.0], vig: 0.55, map: { x: 0, y: 4 } });
   b.floor(0, 90, 12).block(24, 10, 3, 2).block(41, 10, 4, 2).plat(48, 4, 8).block(62, 10, 3, 2).plat(70, 4, 9).block(78, 10, 2, 2);
@@ -175,11 +218,11 @@ export function arrangeCandelabras(def) {
   b.e('barrel', 61, 12, { drop: 'coin' });                                  // (a breakable one: barrels and crates you can smash look like this, and nothing else does)
   b.d('brazier', 28, 12).d('brazier', 46, 12).d('brazier', 65, 12);          // (the first one used to stand at 26, hidden behind the stone block at 24-26)
   b.d('pool', 17, 12, { w: 80 });                                             // a puddle in the street (water washes the white cloak)
-  b.tablet(6, 12, 'THE BELLS RANG AT DUSK. THEN THE THINGS CAME DOWN FROM THE HILL, AND THE FIRES BEGAN. THE KEEP IS BEYOND THE GATE.', 'tab0');
+  b.tablet(6, 12, 'THE BELLS RANG AT DUSK. THEN THE THINGS CAME DOWN FROM THE HILL. PRAGUE HAS NOT WALKED ITS OWN STREETS WITHOUT FEAR SINCE. THE KEEP IS BEYOND THE GATE.', 'tab0');
   b.candle(16, 12, 'heart').candle(38, 12, 'coin').e('statue', 55, 12, { drop: 'mana' }).candle(77, 12, 'heart');
   b.many('zombie', [20, 34, 58, 72], 12).e('skeleton', 46, 12).e('hound', 66, 12).e('fireskull', 40, 5).e('bat', 28, 3).e('bat', 60, 4);
   for (const [x, kind] of [[9, 'woman'], [18, 'oldman'], [30, 'bearded'], [47, 'hatman'], [56, 'woman'], [67, 'bearded'], [76, 'oldman']]) b.e('villager', x, 12, { kind });
-  b.exit('R', 9, 11, 'g1', 1, 12);
+  b.exit('L', 9, 11, 'v0', 62, 12).exit('R', 9, 11, 'g1', 1, 12);
   add(b);
 }
 {
@@ -387,4 +430,4 @@ saveRoom('s5', 'Furnace Sanctuary', 4, 'u1', 31, 12, 10, 0);
 saveRoom('s4', 'Last Sanctuary', 5, 't1', 57, 12, 13, 2);
 
 export { ROOMS };
-export const START = { room: 'v1', x: 4, gy: 12 };
+export const START = { room: 'v0', x: 12, gy: 12 };

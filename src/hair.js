@@ -1,4 +1,4 @@
-// The stranger's hair.  It is not in his sprite: buildHair (assets.js) takes the baked quiff out of every frame and paints a new style on a sheet of its own - hair that sweeps over the
+// The stranger's HOOD (the file keeps its old name: it began as his hair).  It is not in his sprite: buildHair (assets.js) takes the baked quiff out of every frame and paints a new style on a sheet of its own - hair that sweeps over the
 // forehead and FALLS around his face: behind the head and past the shoulder blades, and in a lock beside the cheek.  This file draws that picture as a small TEXTURED MESH simulated like
 // the cloak's cloth: the rows of points at the crown are pinned to the head (so the hair always sits on his head), the rows below are springs that want to hang where the picture has them,
 // so at rest it looks exactly like the painted hair - and it lags when he sets off, streams back when he runs, is lifted by the air when he falls, is pressed down when he rises, and sways
@@ -13,15 +13,17 @@ export class Hair {
     const n = HAIR_NC * HAIR_NR;
     this.x = new Float32Array(n); this.y = new Float32Array(n); this.px = new Float32Array(n); this.py = new Float32Array(n);
     this.rx = new Float32Array(n); this.ry = new Float32Array(n);          // where each point would be if the hair were stiff (this frame)
-    this.ready = false; this.box = null; this.t = 0;
+    this.ready = false; this.box = null; this.t = 0; this.lift = 0;
   }
   reset() { this.ready = false; }
   // o: { box: {bx, by, bw, bh} | null (the hair's picture in the sheet this frame), rest(sx, sy) -> [worldX, worldY], vx, vy, dir }
   step(o) {
     this.t++; this.box = o.box || null; if (!this.box) return;
     const { bx, by, bw, bh } = this.box, NC = HAIR_NC, NR = HAIR_NR;
+    this.lift += ((o.vy > 1.4 ? Math.min(1, (o.vy - 1.4) / 2) : 0) - this.lift) * 0.2;          // falling: the brim of the hood lifts off his eyes
     for (let j = 0; j < NR; j++) for (let i = 0; i < NC; i++) {
       const k = j * NC + i, r = o.rest(bx + bw * i / (NC - 1), by + bh * j / (NR - 1)); this.rx[k] = r[0]; this.ry[k] = r[1];
+      if ((j === 2 || j === 3) && i >= NC - 2) this.ry[k] -= 3.2 * this.lift * (j === 2 ? 1 : 0.9);          // (the brim over the eyes - the front of the second and third rows - rides up)
     }
     let far = 0; if (this.ready) for (let k = 0; k < NC * NR; k++) far = Math.max(far, Math.abs(this.x[k] - this.rx[k]), Math.abs(this.y[k] - this.ry[k]));
     if (!this.ready || far > 40) { for (let k = 0; k < NC * NR; k++) { this.x[k] = this.px[k] = this.rx[k]; this.y[k] = this.py[k] = this.ry[k]; } this.ready = true; return; }          // (first frame / a teleport: no streak)

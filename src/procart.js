@@ -78,7 +78,7 @@ function batFrame(p, k) {
 // ------------------------------------------------------------------------------------------------
 // ICONS (14x14) and props
 // ------------------------------------------------------------------------------------------------
-export const ICON = ['heart', 'potion', 'mana', 'coin', 'gem', 'key', 'feather', 'boot', 'ember', 'thunder', 'hpup', 'mpup', 'atkup', 'skull', 'orb', 'scroll', 'e_fire', 'e_ice', 'e_sun', 'e_aegis', 'dagger', 'axe', 'torchi', 'marrow', 'holy', 'bandage'];
+export const ICON = ['heart', 'potion', 'mana', 'coin', 'gem', 'key', 'feather', 'boot', 'ember', 'thunder', 'hpup', 'mpup', 'atkup', 'skull', 'orb', 'scroll', 'e_fire', 'e_ice', 'e_sun', 'e_aegis', 'dagger', 'axe', 'torchi', 'marrow', 'holy', 'bandage', 'shoes', 'lock', 'mantle', 'lantern', 'shard', 'spring'];
 const IW = 14;
 function iconFrame(p, k) {
   const R = hex('#d4263a'), R2 = hex('#ff7a86'), GL = hex('#f2c14e'), GL2 = hex('#fff0a8'), BL = hex('#3a8bff'), BL2 = hex('#a8d4ff'), WH = hex('#f4f6ff');
@@ -110,6 +110,12 @@ function iconFrame(p, k) {
     case 'marrow': p.line(2, 12, 10, 4, hex('#c6d2ff'), 2); p.poly([[8, 1], [13, 1], [13, 6], [11, 4], [9, 3]], WH); p.poly([[1, 9], [4, 8], [3, 11], [0, 12]], hex('#8fa8ff')); p.poly([[5, 12], [6, 9], [9, 10], [4, 13]], hex('#8fa8ff')); p.set(11, 8, WH); p.set(12, 10, hex('#cfe0ff')); p.set(3, 4, WH); p.set(5, 2, hex('#cfe0ff')); break;
     case 'holy': p.rect(6, 1, 3, 2, GL); p.poly([[6, 3], [9, 3], [12, 9], [11, 12], [4, 12], [3, 9]], hex('#d8ecff')); p.poly([[4, 8], [11, 8], [12, 9], [11, 12], [4, 12], [3, 9]], hex('#8fc4f0')); p.rect(5, 9, 2, 1, WH); p.rect(8, 5, 1, 2, WH); break;
     case 'bandage': p.disc(6.5, 6.5, 5.2, hex('#efeadb')); p.disc(6.5, 6.5, 2.2, hex('#b9b09a')); p.rect(2, 5, 10, 1, hex('#cfc7b2')); p.rect(2, 8, 10, 1, hex('#cfc7b2')); p.rect(6, 4, 2, 6, R); p.rect(4, 6, 6, 2, R); break;
+    case 'shoes': p.poly([[2, 4], [6, 4], [6, 8], [12, 9], [12, 12], [2, 12]], hex('#e0409c')); p.rect(2, 10, 10, 2, hex('#fff2f8')); p.rect(3, 5, 2, 1, hex('#ffb0dc')); p.poly([[7, 1], [12, 0], [11, 4], [8, 4]], hex('#9cf0ff')); p.rect(8, 8, 3, 1, hex('#fff2f8')); break;
+    case 'lock': p.rect(4, 2, 1, 5, hex('#b9c0d0')); p.rect(9, 2, 1, 5, hex('#b9c0d0')); p.rect(5, 1, 4, 1, hex('#b9c0d0')); p.rect(3, 6, 8, 7, GL); p.rect(3, 6, 8, 1, GL2); p.rect(6, 8, 2, 2, hex('#3a2a10')); p.rect(6, 10, 2, 2, hex('#3a2a10')); break;
+    case 'mantle': p.poly([[4, 2], [10, 2], [13, 12], [7, 10], [1, 12]], hex('#5c5868')); p.poly([[5, 3], [9, 3], [11, 10], [7, 9], [3, 10]], hex('#8a849a')); p.rect(6, 2, 2, 2, GL); p.poly([[1, 12], [4, 11], [7, 13], [10, 11], [13, 12], [13, 13], [1, 13]], hex('#ff7a2a')); p.rect(5, 12, 2, 1, hex('#ffd24a')); break;
+    case 'lantern': p.rect(5, 0, 4, 1, hex('#8a8aa0')); p.rect(6, 1, 2, 2, hex('#6a6a80')); p.rect(3, 3, 8, 9, hex('#2a4a44')); p.rect(4, 4, 6, 7, hex('#3ad8a8')); p.poly([[7, 4], [9, 7], [7, 10], [5, 7]], hex('#d8fff0')); p.rect(7, 6, 1, 2, WH); p.rect(3, 12, 8, 2, hex('#6a6a80')); p.rect(3, 3, 8, 1, hex('#8a8aa0')); break;
+    case 'shard': p.poly([[7, 0], [12, 6], [9, 13], [3, 11], [2, 5]], hex('#b8c8f0')); p.poly([[7, 0], [12, 6], [7, 6]], hex('#f4f8ff')); p.poly([[2, 5], [7, 6], [3, 11]], hex('#8aa0d8')); p.poly([[7, 6], [9, 13], [3, 11]], hex('#6a80c0')); p.line(4, 4, 6, 2, WH, 1); break;
+    case 'spring': p.disc(6.5, 6.5, 5.4, hex('#c9962c')); p.disc(6.5, 6.5, 3.4, hex('#8a6a1c')); for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4; p.rect(Math.round(6 + Math.cos(a) * 5.6), Math.round(6 + Math.sin(a) * 5.6), 2, 2, GL2); } p.line(4, 7, 9, 5, hex('#ffe9a0'), 1); p.line(4, 9, 9, 7, hex('#ffe9a0'), 1); p.disc(6.5, 6.5, 1, hex('#2a1c0a')); break;
     case 'scroll': p.rect(3, 2, 8, 10, hex('#e8d9a8')); p.rect(2, 1, 10, 2, hex('#b68a4a')); p.rect(2, 11, 10, 2, hex('#b68a4a')); for (let i = 0; i < 3; i++) p.rect(4, 4 + i * 2, 6, 1, hex('#8a6a3a')); break;
   }
   if (name !== 'coin' && name !== 'mana' && name !== 'potion') { p.shade(1.18, 0.78); } p.outline(OUT);

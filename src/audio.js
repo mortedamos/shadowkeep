@@ -7,6 +7,8 @@ const INDOOR_VOL = 0.4;          // the background music's volume inside a build
 const GENERAL = ['general_track_1', 'general_track_2', 'general_track_3', 'general_track_4'];
 const FALLBACK_FIRST = { boss_final: ['boss'], boss2: ['boss'] };
 const isLevelTrack = id => /^(zone\d+|save|boss\w*)$/.test(id);
+// recorded sound effects (the synthesized ones are in S below).  name -> file in assets/sfx/.  A new one is one line here; Audio_.sample('name') plays it, Audio_.preload('name') fetches it ahead of time.
+const SAMPLES = { record_scratch: 'assets/sfx/record_scratch.mp3' };
 
 export const Audio_ = {
   ctx: null, master: null, sfxGain: null, noiseBuf: null,
@@ -49,6 +51,7 @@ export const Audio_ = {
       const len = this.ctx.sampleRate * 2, b = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; this.noiseBuf = b;
     }
     this.ctx.resume(); this.unlocked = true; this.applyVolumes();
+    if (this.wantSamples) { const w = [...this.wantSamples]; this.wantSamples.clear(); for (const n of w) this.loadSample(n); }          // (samples asked for before the first touch/key)
     if (this.cur && this.cur.el.paused) this.cur.el.play().catch(() => {});
   },
   // The window lost focus (or the tab was hidden): silence everything.  This is separate from the player's own MUTE setting -
@@ -104,6 +107,20 @@ export const Audio_ = {
   },
   // Inside a building (a house, a shed, a hut...) the background music drops by 60%; stepping back outside lifts it to where it was.  It glides rather than jumps (instant = true at once, e.g. on the title screen).
   setIndoor(on, instant = false) { this.indoorTarget = on ? INDOOR_VOL : 1; if (instant) this.indoor = this.indoorTarget; },
+  // recorded sound effects: preload() fetches and decodes them (call it when a room that needs one is entered); sample() plays one (quietly skipping it if it is not ready or the game is silent)
+  samples: {},
+  preload(...names) { for (const n of names) this.loadSample(n); },
+  loadSample(n) {
+    if (this.samples[n] !== undefined || !SAMPLES[n]) return;
+    if (!this.ctx) { (this.wantSamples ||= new Set()).add(n); return; }
+    this.samples[n] = null;
+    fetch(SAMPLES[n]).then(r => r.arrayBuffer()).then(b => new Promise((ok, no) => this.ctx.decodeAudioData(b, ok, no))).then(buf => { this.samples[n] = buf; }).catch(() => { this.samples[n] = false; });
+  },
+  sample(n, vol = 1) {
+    if (!this.ctx || this.ctx.state !== 'running' || this.silent || this.blurred) return;
+    const b = this.samples[n]; if (!b) { this.loadSample(n); return; }
+    const s = this.ctx.createBufferSource(), g = this.ctx.createGain(); s.buffer = b; g.gain.value = vol; s.connect(g); g.connect(this.sfxGain); s.start();
+  },
   stop(fade = 1.0) { this.want = null; if (this.cur) { this.outgoing.push({ ...this.cur, fadeTime: fade }); this.cur = null; } },
   sting(id) {
     if (this.blurred) return;

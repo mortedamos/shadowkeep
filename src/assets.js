@@ -20,6 +20,7 @@ const ENV = [
   // Anokolisa 'Final' (moonlit graveyard), The Sidescroller's Dungeon tiles (32px art)
   'moon_sky', 'moon_tombs', 'moon_foliage1', 'moon_foliage2', 'dg_pillar_1', 'dg_pillar_2', 'dg_pillar_3', 'dg_pillar_4', 'dg_arch', 'dg_door', 'dg_crates', 'dg_urn_1', 'dg_urn_2', 'dg_urn_3', 'dg_banner_1', 'dg_banner_2', 'dg_banner_3', 'dg_banner_4', 'dg_banner_5', 'dg_banner_6',
   'town_sky', 'town_mid', 'town_house_1', 'town_house_2', 'town_house_3', 'town_barrel', 'town_crates', 'town_crate', 'town_lamp', 'town_cart', 'town_well', 'town_sign', 'crypt_tilemap',
+  'sp_tank', 'sp_vent', 'sp_valve', 'sp_clock', 'sp_lamp', 'sp_furnace', 'sp_tesla',          // Steampunk Pixel Art Mega Pack (32x32): the Clockwork Dungeon's props
 ];
 
 // per-sheet overrides.  face: which way the art faces.  ax/ay: anchor fractions.  dx/dy: pixel nudges.
@@ -79,6 +80,7 @@ export async function loadAll(progress = () => {}) {
   buildHair();                            // the hero's quiff is lifted out of his sprites (it is simulated and drawn by hair.js)
   buildEvil();                            // the mirror twin: the hero in silver and violet (hero_*_evil)
   buildWhiteCape();                       // the hero's baked red cape -> white (used while the White Cloak option is on)
+  buildLady();                            // the ghost who walks behind him
   drawProcedural(addSheet, SHEET, IMG);   // custom pixel art: bat, icons, props
   buildEnchants();                        // enchanted sword variants (needs the hero sheets)
 }
@@ -130,10 +132,25 @@ export function recolor(srcId, dstId, fn) {
   addSheet(dstId, c, s.n, s.w, s.h, { face: s.face, ax: s.ax, ay: s.ay, dx: s.dx, dy: s.dy, jump: s.jump });
 }
 
+// The ghost: the villager woman's idle frames washed to cold moonlight, translucent, and faded away from the waist down (see ghost.js).
+function buildLady() {
+  const s = SHEET['npc_woman_idle']; if (!s) return;
+  const c = canvasOf(s.img.width, s.img.height), g = c.getContext('2d'); g.drawImage(s.img, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height), p = d.data;
+  for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) {
+    const i = (y * c.width + x) * 4; if (p[i + 3] < 8) continue;
+    const L = (0.3 * p[i] + 0.59 * p[i + 1] + 0.11 * p[i + 2]) / 255, k = 0.55 + 0.6 * L, fade = y < s.h * 0.42 ? 1 : Math.max(0, 1 - (y - s.h * 0.42) / (s.h * 0.4));
+    p[i] = Math.min(255, 175 * k + 45); p[i + 1] = Math.min(255, 205 * k + 35); p[i + 2] = Math.min(255, 255 * k); p[i + 3] = Math.round(p[i + 3] * fade * 0.92);
+  }
+  g.putImageData(d, 0, 0);
+  addSheet('ghost_lady', c, s.n, s.w, s.h, { face: s.face, ax: s.ax, ay: s.ay, dx: s.dx, dy: s.dy });
+}
+
 function buildRecolors() {
   // bone-white skeleton (the original is brown-red like the zombie)
   recolor('skeleton_walk', 'skeleton_w', (h, s, l) => [0.11, s * 0.28, Math.min(0.95, l * 1.35 + 0.12)]);
   recolor('skeleton_rise', 'skeleton_rise_w', (h, s, l) => [0.11, s * 0.28, Math.min(0.95, l * 1.35 + 0.12)]);
+  recolor('skeleton_walk', 'skeleton_g', (h, s, l) => [0.33, Math.min(0.6, s * 0.9 + 0.12), Math.min(0.9, l * 1.25 + 0.1)]);          // a green one (some of the disco's dancers)
   // sickly green zombie
   recolor('zombie_walk', 'zombie_g', (h, s, l) => [0.24, Math.min(0.55, s * 0.7), l * 0.92 + 0.03]);
   recolor('zombie_rise', 'zombie_rise_g', (h, s, l) => [0.24, Math.min(0.55, s * 0.7), l * 0.92 + 0.03]);
@@ -145,35 +162,51 @@ function buildRecolors() {
   recolor('wraith', 'wraith_g', (h, s, l) => [0.45, s, l * 1.05]);
 }
 
-// ---------- the hero's hair ----------
+// ---------- the hero's hood ----------
 // The Gothic Hero's baked hair is a pompadour in the two cream tones ffd9b9 / af9785: one small patch on top of his head (the sword's slash arcs use the same tones, but they are big
-// or far from the head, so only a patch of 25-70 pixels no wider than 11 counts).  For every frame the whole patch is taken out of the sprite, and new hair is painted on a sheet of
-// its own, <sheet>_hair: a short scalp and a FEW loose strands (see hairPixels) that fall around the face - behind the head, past the shoulder blades, and in a lock beside the cheek.  It is placed by the
-// frame's FACE (the skin pixels beside the old patch), so it sits right however the head is turned or bobbing.  hair.js draws that picture as a bendable mesh (or, with 3D Hair off, plain).
-// HAIR_BOX[sheet][frame] = { bx, by, bw, bh }: where the painted hair is in the sheet frame (null if the frame has none).
+// or far from the head, so only a patch of 25-70 pixels no wider than 11 counts).  For every frame the whole patch is taken out of the sprite, and a HOOD is painted on a sheet of its own,
+// <sheet>_hair (the name is kept from the hair it replaced): the hood of his white cloak - a rounded cowl over the crown, a brim that comes down over the brow and the eyes (the opening is dark
+// inside, so only the nose, mouth and chin show), and the cloth that gathers behind the head and rests on the shoulders, ragged at its edge.  It is placed by the frame's FACE (the skin pixels
+// beside the old patch), so it sits right however the head is turned or bobbing.  hair.js draws that picture as a bendable mesh: the cowl is pinned, the brim lifts when he falls (and the
+// eyes show), the drape sways.  With 3D Hair off, and for the Reflection, it is a still picture - with the brim already lifted in the falling frames.
+// HAIR_BOX[sheet][frame] = { bx, by, bw, bh }: where the painted hood is in the sheet frame (null if the frame has none).
 const HAIR_TONES = new Set([0xffd9b9, 0xaf9785]), SKIN_TONES = new Set([0xe1924d, 0xffc98b]), HAIR_BOX = {};
 export const hairBox = id => HAIR_BOX[id];
-// five tones, bright to dark: a highlight, the cream of his old hair, a mid tone, his old shade, and a dark for the underlayer and the tips
-const HAIR_TONE = [[0xff, 0xf2, 0xe2], [0xff, 0xd9, 0xb9], [0xd8, 0xbc, 0xa4], [0xaf, 0x97, 0x85], [0x76, 0x66, 0x66]];
-// the hair of one frame as single pixels [x, row, tone] (x relative to the face's left edge, facing right; W = the face's width; rows from the top of the head).
-// It is a FEW STRANDS, not a sheet: a small close-cropped scalp (it has to be there - it is the top of his head), two bright strands swept back over it, a strand or two over the forehead, a lock
-// beside the cheek and, behind the head, just three separate strands - one a thick lock that thins out, the others single pixels - that sway as they fall, with clear gaps between them, thinning to a
-// dark ragged tip, and a flyaway or two.  (All of it from fixed numbers, so every frame agrees.)
-function hairPixels(W) {
+// six tones of white cloth, bright to dark: a highlight, light, mid, shade, a deep fold, and the dark inside of the hood
+const HAIR_TONE = [[0xfa, 0xfa, 0xff], [0xe2, 0xe2, 0xf0], [0xc4, 0xc4, 0xda], [0x96, 0x96, 0xb8], [0x60, 0x60, 0x86], [0x22, 0x1c, 0x34]];
+// the hood of one frame as single pixels [x, row, tone] (x relative to the face's left edge, facing right; W = the face's width; rows from the top of the head).  `lift`: the brim is up off the
+// eyes (he is falling).  All of it from fixed numbers, so every frame agrees.
+function hairPixels(W, lift = false) {
   const out = new Map(), hs = (a, b) => { const s = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return s - Math.floor(s); };
   const put = (x, r, t) => { if (r >= 0 && r < 17) out.set(x + ',' + r, [x, r, t]); };
-  // a strand from (x, r) down for `len` rows: it drifts back by `lean` per row and sways by +-`sway` (phase `ph`); `thick` rows at the top are two pixels wide
-  const strand = (x, r, len, lean, tone, hi, sway = 0, ph = 0, thick = 0) => {
-    for (let i = 0; i < len; i++) { const xx = x - Math.floor(i * lean + Math.sin(i * 0.55 + ph) * sway + 0.5), t = i >= len - 1 ? 4 : i >= len - 3 ? 3 : hi && i % 4 === 1 ? 0 : tone; put(xx, r + i, t); if (i < thick) put(xx - 1, r + i, tone === 1 ? 2 : 3); }
-  };
-  for (const [r, x0, x1] of [[0, 2, W - 2], [1, 0, W - 1], [2, -2, W], [3, -3, -1], [4, -3, -2]]) for (let x = x0; x <= x1; x++) put(x, r, r === 0 || hs(x, r) > 0.7 ? 3 : 2);        // the scalp
-  for (const [x0, r0, len, slope, tone] of [[W - 1, 0, W - 1, 0.45, 0], [W - 3, 1, W - 3, 0.3, 1]]) for (let k = 0; k < len; k++) put(x0 - k, r0 + Math.floor(k * slope), tone);     // two bright strands swept back over it
-  strand(W, 1, 5, 0, 1, false); strand(W - 2, 1, 3, 0, 2, false);                                                                  // the fringe: a strand over the forehead and a shorter one (the eye shows between them and the crown)
-  strand(1, 4, 6, 0.17, 1, true);                                                                                                   // a lock beside the cheek, down to the jaw
-  strand(-2, 4, 12, 0.1, 1, true, 0.8, 0, 2);                                                                                       // behind the head: a thick lock that thins out,
-  strand(-5, 3, 14, 0.12, 2, false, 1, 2);                                                                                          // a long single strand,
-  strand(-7, 5, 8, 0.1, 3, false, 0.7, 4);                                                                                          // and a short one further back, with clear gaps between them
-  put(-9, 12, 4); put(-6, 17 - 2, 3);                                                                                               // flyaways
+  const span = (r, x0, x1, tone) => { for (let x = x0; x <= x1; x++) put(x, r, typeof tone === 'function' ? tone(x) : tone); };
+  const ft = W + 1;                                                                                  // the front lip of the brim
+  // the cowl: a dome over the crown, lit from the front
+  span(0, -1, W - 2, x => (x <= -1 || x >= W - 2 ? 2 : 0));
+  span(1, -3, W - 1, x => (x <= -3 ? 3 : x <= -2 ? 2 : x >= W - 2 ? 0 : 1));
+  span(2, -4, W, x => (x <= -3 ? 3 : x <= -1 ? 2 : x >= W - 1 ? 0 : 1));
+  span(3, -5, ft, x => (x <= -4 ? 3 : x <= -2 ? 2 : x >= W ? 0 : 1));
+  if (!lift) {
+    // the brim comes down over the brow: the dark inside of the hood, with a lip of cloth at the front - his eyes are in the shadow
+    for (const r of [4, 5, 6]) span(r, -1, r === 6 ? W - 1 : W, 5);                                  // (the dark inside)
+    put(ft, 4, 1); put(ft, 5, 2); put(W, 6, 3);                                                       // (the lip of cloth at the front)
+    span(4, -6, -2, x => (x <= -5 ? 3 : 2)); span(5, -6, -2, 3); span(6, -7, -2, x => (hs(x, 6) > 0.5 ? 3 : 4));
+  } else {
+    // falling: the brim lifts and the eyes show - the dark inside is only a thin line under the lip
+    span(4, -1, W, 5); put(ft, 4, 1); put(ft - 1, 4, 2);
+    span(4, -6, -2, x => (x <= -5 ? 3 : 2)); span(5, -6, -2, 3); span(6, -7, -2, x => (hs(x, 6) > 0.5 ? 3 : 4));
+  }
+  // the cloth gathered behind the head, and the drape on the shoulders, ragged at the edge
+  span(7, -7, -1, x => (x <= -6 ? 4 : 3));
+  span(8, -8, -1, x => (x <= -7 ? 4 : hs(x, 8) > 0.6 ? 2 : 3));
+  span(9, -9, 0, x => (x <= -8 ? 4 : x >= -1 ? 3 : hs(x, 9) > 0.55 ? 2 : 3));
+  span(10, -9, 1, x => (x <= -8 ? 4 : x >= 0 ? 2 : hs(x, 10) > 0.5 ? 2 : 3));
+  span(11, -10, 3, x => (x <= -9 ? 4 : x >= 2 ? 2 : hs(x, 11) > 0.5 ? 1 : 2));
+  span(12, -10, W + 2, x => (x <= -9 ? 4 : x >= W ? 3 : hs(x, 12) > 0.55 ? 1 : 2));
+  span(13, -9, W + 2, x => (x <= -8 ? 4 : x >= W + 1 ? 4 : hs(x, 13) > 0.5 ? 3 : 2));
+  for (let x = -8; x <= W + 1; x++) if (hs(x, 14) > 0.35) put(x, 14, hs(x, 15) > 0.5 ? 4 : 3);           // the ragged lower edge
+  for (let x = -7; x <= W; x++) if (hs(x, 16) > 0.7) put(x, 15, 4);
+  for (let x = 0; x <= W; x++) out.delete(x + ',7');                                                  // (the lower face - nose, mouth, chin - stays clear: no cloth in front at row 7)
   return [...out.values()];
 }
 function buildHair() {
@@ -197,7 +230,8 @@ function buildHair() {
         let fx0 = 1e9, fx1 = -1, fy0 = 1e9; for (const kk of fs) { const fx = kk % s.w, fy = Math.floor(kk / s.w); fx0 = Math.min(fx0, fx); fx1 = Math.max(fx1, fx); fy0 = Math.min(fy0, fy); }
         if (fx1 < 0) { fx0 = a0 + 1; fx1 = a1 - 2; fy0 = b1 - 3; }                                                      // (no face found: guess from the patch)
         const FW = Math.max(5, Math.min(8, fx1 - fx0)), top = fy0 - 4; let x0 = 1e9, y0 = 1e9, x1 = -1, y1 = -1;
-        for (const [xx, r, tone] of hairPixels(FW)) {
+        const lift = /jump/.test(id) && f >= Math.ceil(s.n / 2);                                                  // (the falling frames of the jump sheets: the brim is lifted)
+        for (const [xx, r, tone] of hairPixels(FW, lift)) {
           const px = fx0 + xx, py = top + r; if (px < 0 || py < 0 || px >= s.w || py >= s.h) continue;
           const c = HAIR_TONE[tone], i = at(px, py); layer[i] = c[0]; layer[i + 1] = c[1]; layer[i + 2] = c[2]; layer[i + 3] = 255;
           x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
@@ -218,7 +252,7 @@ function buildHair() {
 const EVIL = new Map([[0xed053e, [74, 20, 104]], [0x810936, [50, 12, 76]], [0x800735, [40, 10, 62]], [0x983e1d, [96, 48, 120]], [0x671915, [32, 16, 44]], [0x691a17, [32, 16, 44]], [0x130a1b, [8, 5, 14]],
   [0xbc6c17, [84, 92, 138]], [0xffcc61, [176, 184, 222]], [0xe1924d, [132, 126, 150]], [0xffd9b9, [226, 226, 244]], [0xffdbb9, [226, 226, 244]], [0xaf9785, [108, 106, 140]], [0xc69985, [128, 120, 156]],
   [0xffc98b, [196, 192, 214]], [0x573b60, [50, 28, 82]], [0x966495, [112, 76, 150]],
-  [0xfff2e2, [246, 246, 255]], [0xd8bca4, [154, 150, 184]], [0x766666, [72, 64, 104]]]);          // (the three extra tones of his new hair)
+  [0xfafaff, [246, 246, 255]], [0xe2e2f0, [208, 208, 236]], [0xc4c4da, [158, 154, 190]], [0x9696b8, [112, 108, 148]], [0x606086, [76, 68, 112]], [0x221c34, [14, 10, 26]]]);          // (the six tones of his hood)
 function buildEvil() {
   for (const id of HERO_SHEETS) {
     const s = SHEET[id]; if (!s) continue;

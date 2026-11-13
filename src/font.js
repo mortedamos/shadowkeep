@@ -91,6 +91,7 @@ function bmDraw(ctx, str, x, y, o = {}) {
 // ---------------------------------------------------------------------------------------------- gothic vector text
 let vec = null;                                   // { body, display } once the fonts are loaded
 const FONT_FILES = [['body', 'SK Almendra', '../assets/fonts/Almendra-Bold.ttf', 1.06], ['display', 'SK Pirata', '../assets/fonts/PirataOne-Regular.ttf', 1.12]];
+const HAND_FONT = ['hand', 'SK Fraktur', '../assets/fonts/Fraktur Handschrift.ttf', 1.14];        // "Fraktur Handschrift": her handwriting - used (with font: 'hand') for the gravestones and tablets, in mixed case
 const TITLE_FONT = ['title', 'SK Blackletter', '../assets/fonts/BLACEB__.TTF', 1.0];       // "Blackletter ExtraBold" (Typographer Mediengestaltung): the game title only
 export async function loadFonts() {
   try {
@@ -106,19 +107,28 @@ export async function loadFonts() {
       m.font = `100px "${TITLE_FONT[1]}"`; const cap = m.measureText('H').actualBoundingBoxAscent / 100;
       if (cap > 0.3 && cap < 1) spec.title = { fam: TITLE_FONT[1], cap, fit: TITLE_FONT[3] };
     } catch (e) { console.warn('Title font unavailable - using the display font.', e); }
+    try {                                                    // so is the handwriting face: without it the stones are written in the body face, in capitals
+      const f = new FontFace(HAND_FONT[1], `url(${new URL(HAND_FONT[2], import.meta.url).href})`); await f.load(); document.fonts.add(f);
+      m.font = `100px "${HAND_FONT[1]}"`; const cap = m.measureText('H').actualBoundingBoxAscent / 100;
+      if (cap > 0.3 && cap < 1) spec.hand = { fam: HAND_FONT[1], cap, fit: HAND_FONT[3] };
+    } catch (e) { console.warn('Handwriting font unavailable - using the body font.', e); }
     vec = spec; widths.clear(); return true;
   } catch (e) { console.warn('Gothic fonts unavailable - using the bitmap font.', e); vec = null; return false; }
 }
 const measureCtx = document.createElement('canvas').getContext('2d'), widths = new Map();
 // Pirata One (display) for big text and anything outlined (HUD, menus, banners, floating text); Almendra (body) for dialogue and descriptive text.
-const pick = (scale, o) => vec[(o && o.font) || (scale >= 2 || (o && o.outline) ? 'display' : 'body')] || vec.display;
+const pick = (scale, o) => { const k = (o && o.font) || (scale >= 2 || (o && o.outline) ? 'display' : 'body'); return vec[k] || (k === 'hand' ? vec.body : vec.display); };
 const sizeOf = (F, scale) => 7 * scale * F.fit / F.cap;                       // font-size that gives caps ~7*fit px tall
 function vecWidth(str, scale, o) {
   const F = pick(scale, o), size = sizeOf(F, scale), key = F.fam + size + '|' + str; let w = widths.get(key);
   if (w === undefined) { measureCtx.font = `${size}px "${F.fam}"`; w = measureCtx.measureText(str).width; if (widths.size > 4000) widths.clear(); widths.set(key, w); }
   return w;
 }
-const casing = (str, font) => font === 'title' ? String(str) : String(str).toUpperCase();      // (the game draws capitals - except the blackletter title, which reads far better in mixed case)
+// Fraktur Handschrift draws a lowercase "s" as the LONG s (like an f without its crossbar) and keeps the round s under "$" - so, as in the old printed books, the round one goes at the END of a word and the long one everywhere else.
+// (Set LONG_S to false to use the round s everywhere.)  Call this on a text before it is wrapped or typed out; it does nothing if the handwriting face did not load.
+const LONG_S = true;
+export const handText = str => vec && vec.hand ? String(str).replace(LONG_S ? /s(?![A-Za-z$])/g : /s/g, () => '$') : String(str);
+const casing = (str, font) => font === 'title' || (font === 'hand' && vec && vec.hand) ? String(str) : String(str).toUpperCase();      // (the game draws capitals - except the blackletter title and the handwriting, which read far better in mixed case)
 export function textWidth(str, scale = 1, font) { const f = typeof font === 'object' ? font : { font }; str = casing(str, f.font); return vec ? vecWidth(str, scale, f) : bmWidth(str.toUpperCase(), scale); }
 
 export function drawText(ctx, str, x, y, o = {}) {

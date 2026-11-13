@@ -1,4 +1,5 @@
 // Static scenery drawn with the room (tombstones, torches, banners, doors ...) + the list of flames to light them.
+import { KEYS } from './itemdata.js';
 import { IMG, SHEET, drawSheet } from './assets.js';
 import { extra } from './world.js';
 import { T } from './util.js';
@@ -92,6 +93,36 @@ export function drawDeco(g, d, cx, cy, t, room) {
       else { g.fillStyle = '#1a1424'; g.fillRect(x - w / 2 + 3, y - h + 3, w - 6, h - 3); g.fillStyle = '#6a6458'; g.fillRect(x - 5, y - h + 8, 10, 2); g.fillRect(x - 1, y - h + 4, 2, 10); }
       break;
     }
+    case 'grave': {          // HER grave: a mound of earth, a worn headstone, a few white flowers, and a candle burning with a blue flame - the one arcane light on the hill, where the ghost shows
+      const flick = 0.85 + 0.15 * Math.sin(t * 0.3 + 1.7) + 0.08 * Math.sin(t * 0.8);
+      g.fillStyle = '#17110e'; g.beginPath(); g.ellipse(x + 6, y - 1, 28, 7, 0, Math.PI, 0); g.fill(); g.fillStyle = '#2a1f17'; g.beginPath(); g.ellipse(x + 6, y - 1, 25, 5, 0, Math.PI, 0); g.fill();
+      g.fillStyle = '#4a4756'; g.beginPath(); g.moveTo(x - 22, y - 2); g.lineTo(x - 22, y - 28); g.quadraticCurveTo(x - 13, y - 39, x - 4, y - 28); g.lineTo(x - 4, y - 2); g.closePath(); g.fill();
+      g.fillStyle = '#6c697c'; g.fillRect(x - 22, y - 28, 2, 26); g.fillStyle = 'rgba(20,18,30,0.55)'; for (let i = 0; i < 4; i++) g.fillRect(x - 18 + (i % 2), y - 24 + i * 5, 10 - ((i * 3) % 5), 1);          // the lettering, worn smooth
+      for (const [fx, fy] of [[x + 1, y - 5], [x + 4, y - 8], [x + 8, y - 5], [x + 12, y - 7]]) { g.fillStyle = '#4a6a3a'; g.fillRect(fx, fy + 2, 1, 4); g.fillStyle = '#e4e0f2'; g.fillRect(fx - 1, fy, 3, 2); }
+      g.fillStyle = '#ddd5c4'; g.fillRect(x + 17, y - 13, 3, 9); g.fillStyle = '#9a927f'; g.fillRect(x + 19, y - 13, 1, 9);
+      g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(x + 18.5, y - 18, 1, x + 18.5, y - 18, 26); gr.addColorStop(0, 'rgba(110,160,255,' + (0.5 * flick).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(110,160,255,0)'); g.fillStyle = gr; g.fillRect(x - 8, y - 44, 54, 54); g.restore();
+      g.fillStyle = '#6a98ff'; g.beginPath(); g.moveTo(x + 17, y - 14); g.quadraticCurveTo(x + 15.5, y - 19, x + 18.5, y - 24 * flick + 2); g.quadraticCurveTo(x + 21.5, y - 19, x + 20, y - 14); g.closePath(); g.fill(); g.fillStyle = '#e8f2ff'; g.fillRect(x + 18, y - 18, 1, 3);
+      break;
+    }
+    case 'padlock': {          // a padlock and crossed chains over a locked door, in the colour of its key (a faint glow); gone once the door has been opened
+      const K = KEYS.find(k => k.id === d.key), F = (room && room.flags) || {}; if (F['unlocked_' + d.key]) break;
+      const c = K ? K.rgb : [230, 200, 100], k = c.join(','), pulse = 0.5 + 0.5 * Math.sin(t * 0.07 + d.x), ly = y - 22;
+      g.save(); g.globalCompositeOperation = 'lighter'; const gr = g.createRadialGradient(x, ly, 1, x, ly, 20); gr.addColorStop(0, 'rgba(' + k + ',' + (0.32 + 0.14 * pulse).toFixed(3) + ')'); gr.addColorStop(1, 'rgba(' + k + ',0)'); g.fillStyle = gr; g.fillRect(x - 20, ly - 20, 40, 40); g.restore();
+      g.lineCap = 'butt'; for (const [col, w, off] of [['#1c1826', 3, 0], ['#8a86a2', 1, 0]]) { g.strokeStyle = col; g.lineWidth = w; g.setLineDash(w === 1 ? [2, 2] : []); g.beginPath(); g.moveTo(x - 15, y - 38 + off); g.lineTo(x + 15, y - 7 + off); g.moveTo(x + 15, y - 38 + off); g.lineTo(x - 15, y - 7 + off); g.stroke(); } g.setLineDash([]);
+      g.fillStyle = '#12101a'; g.fillRect(x - 7, ly - 6, 14, 12); g.fillStyle = 'rgb(' + k + ')'; g.fillRect(x - 6, ly - 5, 12, 10); g.fillStyle = 'rgba(255,255,255,0.35)'; g.fillRect(x - 6, ly - 5, 12, 2);
+      g.strokeStyle = '#b9c0d0'; g.lineWidth = 2; g.beginPath(); g.arc(x, ly - 6, 4.5, Math.PI, 0); g.stroke(); g.fillStyle = '#1a1020'; g.fillRect(x - 1, ly - 2, 2, 4);
+      break;
+    }
+    case 'sigils': {          // the sigils of a door that is locked until bosses fall: a small diamond for each, lit once its boss is dead; the door is barred until they all burn
+      const fl = d.flags || [], n = fl.length, F = (room && room.flags) || {}, lit = fl.filter(f => F[f]).length;
+      if (lit < n) { g.fillStyle = 'rgba(8,4,16,0.55)'; g.fillRect(x - 15, y - 44, 30, 44); g.fillStyle = '#2c2838'; g.fillRect(x - 15, y - 36, 30, 3); g.fillRect(x - 15, y - 16, 30, 3); g.fillStyle = '#4a4458'; g.fillRect(x - 1, y - 44, 2, 44); }
+      for (let i = 0; i < n; i++) {
+        const sx = x + Math.round((i - (n - 1) / 2) * 13), sy = y - 58, on = !!F[fl[i]], pulse = 0.7 + 0.3 * Math.sin(t * 0.12 + i * 2);
+        g.fillStyle = '#0a0612'; g.beginPath(); g.moveTo(sx, sy - 7); g.lineTo(sx + 6, sy); g.lineTo(sx, sy + 7); g.lineTo(sx - 6, sy); g.closePath(); g.fill();
+        g.fillStyle = on ? 'rgba(255,214,110,' + pulse + ')' : '#3a3050'; g.beginPath(); g.moveTo(sx, sy - 5); g.lineTo(sx + 4, sy); g.lineTo(sx, sy + 5); g.lineTo(sx - 4, sy); g.closePath(); g.fill();
+      }
+      break;
+    }
     case 'gate': { // closed iron gate at the start (flavour)
       g.fillStyle = '#181420'; g.fillRect(x - 8, y - 96, 56, 96);
       g.fillStyle = '#2c2838'; for (let i = 0; i < 7; i++) { g.fillRect(x - 6 + i * 8, y - 90, 3, 90); g.fillRect(x - 7 + i * 8, y - 94, 5, 5); }
@@ -154,13 +185,29 @@ export function drawFlames2D(g, flames, cx, cy, t) {
   g.restore();
 }
 
+// flowing water on the floor (the Cistern): a translucent knee-deep sheet drawn OVER the hero's legs, with streaks of foam sliding along it the way the water runs
+export function drawCurrents(g, list, cx, cy, t) {
+  for (const c of list) {
+    const x0 = Math.round(c.x0 - cx), x1 = Math.round(c.x1 - cx); if (x1 < 0 || x0 > 384) continue;
+    const y = Math.round(c.y - cy), a = Math.max(0, x0), b = Math.min(384, x1), h = 20, len = c.x1 - c.x0;
+    g.fillStyle = 'rgba(70,150,185,0.30)'; g.fillRect(a, y - h, b - a, h + 2);
+    g.fillStyle = 'rgba(160,220,240,0.40)'; g.fillRect(a, y - h, b - a, 1);
+    for (let i = 0; i < Math.round(len / 14); i++) {
+      const w = 5 + (i % 4) * 4, yy = y - 3 - ((i * 7) % (h - 5)), xw = c.x0 + ((((i * 53 + t * c.vx * 1.5) % len) + len) % len), xs = Math.round(xw - cx);
+      if (xs + w < a || xs > b) continue; g.fillStyle = 'rgba(200,240,250,' + (0.22 + 0.2 * ((i * 3) % 3) / 2).toFixed(2) + ')'; g.fillRect(Math.max(a, xs), yy, Math.min(w, b - xs), 1);
+    }
+    for (let i = 0; i < 8; i++) { const xw = c.x0 + ((((i * 97 + t * c.vx * 2.2) % len) + len) % len), xs = Math.round(xw - cx); if (xs < a || xs > b) continue; g.fillStyle = 'rgba(235,250,255,0.5)'; g.fillRect(xs, y - h - 1 + (i % 2), 3, 1); }          // foam on the surface
+  }
+}
+
 // flames that must be lit for this room's decor
 export function roomFlames(room) {
   const out = [];
   for (const d of room.decos) {
     if (d.t === 'torch') out.push({ x: d.x, y: d.y - 15, scale: 1.1, seed: d.x, light: 80 });
     else if (d.t === 'cdl') for (const [ox, oy, s] of [[-5.5, -26, 0.8], [0.5, -31, 1], [6.5, -26, 0.8]]) out.push({ x: d.x + ox, y: d.y + oy, scale: s, seed: d.x + ox, light: ox === 0.5 ? 60 : 0, behind: true });
-    else if (d.t === 'blaze') {      // a building fire (no sprite - just fire): windows burn big, and many small fires burn all over the walls and roof. Each is a little bigger or smaller than its scale says
+    else if (d.t === 'blaze') {      // a building fire
+      if (d.burn && !(room.flags && room.flags.village_fire) && !(room.ignited && room.ignited.has(d.burn))) continue;          // (a house's fires are unlit until a torch lands on it, or the village burns) (no sprite - just fire): windows burn big, and many small fires burn all over the walls and roof. Each is a little bigger or smaller than its scale says
       const sc = d.scale || 1.5, small = !!d.small, j = 0.82 + 0.36 * hash(d.x, d.y);
       out.push({ x: d.x, y: d.y, fs: sc * 1.35 * j, seed: d.x + d.y, ph: Math.floor(hash(d.y, d.x) * 97), light: small ? 0 : Math.round(130 * (0.75 + 0.25 * j)), big: true, blaze: true, small, smoke: true, behind: true });
     }

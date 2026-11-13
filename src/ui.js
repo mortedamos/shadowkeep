@@ -1,6 +1,6 @@
 // HUD, menus and overlay screens (all drawn with the pixel font on the 384x216 canvas).
 import { W, H, clamp, lerp, fmtTime, easeOut } from './util.js';
-import { drawText, textWidth, wrapText } from './font.js';
+import { drawText, textWidth, wrapText, handText } from './font.js';
 import { Input } from './input.js';
 import { Touch } from './touch.js';
 import { Audio_ as A } from './audio.js';
@@ -9,7 +9,8 @@ import { ICON } from './procart.js';
 import { ZONES } from './rooms.js';
 import { SPELLS } from './player.js';
 import { ENCH, TUNE } from './enchant.js';
-import { ITEMS } from './itemdata.js';
+import { ITEMS, KEYS } from './itemdata.js';
+import { STORY } from './story.js';
 
 const GOLD = '#e8b84a', PALE = '#e8dcc0', DIM = '#8a7d9a', RED = '#c23b2a';
 const icon = (ctx, name, x, y, sc = 1, a) => drawSheet(ctx, 'icons', ICON.indexOf(name), x, y, { ay: 0.5, scale: sc, alpha: a });
@@ -62,8 +63,6 @@ export const HUD = {
     }
     // gold
     icon(ctx, 'coin', W - 24, 43, 1); drawText(ctx, S.gold, W - 8, 40, { align: 'right', color: PALE, outline: '#000' });
-    // abilities
-    let ax = W - 24; for (const [k, ic] of [['djump', 'feather'], ['dash', 'boot'], ['ember', 'ember'], ['thunder', 'thunder']]) if (S.abilities[k]) { icon(ctx, ic, ax, 56, 0.8); ax -= 12; }
     // boss bar
     const b = g.boss; if (b && b.active && !b.dead) {
       const w = 220, x = (W - w) / 2, y = H - 22, f = Math.max(0, b.hp / b.maxHp); this.lagBoss += (f - this.lagBoss) * (f < this.lagBoss ? 0.03 : 1);
@@ -107,7 +106,7 @@ export function drawExitArrow(ctx, x, y, t, dir) {
 }
 
 export class Dialog {
-  constructor(text, o = {}) { this.lines = wrapText(text, 300); this.full = this.lines.join('\n'); this.t = 0; this.done = false; this.closed = false; this.name = o.name || null; this.onClose = o.onClose || null; this.choices = o.choices || null; this.sel = 0; this.choice = -1; this.footer = o.footer || null; }
+  constructor(text, o = {}) { this.font = o.font || undefined; if (this.font === 'hand') text = handText(text); this.lines = wrapText(text, 300, 1, this.font); this.full = this.lines.join('\n'); this.t = 0; this.done = false; this.closed = false; this.name = o.name || null; this.onClose = o.onClose || null; this.choices = o.choices || null; this.sel = 0; this.choice = -1; this.footer = o.footer || null; }
   update() {
     this.t += 1.2; const skip = Input.pressed.confirm || Input.pressed.back || Input.pressed.attack || Input.pressed.jump;
     if (this.choices && this.t >= this.full.length) {                                       // a question: LEFT / RIGHT (or UP / DOWN) choose, ENTER / SPACE answers, ESC says no
@@ -124,7 +123,7 @@ export class Dialog {
     const bottom = this.choices || this.footer, h = this.lines.length * 11 + 16 + (bottom ? 13 : 0), y = H - h - 14; panel(ctx, 30, y, W - 60, h);
     if (this.name) { const nw = textWidth(this.name, 1, { outline: true }) + 14; panel(ctx, 34, y - 12, nw, 14); drawText(ctx, this.name, 41, y - 9, { color: GOLD, outline: '#000' }); }       // who is speaking
     let n = Math.floor(this.t), yy = y + 8;
-    for (const l of this.lines) { const s = l.slice(0, Math.max(0, Math.min(l.length, n))); drawText(ctx, s, 40, yy, { color: PALE }); n -= l.length + 1; yy += 11; }
+    for (const l of this.lines) { const s = l.slice(0, Math.max(0, Math.min(l.length, n))); drawText(ctx, s, 40, yy, { color: PALE, font: this.font }); n -= l.length + 1; yy += 11; }
     if (this.footer) drawText(ctx, this.footer, W - 42, y + h - 12, { align: 'right', color: '#b5a47a' });
     if (this.choices && this.done) this.choices.forEach((c, i) => { const sel = i === this.sel, x = 44 + i * 52; drawText(ctx, (sel ? '> ' : '  ') + c, x, y + h - 12, { color: sel ? GOLD : PALE, outline: '#000' }); });
     else if (this.done && !this.footer && Math.floor(performance.now() / 350) % 2) drawText(ctx, '>', W - 44, y + h - 11, { color: GOLD });
@@ -191,7 +190,7 @@ export class TitleScreen {
     this.main = new Menu([
       { label: 'NEW GAME', action: () => g.newGame() }, { label: 'CONTINUE', disabled: !has, action: () => g.continueGame() },
       { label: 'CHOOSE SEED', action: () => {
-        if (Input.touchOn) { const v = window.prompt('Choose a seed: numbers only (0 = the classic castle, empty = a random castle)', ''); if (v !== null) { const d = v.replace(/\D/g, '').slice(0, 9); g.newGame(d === '' ? undefined : +d); } }          // (a phone has no keys to type the number with: its own keyboard asks)
+        if (Input.touchOn) { const v = window.prompt('Choose a seed: numbers only (empty = a random castle)', ''); if (v !== null) { const d = v.replace(/\D/g, '').slice(0, 9); g.newGame(d === '' ? undefined : +d); } }          // (a phone has no keys to type the number with: its own keyboard asks)
         else { this.mode = 'seed'; this.seed = ''; Input.typed.length = 0; } } },
       { label: 'CONTROLS', action: () => { this.mode = 'controls'; } }, { label: 'OPTIONS', action: () => { this.mode = 'options'; this.opts.i = 0; } }, { label: 'CREDITS', action: () => this.openCredits() },
     ]); if (has) this.main.i = 1;
@@ -245,7 +244,7 @@ export class TitleScreen {
       const tw = textWidth(this.seed, 2); drawText(ctx, this.seed || 'RANDOM', W / 2 - (this.seed ? 3 : 0), 112, { align: 'center', scale: 2, color: this.seed ? PALE : DIM });
       if (this.seed && Math.floor(t / 24) % 2) { ctx.fillStyle = PALE; ctx.fillRect(Math.round(W / 2 - 3 + tw / 2 + 2), 112, 8, 12); }
       drawText(ctx, 'THE SAME SEED ALWAYS BUILDS THE SAME CASTLE.', W / 2, 138, { align: 'center', color: '#b5a47a' });
-      drawText(ctx, 'TYPE NUMBERS.   0 = THE CLASSIC CASTLE.', W / 2, 150, { align: 'center', color: DIM });
+      drawText(ctx, 'TYPE NUMBERS.   NONE = A RANDOM CASTLE.', W / 2, 150, { align: 'center', color: DIM });
       drawText(ctx, 'ENTER = BEGIN     ESC = BACK', W / 2, 176, { align: 'center', color: PALE });
     }
     else controlsScreen(ctx);
@@ -259,7 +258,7 @@ function optionsMenu(onBack) {
     { label: 'MUTE', val: () => (A.settings.muted ? 'ON' : 'OFF'), action: () => A.toggleMute() },
     { label: 'BOSS HINTS', val: () => (A.settings.hints ? 'ON' : 'OFF'), action: () => { A.settings.hints = !A.settings.hints; A.save(); } },
     { label: 'WHITE CLOAK', val: () => (A.settings.cloak ? 'ON' : 'OFF'), action: () => { A.settings.cloak = !A.settings.cloak; A.save(); } },
-    { label: '3D HAIR', val: () => (A.settings.hair ? 'ON' : 'OFF'), action: () => { A.settings.hair = !A.settings.hair; A.save(); } },
+    { label: '3D HOOD', val: () => (A.settings.hair ? 'ON' : 'OFF'), action: () => { A.settings.hair = !A.settings.hair; A.save(); } },
     { label: 'TOUCH PAD', val: () => (Touch.on ? 'ON' : 'OFF'), action: () => Touch.show(!Touch.on, true) },
     { label: 'BACK', action: onBack },
   ]);
@@ -271,6 +270,21 @@ export function controlsScreen(ctx) {
   drawText(ctx, Input.touchOn ? 'TAP ANYWHERE TO RETURN' : 'GAMEPAD WORKS TOO.   ANY KEY TO RETURN', W / 2, H - 28, { align: 'center', color: DIM });
 }
 
+// what the hero has found, for the pause screen: the four powers (dim and unnamed until found), the Magic Shoes and the Tide Blade once found, and the keys he carries
+const POWERS = [['djump', 'feather', 'AETHER FEATHER'], ['dash', 'boot', 'QUICKSILVER'], ['ember', 'ember', 'SULPHUR'], ['thunder', 'thunder', 'VITRIOL']];
+function foundPanel(ctx, g) {
+  const S = g.save, F = S.flags, rows = [];
+  for (const [k, ic, name] of POWERS) rows.push({ ic, name: S.abilities[k] ? name : '???', has: !!S.abilities[k] });
+  for (const [f, ic, name] of [['got_mantle', 'mantle', 'SALAMANDER'], ['got_lantern', 'lantern', 'IGNIS FATUUS'], ['got_shard', 'shard', 'SPECULUM'], ['got_spring', 'spring', 'PERPETUUM'], ['got_shoes', 'shoes', 'HERMES SHOES'], ['got_tide', 'e_ice', 'AQUA REGIA']]) if (F[f]) rows.push({ ic, name, has: true });
+  const keys = KEYS.filter(k => F['has_' + k.id] && !F['unlocked_' + k.id]);
+  panel(ctx, 8, 36, 124, 174); drawText(ctx, 'FOUND', 70, 42, { align: 'center', color: GOLD, scale: 1.3 });
+  const step = rows.length > 8 ? 11 : 13;
+  rows.forEach((r, i) => { const y = 59 + i * step; icon(ctx, r.ic, 21, y, 1, r.has ? 1 : 0.2); drawText(ctx, r.name, 33, y - 4, { color: r.has ? PALE : '#4a4458' }); });
+  if (keys.length) {                                                                          // the keys you carry, in a row: each in its own colour
+    const y0 = 59 + rows.length * step + 3; drawText(ctx, 'KEYS', 14, y0 - 2, { color: DIM });
+    keys.forEach((k, i) => { const x = 22 + (i % 6) * 18, y = y0 + 14 + Math.floor(i / 6) * 17; icon(ctx, 'key', x, y, 1.1); ctx.fillStyle = 'rgb(' + k.rgb.join(',') + ')'; ctx.fillRect(x - 5, y + 8, 10, 2); });
+  }
+}
 export class PauseMenu {
   constructor(g) {
     this.g = g; this.mode = 'main'; this.opts = optionsMenu(() => { this.mode = 'main'; });
@@ -280,9 +294,9 @@ export class PauseMenu {
   draw(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 0, W, H);
     if (this.mode === 'main') {
-      const g = this.g, S = g.save; panel(ctx, 100, 36, W - 200, 150); drawText(ctx, 'PAUSED', W / 2, 46, { align: 'center', scale: 2, color: GOLD });
-      this.main.draw(ctx, W / 2, 74, 13);
-      drawText(ctx, `LV ${S.level}   HP ${S.hp}/${S.maxHp}   MP ${S.mp}/${S.maxMp}`, W / 2, 146, { align: 'center', color: PALE }); drawText(ctx, `POWER ${g.player.atkPower}   GOLD ${S.gold}   TIME ${fmtTime(S.time)}`, W / 2, 158, { align: 'center', color: '#b5a47a' }); drawText(ctx, S.seed ? 'CASTLE SEED ' + S.seed : 'THE CLASSIC CASTLE', W / 2, 170, { align: 'center', color: DIM });
+      const g = this.g, S = g.save, cx = 260; foundPanel(ctx, g); panel(ctx, 142, 36, 236, 174); drawText(ctx, 'PAUSED', cx, 46, { align: 'center', scale: 2, color: GOLD });
+      this.main.draw(ctx, cx, 74, 13);
+      drawText(ctx, `LV ${S.level}   HP ${S.hp}/${S.maxHp}   MP ${S.mp}/${S.maxMp}`, cx, 146, { align: 'center', color: PALE }); drawText(ctx, `POWER ${g.player.atkPower}   GOLD ${S.gold}   TIME ${fmtTime(S.time)}`, cx, 158, { align: 'center', color: '#b5a47a' }); drawText(ctx, 'CASTLE SEED ' + S.seed, cx, 170, { align: 'center', color: DIM });
     } else if (this.mode === 'options') { panel(ctx, 70, 40, W - 140, 150); drawText(ctx, 'OPTIONS', W / 2, 47, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 94, 68, 14, 'left'); }
     else controlsScreen(ctx);
   }
@@ -290,15 +304,15 @@ export class PauseMenu {
 
 // ---------------------------------------------------------------------------------------------- map
 // The castle is ~40 rooms wide, so the map scrolls: it centres on you (or, at a waystone, on the destination you are choosing).
-const ZCOL = { 1: '#4a6a3a', 2: '#8a6a2a', 3: '#6a4a9a', 4: '#4a7a7a', 5: '#9a2a3a', 6: '#a8542a', 7: '#3a7a5a' };
-const CW = 22, CH = 22;
+const ZCOL = { 1: '#4a6a3a', 2: '#8a6a2a', 3: '#6a4a9a', 4: '#4a7a7a', 5: '#9a2a3a', 6: '#a8542a', 7: '#3a7a5a', 8: '#9a7a3a', 9: '#3a6a9a' };
+const CW = 28, CH = 22;                                   // a map cell; every room is drawn standing on the floor of its row, so a tall tower rises above its neighbours
 export class MapScreen {
   // o.teleport = id of the waystone room we are standing in: the map becomes a destination picker for every attuned waystone
   constructor(g, o = {}) {
-    this.g = g; this.t = 0; this.here = o.teleport || null; this.tele = !!o.teleport; this.pan = 0;
+    this.g = g; this.t = 0; this.here = o.teleport || null; this.tele = !!o.teleport; this.pan = 0; this.panY = 0;
     const S = g.save; this.stones = (g.world.stones || []).filter(id => S.flags['tp_' + id]);
     if (this.tele) { const i = this.stones.indexOf(this.here); this.sel = i > 0 ? i - 1 : Math.min(1, this.stones.length - 1); if (this.sel < 0) this.sel = 0; }
-    const f = this.focusRoom(); this.cam = { x: f.map.x * CW + CW / 2 };
+    const f = this.focusRoom(); this.cam = { x: f.map.x * CW + CW / 2, y: f.map.y * CH + CH / 2 };
   }
   focusRoom() { const g = this.g; return this.tele ? g.world.rooms[this.stones[this.sel]] : g.world.rooms[g.room.id]; }
   update() {
@@ -309,34 +323,70 @@ export class MapScreen {
       if (Input.pressed.map || Input.pressed.back || Input.pressed.pkey) g.resume();
     } else {
       if (Input.held.left) this.pan -= 3; if (Input.held.right) this.pan += 3; this.pan = clamp(this.pan, -900, 900);
+      if (Input.held.up) this.panY -= 2; if (Input.held.down) this.panY += 2; this.panY = clamp(this.panY, -160, 160);
       if (Input.pressed.map || Input.pressed.back || Input.pressed.pause || Input.pressed.confirm) g.resume();
     }
-    const f = this.focusRoom(), want = f.map.x * CW + CW / 2 + (this.tele ? 0 : this.pan); this.cam.x += (want - this.cam.x) * 0.2;
+    const f = this.focusRoom(), want = f.map.x * CW + CW / 2 + (this.tele ? 0 : this.pan), wantY = f.map.y * CH + CH / 2 + (this.tele ? 0 : this.panY); this.cam.x += (want - this.cam.x) * 0.2; this.cam.y += (wantY - this.cam.y) * 0.2;
   }
   draw(ctx) {
     const g = this.g, S = g.save, ROOMS = g.world.rooms; ctx.fillStyle = 'rgba(4,2,10,0.95)'; ctx.fillRect(0, 0, W, H);
     drawText(ctx, this.tele ? 'WAYSTONE' : 'CASTLE MAP', W / 2, 8, { align: 'center', scale: 2, color: this.tele ? '#9fe8ff' : GOLD });
-    const rect = r => { const w = clamp(Math.round(r.w / 4.6), 9, 20), h = clamp(Math.round(r.h / 2.6), 7, 15); return { x: r.map.x * CW, y: r.map.y * CH + Math.round((CH - h) / 2), w, h }; };
+    const rect = r => { const w = clamp(Math.round(r.w / 4.6), 9, 18), h = clamp(Math.round(r.h / 2.6), 7, 15); return { x: r.map.x * CW + Math.round((CW - w) / 2), y: r.map.y * CH + CH - 3 - h, w, h }; };
     const rooms = Object.values(ROOMS).filter(r => S.visited[r.id]);
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 28, W, 140); ctx.clip(); ctx.translate(Math.round(W / 2 - this.cam.x), 24);
-    // lines between the rooms that are joined: a plain dark corridor where one room opens into the next, and a lighter line with a little door mark where the way is a DOOR (houses,
-    // side rooms, an upper floor's door, the doors that join two areas).  A line is drawn once both of its rooms have been visited.
-    const drawn = new Set();
-    const join = (A, C, door) => {
-      const key = [A.id, C.id].sort().join('|') + (door ? 'd' : 'e'); if (drawn.has(key)) return; drawn.add(key);
-      const a = rect(A), c = rect(C), acy = a.y + a.h / 2, ccy = c.y + c.h / 2; let mx, my;
-      ctx.fillStyle = door ? '#6f5f8c' : '#2a2236';
-      if (Math.abs(acy - ccy) < 4) {                                                  // side by side: straight across
-        const l = a.x < c.x ? a : c, r2 = a.x < c.x ? c : a, y = Math.round((acy + ccy) / 2) - 1; ctx.fillRect(l.x + l.w, y, Math.max(2, r2.x - l.x - l.w), 2); mx = Math.round((l.x + l.w + r2.x) / 2); my = y;
-      } else {                                                                        // one above the other: down from the upper one, jogging sideways halfway if they are not lined up
-        const u = acy < ccy ? a : c, d2 = acy < ccy ? c : a, ux = Math.round(u.x + u.w / 2), dx2 = Math.round(d2.x + d2.w / 2), y0 = u.y + u.h, y1 = d2.y, ym = Math.round((y0 + y1) / 2);
-        ctx.fillRect(ux, y0, 2, Math.max(2, ym - y0 + 2)); if (dx2 !== ux) ctx.fillRect(Math.min(ux, dx2), ym, Math.abs(dx2 - ux) + 2, 2); ctx.fillRect(dx2, ym, 2, Math.max(2, y1 - ym + 1)); mx = dx2; my = ym;
-      }
-      if (door) { ctx.fillStyle = '#05030a'; ctx.fillRect(mx - 2, my - 2, 6, 6); ctx.fillStyle = '#d8b25a'; ctx.fillRect(mx - 1, my - 1, 4, 4); ctx.fillStyle = '#2a2236'; ctx.fillRect(mx, my, 2, 3); }
+    ctx.save(); ctx.beginPath(); ctx.rect(0, 28, W, 140); ctx.clip(); ctx.translate(Math.round(W / 2 - this.cam.x), Math.round(92 - this.cam.y));          // (the view centres on you, or on the waystone being chosen; the arrows scroll it)
+    // Every line starts and ends where its doorway really is, measured down the room's height: an open edge leaves a room at the height of its doorway and arrives at the height of the other room's;
+    // so a tower (entered at its foot, left at its top) is plainly a way THROUGH, never a dead end.  Plain dark lines are open passages; light lines with a gold mark are doors; a dotted line is a
+    // one-way door that drops you back at a crossroads.  A line is drawn once both of its rooms have been visited (a doorway whose far side is unseen shows as a short stub).
+    const at = (b, rm, row) => b.y + Math.round(clamp(row / rm.h, 0, 1) * (b.h - 1));
+    const seg = (x0, y0, x1, y1, col, dot) => {
+      ctx.fillStyle = col;
+      if (y0 === y1) { const a = Math.min(x0, x1), n = Math.abs(x1 - x0) + 2; if (!dot) ctx.fillRect(a, y0, n, 2); else for (let i = 0; i < n; i += 4) ctx.fillRect(a + i, y0, 2, 2); }
+      else { const a = Math.min(y0, y1), n = Math.abs(y1 - y0) + 2; if (!dot) ctx.fillRect(x0, a, 2, n); else for (let i = 0; i < n; i += 4) ctx.fillRect(x0, a + i, 2, 2); }
     };
+    const path = (pts, col, dot) => { for (let i = 0; i + 1 < pts.length; i++) seg(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], col, dot); };
+    const mark = (x, y) => { ctx.fillStyle = '#05030a'; ctx.fillRect(x - 2, y - 2, 6, 6); ctx.fillStyle = '#d8b25a'; ctx.fillRect(x - 1, y - 1, 4, 4); ctx.fillStyle = '#2a2236'; ctx.fillRect(x, y, 2, 3); };
+    const PASS = '#4c4264', DOOR = '#8a7aa8', ONEWAY = '#6f94c8', STUB = '#3a3250';
+    const crossroad = d => d.tag && d.tag !== 'in' && d.tag !== 'out';               // a door of a crossroads (it leads to the first room of a branch)
+    const fwd = {};                                                                  // each crossroads' branch doors, top to bottom: where their marks and channels sit along its right edge
+    for (const r of rooms) fwd[r.id] = r.doors.filter(crossroad).sort((a, b) => ROOMS[a.room].map.y - ROOMS[b.room].map.y);
+    const fmark = (hb, h, k) => hb.y + Math.round((k + 1) * (hb.h - 1) / (h.length + 1)) + 1;
+    const drawn = new Set(), once = (a, b, t) => { const k = [a, b].sort().join('|') + t; if (drawn.has(k)) return false; drawn.add(k); return true; };
     for (const r of rooms) {
-      for (const e of r.exits) { const t = ROOMS[e.room]; if (t && S.visited[t.id] && e.side !== 'L') join(r, t, false); }
-      for (const d of r.doors) { const t = ROOMS[d.room]; if (t && S.visited[t.id]) join(r, t, true); }
+      const rb = rect(r);
+      for (const e of r.exits) {                                                     // open edges: drawn from the room on the left
+        if (e.side !== 'R') continue; const t = ROOMS[e.room], ya = at(rb, r, (e.from + e.to) / 2);
+        if (!t || !S.visited[t.id]) { seg(rb.x + rb.w, ya, rb.x + rb.w + 4, ya, STUB); continue; }
+        const tb = rect(t), back = t.exits.find(q => q.room === r.id), yb = at(tb, t, back ? (back.from + back.to) / 2 : e.gy - 1), mx = Math.round((rb.x + rb.w + tb.x) / 2);
+        path([[rb.x + rb.w, ya], [mx, ya], [mx, yb], [tb.x, yb]], PASS);
+      }
+      for (const d of r.doors) {
+        const t = ROOMS[d.room]; if (!t) continue;
+        if (d.tag === 'in') continue;                                                // (the crossroads draws this line)
+        if (crossroad(d)) {                                                          // a crossroads door: out of the right edge, along a channel, in at the branch's first room
+          const k = fwd[r.id].indexOf(d), my = fmark(rb, fwd[r.id], k), cx = rb.x + rb.w + 3 + 2 * k;
+          if (!S.visited[t.id]) { seg(rb.x + rb.w - 1, my, cx + 2, my, STUB); mark(rb.x + rb.w - 2, my); continue; }
+          const tb = rect(t), yb = at(tb, t, d.tgy);
+          path([[rb.x + rb.w - 1, my], [cx, my], [cx, yb], [tb.x, yb]], DOOR); mark(rb.x + rb.w - 2, my); continue;
+        }
+        if (d.tag === 'out') {                                                       // the far end of a branch: a one-way door back to its crossroads
+          if (!S.visited[t.id]) continue;
+          const hb = rect(t), k = fwd[t.id].findIndex(q => q.tag === d.destTag); if (k < 0) continue;
+          const my = fmark(hb, fwd[t.id], k), cx = hb.x + hb.w + 4 + 2 * k, sx = rb.x + rb.w - 4, down = t.map.y > r.map.y;
+          const lane = down ? r.map.y * CH + CH + 1 : r.map.y * CH + 1;               // a lane along the foot (or the head) of the branch's row
+          path([[sx, down ? rb.y + rb.h : rb.y], [sx, lane], [cx, lane], [cx, my], [hb.x + hb.w - 1, my]], ONEWAY, true); mark(sx, down ? rb.y + rb.h - 1 : rb.y + 1); continue;
+        }
+        if (!S.visited[t.id]) continue;
+        const tb = rect(t), side = t.map.x === r.map.x && t.map.y !== r.map.y;
+        if (side) {                                                                  // a side room (a house, a sanctuary, a lair): hangs below its parent
+          if (t.map.y < r.map.y || !once(r.id, t.id, 'd')) continue;
+          const ax = rb.x + Math.round(clamp(d.x / r.w, 0, 1) * (rb.w - 1)), bx = tb.x + Math.round(clamp(d.tx / t.w, 0, 1) * (tb.w - 1)), ym = Math.round((rb.y + rb.h + tb.y) / 2);
+          path([[ax, rb.y + rb.h - 1], [ax, ym], [bx, ym], [bx, tb.y]], DOOR); mark(ax, rb.y + rb.h - 2); continue;
+        }
+        if (!once(r.id, t.id, 'd')) continue;                                        // two neighbours joined by a door at each end instead of an open edge
+        const L = rb.x < tb.x, p = L ? [rb, r, d.gy] : [tb, t, d.tgy], q = L ? [tb, t, d.tgy] : [rb, r, d.gy];
+        const ya = at(p[0], p[1], p[2]), yb = at(q[0], q[1], q[2]), mx = Math.round((p[0].x + p[0].w + q[0].x) / 2);
+        path([[p[0].x + p[0].w, ya], [mx, ya], [mx, yb], [q[0].x, yb]], DOOR); mark(mx - 1, Math.min(ya, yb));
+      }
     }
     for (const r of rooms) {
       const q = rect(r), x = q.x, y = q.y, w = q.w, h = q.h, stone = r.spawns.some(sp => sp.type === 'waystone');
@@ -360,17 +410,18 @@ export class MapScreen {
     }
     { const here = ROOMS[g.room.id]; if (here) drawText(ctx, 'YOU ARE IN:  ' + (ZONES[here.zone].name + ' - ' + here.name).toUpperCase(), W / 2, H - 47, { align: 'center', color: '#ffffff', scale: 1.1 }); }          // where the hero is
     const done = Object.keys(S.flags).filter(k => /^(g2|h2|c1|u1|u2|t1|c2|v2|v3|g4|w1|w2|w3|bu)_/.test(k) && !k.endsWith('_u')).length;
-    drawText(ctx, 'WHITE = YOU   PURPLE = SAVE   CYAN CROSS = WAYSTONE', W / 2, H - 35, { align: 'center', color: DIM }); drawText(ctx, 'SKULL = BOSS   ARROWS SCROLL', W / 2, H - 24, { align: 'center', color: DIM }); drawText(ctx, `ROOMS ${Object.keys(S.visited).length}/${Object.keys(ROOMS).length}   SECRETS ${done}   ${S.seed ? 'SEED ' + S.seed : 'CLASSIC CASTLE'}`, W / 2, H - 12, { align: 'center', color: PALE });
+    drawText(ctx, 'WHITE = YOU   PURPLE = SAVE   CYAN CROSS = WAYSTONE', W / 2, H - 35, { align: 'center', color: DIM }); drawText(ctx, 'SKULL = BOSS   GOLD = DOOR   DOTS = ONE-WAY   ARROWS SCROLL', W / 2, H - 24, { align: 'center', color: DIM }); drawText(ctx, `ROOMS ${Object.keys(S.visited).length}/${Object.keys(ROOMS).length}   SECRETS ${done}   SEED ${S.seed}`, W / 2, H - 12, { align: 'center', color: PALE });
   }
 }
 
 // ---------------------------------------------------------------------------------------------- story screens
 const INTRO = [
-  'FOR A HUNDRED YEARS THE SUN HAS NOT RISEN OVER THE VALE.',
+  'FOR A HUNDRED YEARS THE SUN HAS NOT RISEN OVER BOHEMIA.',
   'IT WAS TAKEN BY THE LORD OF THE SHADOWKEEP, WHO WALLED THE DAWN BEHIND HIS THRONE.',
   'THOSE WHO ENTERED NEVER RETURNED. THEIR PORTRAITS STILL WATCH THE HALLS.',
   'YOU HAVE NO NAME. ONLY A CLOAK, A BLADE, AND A DEBT THE DARKNESS OWES.',
-  'THE GATE IS OPEN. THE STORM IS WAITING.',
+  'TONIGHT THE DEAD WALK THE STREETS OF PRAGUE. THE GATE OF THE KEEP STANDS OPEN.',
+  'THE STORM IS WAITING.',
 ];
 export class IntroCrawl {
   constructor(g) { this.g = g; this.t = 0; this.i = 0; this.chars = 0; this.hold = 0; this.done = false; }
@@ -408,9 +459,15 @@ export class Ending {
     ctx.fillStyle = grd; ctx.fillRect(0, 0, W, H);
     const sy = H - 20 - easeOut(clamp((t - 40) / 400, 0, 1)) * 110; ctx.fillStyle = `rgba(255,236,170,${0.4 + 0.6 * a})`; ctx.beginPath(); ctx.arc(W / 2, sy + 60, 34 + a * 10, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#0a0612'; ctx.beginPath(); ctx.moveTo(0, H); ctx.lineTo(0, H - 36); for (let x = 0; x <= W; x += 24) ctx.lineTo(x, H - 36 - Math.abs(Math.sin(x * 0.07)) * 14); ctx.lineTo(W, H); ctx.fill();
-    if (t > 200) { const k = clamp((t - 200) / 60, 0, 1); drawText(ctx, 'THE SUN RISES OVER THE VALE', W / 2, 30, { align: 'center', scale: 2, color: '#fff0b0', outline: '#3a1008', alpha: k }); }
-    [['THE SHADOWKEEP CRUMBLES.', 54, 330], ['THE STRANGER WALKS INTO THE LIGHT,', 66, 360], ['AND IS NEVER SEEN AGAIN.', 78, 400]].forEach(([txt, yy, t0]) => { if (t > t0) drawText(ctx, txt, W / 2, yy, { align: 'center', scale: 1.15, color: '#3a1008', alpha: clamp((t - t0) / 60, 0, 1) }); });
-    if (t > 520) { const k = clamp((t - 520) / 60, 0, 1); panel(ctx, 100, 100, W - 200, 62, 0.8 * k); ctx.globalAlpha = k; drawText(ctx, `TIME ${fmtTime(S.time)}    LEVEL ${S.level}`, W / 2, 108, { align: 'center', color: PALE }); drawText(ctx, `FOES SLAIN ${g.kills + (S.kills || 0)}    ITEMS ${g.itemPercent()}%`, W / 2, 122, { align: 'center', color: PALE }); drawText(ctx, 'THANK YOU FOR PLAYING', W / 2, 142, { align: 'center', color: GOLD }); ctx.globalAlpha = 1; }
+    if (t > 200) { const k = clamp((t - 200) / 60, 0, 1); drawText(ctx, STORY.ending.title, W / 2, 30, { align: 'center', scale: 2, color: '#fff0b0', outline: '#3a1008', alpha: k }); }
+    STORY.ending.lines.map((txt, i) => [txt, 50 + i * 12, 330 + i * 40]).forEach(([txt, yy, t0]) => { if (t > t0) drawText(ctx, txt, W / 2, yy, { align: 'center', scale: 1.15, color: '#3a1008', alpha: clamp((t - t0) / 60, 0, 1) }); });
+    if (t > 560) { const k = clamp((t - 560) / 60, 0, 1); panel(ctx, 100, 114, W - 200, 54, 0.8 * k); ctx.globalAlpha = k; drawText(ctx, `TIME ${fmtTime(S.time)}    LEVEL ${S.level}`, W / 2, 120, { align: 'center', color: PALE }); drawText(ctx, `FOES SLAIN ${g.kills + (S.kills || 0)}    ITEMS ${g.itemPercent()}%`, W / 2, 132, { align: 'center', color: PALE }); drawText(ctx, 'THANK YOU FOR PLAYING', W / 2, 150, { align: 'center', color: GOLD }); ctx.globalAlpha = 1; }
+    if (t > 300) {                                                                    // the hill above Prague, in the sunlight: the Stranger kneels at her grave - and she is beside him, seen at last without any blue light
+      const hk = SHEET.hero_crouch_cw ? 'hero_crouch_cw' : 'hero_crouch', fa = clamp((t - 300) / 60, 0, 1), ga = clamp((t - 480) / 120, 0, 1);
+      ctx.fillStyle = '#0a0612'; ctx.beginPath(); ctx.moveTo(34, 169); ctx.lineTo(34, 150); ctx.quadraticCurveTo(41, 141, 48, 150); ctx.lineTo(48, 169); ctx.fill();
+      drawSheet(ctx, hk, 0, 68, 169, { dir: -1, alpha: fa }); drawSheet(ctx, 'hero_crouch_hair', 0, 68, 169, { dir: -1, alpha: fa });
+      drawSheet(ctx, 'ghost_lady', Math.floor(t / 10) % 7, 94, 169, { dir: -1, alpha: ga * 0.92 });
+    }
     if (this.menu) this.menu.draw(ctx, W / 2, H - 38, 14);
   }
 }

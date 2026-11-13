@@ -279,6 +279,7 @@ class Wyrm extends Enemy {
     this.sheet = 'ct_' + this.variant; this.ang = Math.random() < 0.5 ? 0 : Math.PI; this.phase = rand(TAU); this.state = 'weave'; this.st = 0; this.cool = 50 + rand(60);
     this.spd = WY.cruise; this.kx = 0; this.ky = 0; this.home = { x, y }; this.body = false; this.blocked = false; this.dir = this.ang === 0 ? 1 : -1;
     this.trail = []; this.parts = Array.from({ length: WY.segs + 1 }, () => ({ x, y }));
+    this.fast = 1; if (this.variant === 'bone') { this.hp = this.maxHp = 38; this.fast = 1.4; this.xp = 24; }          // the bone wyrm is quicker and tougher than its frost and ember cousins
   }
   begin(state) { this.state = state; this.st = 0; }
   free(room, x, y) {      // is a 14x14 box centred here clear of walls (and above the bottom of the room)?
@@ -322,7 +323,7 @@ class Wyrm extends Enemy {
     }
     this.ang = turnTo(this.ang, want, rate); if (this.state !== 'lunge') this.steer(room, want);
     if (this.state !== 'wind') this.dir = Math.cos(this.ang) >= 0 ? 1 : -1;
-    this.spd = approach(this.spd, spd, this.state === 'wind' ? 0.08 : 0.06);
+    this.spd = approach(this.spd, spd * this.fast, this.state === 'wind' ? 0.08 : 0.06);
     g.fx.light(this.x, this.cy, 30, 0.3);
   }
   physics() {

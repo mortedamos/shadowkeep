@@ -104,20 +104,20 @@ class Throw {
 }
 
 export class TwinDagger extends Throw {
-  constructor(x, y, dir, vy = 0, dmg = 7) { super(x, y, dir * 4.3, vy, { dmg, w: 8, h: 4, grav: 0.012, life: 80, destructible: true }); }
+  constructor(x, y, dir, vy = 0, dmg = 10) { super(x, y, dir * 4.3, vy, { dmg, w: 8, h: 4, grav: 0.012, life: 80, destructible: true }); }
   update(g) { const r = this.step(g); if (r === 'wall' || r === 'floor') this.explode(g); }
   draw(ctx, cx, cy) { const x = this.x - cx, y = this.y - cy, d = this.dir; ctx.fillStyle = '#c9c4ee'; ctx.fillRect(Math.round(x - 4 * d - (d < 0 ? 4 : 0)), Math.round(y - 1), 8, 2); ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(x + (d > 0 ? 1 : -4)), Math.round(y - 1), 3, 1); ctx.fillStyle = '#4a2a78'; ctx.fillRect(Math.round(x - (d > 0 ? 6 : -3)), Math.round(y - 1), 3, 2); }
 }
 
 export class TwinAxe extends Throw {
-  constructor(x, y, vx, dmg = 13) { super(x, y, vx, -3.4, { dmg, w: 12, h: 12, grav: 0.17, life: 130, spin: 0.28 * (vx >= 0 ? 1 : -1) }); }
+  constructor(x, y, vx, dmg = 18) { super(x, y, vx, -3.4, { dmg, w: 12, h: 12, grav: 0.17, life: 130, spin: 0.28 * (vx >= 0 ? 1 : -1) }); }
   update(g) { const r = this.step(g); if (r === 'wall' || r === 'floor') { this.explode(g); g.fx.sparks(this.x, this.y, 6, [[1, 1, 1], [0.7, 0.6, 1]], 2.2); } }
   draw(ctx, cx, cy) { ctx.save(); ctx.translate(Math.round(this.x - cx), Math.round(this.y - cy)); ctx.rotate(this.rot); ctx.fillStyle = '#3a2a58'; ctx.fillRect(-1, -7, 2, 14); ctx.fillStyle = '#cfcdf0'; ctx.beginPath(); ctx.moveTo(1, -7); ctx.lineTo(7, -9); ctx.lineTo(7, -1); ctx.lineTo(1, -3); ctx.closePath(); ctx.fill(); ctx.fillStyle = '#ffffff'; ctx.fillRect(6, -8, 1, 6); ctx.restore(); }
 }
 
 export class TwinTorch extends Throw {
-  constructor(x, y, vx, dmg = 6) { super(x, y, vx, -2.3, { dmg, w: 8, h: 8, grav: 0.14, life: 140, spin: 0.22 * (vx >= 0 ? 1 : -1) }); }
-  landFire(g) { const gy = g.groundBelow(this.x, this.y); g.addProjectile(new FirePatch(this.x, gy, 150, { w: 22, dmg: 5 })); }
+  constructor(x, y, vx, dmg = 9) { super(x, y, vx, -2.3, { dmg, w: 8, h: 8, grav: 0.14, life: 140, spin: 0.22 * (vx >= 0 ? 1 : -1) }); }
+  landFire(g) { const gy = g.groundBelow(this.x, this.y); g.addProjectile(new FirePatch(this.x, gy, 150, { w: 22, dmg: 7 })); }
   update(g) {
     const r = this.step(g); g.fx.fire(this.x, this.y, { scale: 0.5, n: 1 }); g.fx.light(this.x, this.y, 46, 0.7);
     if (r === 'wall' || r === 'floor') { if (r === 'floor') this.landFire(g); else g.fx.burst(this.x, this.y, 5, [[1, 0.6, 0.2], [0.8, 0.15, 0.05]], { speed: 1.2, s0: 8 }); A.sfx('fire'); this.dead = true; }
@@ -139,8 +139,8 @@ class TwinPool {
   draw(ctx, cx, cy) { const k = Math.min(1, this.life / 40), x = Math.round(this.x - cx), y = Math.round(this.y - cy), w = this.w; ctx.fillStyle = `rgba(190,225,255,${0.45 * k})`; ctx.fillRect(x - w / 2, y - 2, w, 2); ctx.fillStyle = `rgba(255,250,210,${0.55 * k})`; ctx.fillRect(x - w / 2 + 3, y - 3, w - 6, 1); }
 }
 export class TwinFlask extends Throw {
-  constructor(x, y, vx, dmg = 4) { super(x, y, vx, -2.5, { dmg, w: 8, h: 8, grav: 0.16, life: 130, spin: 0.2 * (vx >= 0 ? 1 : -1) }); }
-  shatter(g, y) { g.addProjectile(new TwinPool(this.x, y, 5)); g.fx.burst(this.x, y - 3, 10, [[0.85, 0.93, 1], [1, 0.97, 0.7]], { speed: 1.8, s0: 8 }); g.fx.ring(this.x, y - 3, 22, [0.8, 0.9, 1], 16, 0.25); A.sfx('break'); this.dead = true; }
+  constructor(x, y, vx, dmg = 6) { super(x, y, vx, -2.5, { dmg, w: 8, h: 8, grav: 0.16, life: 130, spin: 0.2 * (vx >= 0 ? 1 : -1) }); }
+  shatter(g, y) { g.addProjectile(new TwinPool(this.x, y, 7)); g.fx.burst(this.x, y - 3, 10, [[0.85, 0.93, 1], [1, 0.97, 0.7]], { speed: 1.8, s0: 8 }); g.fx.ring(this.x, y - 3, 22, [0.8, 0.9, 1], 16, 0.25); A.sfx('break'); this.dead = true; }
   update(g) { const r = this.step(g); if (r === 'floor') this.shatter(g, Math.floor((this.y + 4) / T) * T); else if (r === 'wall') this.shatter(g, Math.floor(this.y / T + 1) * T); }
   explode(g) { this.shatter(g, g.groundBelow(this.x, this.y)); }
   draw(ctx, cx, cy) { ctx.save(); ctx.translate(Math.round(this.x - cx), Math.round(this.y - cy)); ctx.rotate(this.rot); ctx.fillStyle = '#d8ecff'; ctx.fillRect(-3, -2, 6, 6); ctx.fillStyle = '#9ccaf0'; ctx.fillRect(-2, 0, 4, 3); ctx.fillStyle = '#c9a14a'; ctx.fillRect(-1, -4, 2, 2); ctx.restore(); }
@@ -148,7 +148,7 @@ export class TwinFlask extends Throw {
 
 // the magic arrow, turned: it bends toward YOU (slowly enough to be outrun round a corner) and the sword can cut it down
 export class TwinArrow extends Throw {
-  constructor(x, y, dir, dmg = 8) { super(x, y, dir * 3, -0.4, { dmg, w: 8, h: 6, life: 190, destructible: true }); this.ang = dir > 0 ? -0.12 : Math.PI + 0.12; this.spd = 2.8; }
+  constructor(x, y, dir, dmg = 11) { super(x, y, dir * 3, -0.4, { dmg, w: 8, h: 6, life: 190, destructible: true }); this.ang = dir > 0 ? -0.12 : Math.PI + 0.12; this.spd = 2.8; }
   update(g) {
     const p = g.player, da0 = Math.atan2(p.y - 20 - this.y, p.x - this.x) - this.ang, da = Math.atan2(Math.sin(da0), Math.cos(da0));
     this.ang += clamp(da, -0.05, 0.05); this.spd = Math.min(3.7, this.spd + 0.03); this.vx = Math.cos(this.ang) * this.spd; this.vy = Math.sin(this.ang) * this.spd; this.dir = this.vx >= 0 ? 1 : -1;

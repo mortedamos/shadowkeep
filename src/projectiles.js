@@ -14,6 +14,7 @@ const KINDS = {
   fire: { sheet: 'fireball', n: 3, w: 12, h: 12, grav: 0, glow: [1, 0.5, 0.15], hitFx: COLORS.fire, dmg: 10, flipDir: true, orb: true },
   skull: { sheet: 'fireskull', n: 8, w: 14, h: 14, grav: 0, glow: [0.4, 0.9, 1], hitFx: COLORS.blue, dmg: 12, scale: 0.38, fxTrail: COLORS.blue, spinFrames: true },
   spore: { sheet: 'orb_dark', n: 2, w: 10, h: 10, grav: 0, glow: [0.4, 1, 0.4], hitFx: COLORS.green, dmg: 9, scale: 1.5, fxTrail: COLORS.green },
+  tide: { sheet: 'orb_dark', n: 2, w: 10, h: 10, grav: 0, glow: [0.4, 0.8, 1], hitFx: COLORS.blue, dmg: 9, scale: 1.5, fxTrail: COLORS.blue },
   blood: { sheet: 'orb_dark', n: 2, w: 9, h: 9, grav: 0, glow: [1, 0.1, 0.2], hitFx: COLORS.red, dmg: 9, scale: 1.3, fxTrail: COLORS.red },
   wisp: { sheet: 'orb_dark', n: 1, w: 12, h: 12, grav: 0, glow: [0.4, 0.7, 1], hitFx: COLORS.blue, dmg: 8, orb: true },                                  // (a haunted portrait's blue fire - see HomingWisp)
   ember: { sheet: 'fireball', n: 3, w: 8, h: 8, grav: 0.04, glow: [1, 0.4, 0.1], hitFx: COLORS.fire, dmg: 7, scale: 0.6, orb: true },          // (orb: burning light + flame particles in the effects layer, not the fireball sprite)
@@ -78,13 +79,13 @@ export class SwordFire extends Fireball {
 
 // moving ground wave (boss stomps)
 export class Shockwave {
-  constructor(x, y, dir, o = {}) { this.x = x; this.y = y; this.dir = dir; this.speed = o.speed || 2.2; this.dmg = o.dmg || 12; this.w = 16; this.h = o.h || 16; this.life = o.life || 60; this.owner = 'enemy'; this.t = 0; this.dead = false; this.color = o.color || COLORS.warm; this.k = { glow: null }; this.vx = dir; this.vy = 0; this.big = o.big || false; }
+  constructor(x, y, dir, o = {}) { this.x = x; this.y = y; this.dir = dir; this.speed = o.speed || 2.2; this.dmg = o.dmg || 12; this.w = 16; this.h = o.h || 16; this.life = o.life || 60; this.owner = 'enemy'; this.t = 0; this.dead = false; this.color = o.color || COLORS.warm; this.k = { glow: null }; this.vx = dir; this.vy = 0; this.big = o.big || false; this.flame = o.fire || (o.big ? 'fire' : 'warm'); }
   get box() { return { x: this.x - this.w / 2, y: this.y - this.h, w: this.w, h: this.h }; }
   update(g) {
     this.t++; this.x += this.dir * this.speed; if (--this.life <= 0) this.dead = true;
     const tx = Math.floor((this.x + this.dir * 8) / T), ty = Math.floor((this.y - 4) / T); if (g.room.solid(tx, ty)) this.dead = true;
     if (!g.room.solid(Math.floor(this.x / T), Math.floor((this.y + 4) / T))) this.dead = true;
-    g.fx.fire(this.x, this.y, { scale: 0.9, color: this.big ? 'fire' : 'warm', n: 2 }); if (this.t % 3 === 0) g.fx.burst(this.x, this.y - 2, 2, [[0.6, 0.55, 0.5], [0.2, 0.2, 0.25]], { speed: 0.8, s0: 8, s1: 2, up: 0.6, l0: 10, l1: 22 });
+    g.fx.fire(this.x, this.y, { scale: 0.9, color: this.flame, n: 2 }); if (this.t % 3 === 0) g.fx.burst(this.x, this.y - 2, 2, [[0.6, 0.55, 0.5], [0.2, 0.2, 0.25]], { speed: 0.8, s0: 8, s1: 2, up: 0.6, l0: 10, l1: 22 });
   }
   draw() {}
 }

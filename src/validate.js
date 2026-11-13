@@ -133,7 +133,7 @@ export function validateRoom(def, opts = {}) {
   const start = node(startP, 'start'), seen = start >= 0 ? reach(room, S, [start], base) : new Set();
   const must = [];
   if (entries.L && entries.R) must.push(['entry R', node(entries.R, 'entry R')], ['entry L', node(entries.L, 'entry L')]);
-  for (const d of def.doors) must.push(['door', at(d.x, d.gy)]);
+  for (const d of def.doors) if (!d.gated) must.push(['door', at(d.x, d.gy)]);              // (a door sealed in a cell is proved reachable by its gate item instead)
   for (const p of meta.must || []) must.push([p.name || 'target', node(p, p.name || 'target')]);
   for (const [name, id] of must) if (id >= 0 && !seen.has(id)) errs.push(`${name} unreachable from start with [${base}]`);
   // coming back the other way

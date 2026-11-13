@@ -2,8 +2,8 @@
 
 A gothic-fantasy, side-scrolling action-adventure for the browser, in the spirit of *Castlevania* and *Bloodstained*.
 You are a nameless cloaked stranger with a sword, exploring a haunted castle: platforming, secrets, power-ups,
-seven zones, nine bosses (two of them optional), throwable items, waystone travel, and a three.js effects layer (fire, flickering candles, lightning, auras, mist). Text is set in two
-free gothic typefaces (Pirata One and Almendra, with Blackletter ExtraBold for the title) rather than a pixel font. The hero is Ansimuz's Gothic Hero (the hooded-warrior set is archived in `assets/archive/`), draped in an
+nine zones laid out as a branching map, ten bosses (one of them optional), throwable items, waystone travel, and a three.js effects layer (fire, flickering candles, lightning, auras, mist). Text is set in two
+free gothic typefaces (Pirata One and Almendra, with Blackletter ExtraBold for the title and Fraktur Handschrift for the gravestones) rather than a pixel font. The hero is Ansimuz's Gothic Hero (the hooded-warrior set is archived in `assets/archive/`), draped in an
 experimental animated **white cloak** (a cloth hung from both shoulders that drapes behind him; Options > White Cloak turns it off, or start with `?cloak=0`).
 
 ## Play it
@@ -34,11 +34,11 @@ The published repository holds only what the game needs to run. `.gitignore` kee
 | Action | Keys |
 |---|---|
 | Move | Arrow keys / WASD |
-| Jump (variable height) | Space / Z / K  - press again in mid-air once you own the **Raven Feather** |
+| Jump (variable height) | Space / Z / K  - press again in mid-air once you own the **Aether Feather** |
 | Attack (tap again for a 3-hit combo) | X / J  (works in the air too; the hero stays planted while swinging) |
 | Duck | hold Down / S  - shrinks your hitbox; you can slash while ducking (a low cut that skims the floor) |
 | Drop through one-way platforms | Down / S  + Jump |
-| Dash (invulnerable) | Shift / L  - needs **Shadow Step** |
+| Dash (invulnerable) | Shift / L  - needs the **Quicksilver Step** |
 | Use the selected spell or item | C / I |
 | Move the selection box (top of the screen) | Q (left) / V (right) |
 | Use altar, read tablet, open chest, enter door, use a waystone | Up / W / E |
@@ -49,13 +49,53 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
 
 **Phones and tablets:** on-screen controls appear by themselves on a touch screen (and go away when a key is pressed). A round **D-pad** at the bottom left: slide a thumb round it to run, duck, or go up a door (up is also USE). **JUMP** and **HIT** are the big buttons on the right (they are also OK and BACK in the menus); **DASH**, **ITEM** (uses the selected spell or item) and the two small arrows that change the selection sit above them, and **MAP**, **II** (pause) and a full-screen square run along the top. Tap a menu item to pick it, tap the item box in the corner to change the selection, tap to advance a dialogue. Turn the phone sideways for a bigger picture (held sideways, the picture gives up some width so the controls only overlap its edges a little; on a squarer tablet the controls take a strip under it instead). Add `?touch=1` to the address to force the pad on (or `?touch=0` to keep it off); Options > TOUCH PAD switches it by hand. On the iPhone, "Add to Home Screen" runs the game full screen.
 
+## The story
+
+*Prague, Bohemia, 1619.* The Stranger - we never learn his name - is found kneeling at a grave on a hill above the city, in the rain: the grave of a woman who was his wife, his sister, his lover (the game never says). She died to the
+**Shadowkeep**, the castle that rose out of the countryside, took the **sun** and let the things of the shadow-realm walk the earth. As he kneels the city far below begins to burn. He rises, draws the sword **Silberzahn**
+("the silver tooth") and goes down to it. Under his white cloak there is armour: a soldier's, or a monster-hunter's.
+
+* **An opening scene** (once, at the start of a new game; any key skips it): rain, a tolling bell, the grave with a blue candle on it, the title card, the glow of fire rising over the roofs. It is a real room - **the Hill Above Prague**, west of Market Street - with a tablet of its own.
+  Its music is the `intro` track.
+* **Her ghost walks behind him** - pale, translucent, her lower half fading into nothing. She is invisible except in an **arcane (blue) light**: a waystone, a will-o'-the-wisp, a blue seal-flame, the candle on her grave, the **Ignis Fatuus**
+  lantern (own it, and she is always there). **Every tablet and gravestone is her voice**, written in her own handwriting (the Fraktur Handschrift font, in mixed case: the round s ends a word, the long s sits elsewhere - set `LONG_S` in `src/font.js` to change that): advice about the road ahead, and what it is to be a ghost. She shows for a while whenever one speaks. (Signposts are only signs.)
+* **Every boss speaks to the Stranger before the fight** (once), and some say a last word as they fall; the Shadow Lord's come just before the sun rises. The ending returns to the grave.
+* **Alchemy, as Prague loved it.** The sun is the **Azoth**, the light that wakes it. The spells are **Sulphur** and **Vitriol**; the feather is **Aether**, the dash **Quicksilver**; the containers are the **Elixir Vitae** and the **Quintessence**;
+  the whetstone is **Sal Martis**; the boss rewards are the **Salamander Mantle**, the **Ignis Fatuus Lantern**, the **Speculum Shard**, the **Perpetuum**, the **Aqua Regia** and the **Shoes of Hermes**; holy water is **Aqua Vitae**, the bandage **Panacea**.
+  The six keys are the **Keys of Lead, Iron, Silver, Tin, Copper and Mercury** (the metals of the old planets; gold, the Sun, is what was stolen). The four stages of the Great Work - Nigredo, Albedo, Citrinitas, Rubedo - are the frame the text hangs on.
+* **All the words are in one file, `src/story.js`:** the opening, her tablets, each boss's exchange and the ending. Edit it freely - it is plain text in capitals, nothing else needs to change.
+
 ## The game
 
-* **7 zones, 38 main rooms (plus up to eight small rooms behind doors) - one look per zone.** A level never mixes tilesets; each look gets its own level instead:
-  the **Burning Village** (a town under attack, houses ablaze, monsters in the street, villagers running about in a panic - they can't be hurt,
-  and they cheer when you cut something down near them) -> the **Graveyard Approach** (a moonlit cemetery) -> the **Weeping Swamp** ->
-  the **Great Hall** (a library of bookcases and teal pillars) -> the **Moonlit Chapel** -> the **Underworks** -> the **Shadow Throne**.
-  Open room edges (marked by a small arrow on the screen edge), **doors** (UP) and fade transitions connect them; the zone name appears when you cross into a new one. In a generated castle several neighbouring areas are joined by a door at each end instead of an open edge (the village lane and the bell tower, the Iron Gate and Grave Hollow, the boardwalks, the hall, the nave, the boiler corridor and the gear shaft), and the map draws a line between every pair of joined rooms - with a little door mark where the way is a door.
+* **9 zones in a branching castle - one look per zone.** The story is set in **Bohemia**; you begin in its capital, **Prague**. A level never mixes tilesets; each look gets its own level.
+  It is a graph, not a corridor: after the Graveyard the way splits at **the Three Roads** (a crossroads with a waystone) into the **Weeping Mire** (a door high on a ledge - it needs the Double Jump), which runs on into **the Cistern**,
+  the **Great Hall**, and the **Moonlit Chapel** (its door is sealed until the masters of the Hall and of the Cistern are dead). The Chapel leads to a second crossroads, **the Crossing Hall**, where the way splits again into **the Crypts**
+  (barricaded: burn it), **the Clockwork Dungeon** (its door stands beyond a gulf: it needs the Dash) and the **Shadow Throne** (sealed by crystal - Thunder - and by the Crimson Count and the Hierophant). Every door at a
+  crossroads has a signpost, every branch ends in a door that drops you back at its crossroads, and the order in which you do the branches is yours. `tools/test-world.mjs` proves, for every castle, that it can be finished
+  and that each of those locks really needs its key. Open room edges (marked by a small arrow on the screen edge), **doors** (UP) and fade transitions connect the rooms; the zone name appears when you cross into a new one.
+  The map draws every line from where its doorway really is (a tower is entered at its foot and left at its top, so it is plainly a way through), a gold mark where the way is a door, and a dotted line for the one-way doors that
+  bring you back to a crossroads; unexplored doorways show as short stubs. Up / Down scroll it as well as Left / Right.
+* **Prague is calm at dusk - until the Cinder Warden arrives.** The village starts as a violet dusk with the monsters already loose; as you reach the east end of Market Street a short scene plays (you cannot move or strike, and the monsters
+  freeze): the Warden steps out of the dark, hurls three torches that set the houses alight one by one, turns to look at you, and strides away. From then on Prague burns.
+* **Moving gears.** The Clockwork Dungeon has brass-and-iron rooms and a background of gears behind gears, from ones half a hero tall to ones the size of the room. In **the Great Gear** you cross a pit on the *teeth* of three great turning
+  wheels: every tooth on a wheel's upper side is a moving one-way platform that carries you with it - ride one up, over and down, and hop to the next.
+* **Flowing water.** In the Cistern streams of water run along the floor and **carry the hero** the way they flow (wading: fully; in the air: a little), under waterfalls; the Drowned Warden keeps the gate at the end, and leaves the **Aqua Regia**:
+  from then on a **dash cuts through** whatever it passes through (it wakes the moment you can dash).
+* **The Disco.** A joke room off the Nave's upper floor: skeletons dance in the background, at three depths, under sweeping coloured spotlights and a mirror ball, to a track of its own. The **Shoes of Hermes** (+10% movement speed) wait at the far
+  end. When you reach the middle of the floor the music dies with a record scratch, every skeleton stops and turns to look at you, and the lights swing round to find you. Come back later and the room is dark and empty.
+* **Every boss leaves a power-up.** The four bosses that used to leave a heart or mana container now leave something that changes how you play: the **Cinder Warden** the **Salamander Mantle** (fire hurts half as much and soot never
+  stains the cloak), the **Mire Mother** the **Ignis Fatuus Lantern** (a wisp follows you - it lights the dark, clears the fog around you and draws loot from much further off), the optional **Reflection** the **Speculum Shard** (your sword
+  turns arrows, bones, orbs and thrown items back at their throwers, faster and now hurting them) and the **Hierophant** the **Perpetuum** (your dash recharges twice as fast). The other bosses already give a power (double jump, dash, Ember,
+  Thunder, the Aqua Regia, the Azoth). The containers they used to carry are now on a high ledge in Prague, in a hidden cell in the Portrait Gallery and in two new locked vaults (below).
+* **Keys and locked doors.** Six doors are **locked** - a padlock and chains are drawn over them, in the colour of their key - and lead to optional **vaults** (the Gravekeeper's, the Steward's, the Verger's, the Count's Treasury, the
+  Ferryman's and the Engineer's) with a chest inside. Each key is found earlier in the same zone: in a chest in a hidden cell of the Iron Gate, at the top of the Belfry Stairs, in a chest in the Nave, at the top of the Bone Stair, in a cell
+  of Mire Edge, in a barricaded cell of the Escapement. Walk up to a locked door and press
+  Up: without its key it tells you which one it needs; with it the door opens for good (the key is used up). Vaults are optional, so no key can ever lock you out of the game - `tools/test-world.mjs` proves every key is
+  reachable and every vault is shut without its key.
+* **The pause screen shows what you have found:** the four powers (dim and unnamed until you find them), the Shoes of Hermes, the Aqua Regia and the rest once found, and the keys you carry. (They are no longer on the main screen.)
+* **Breakable things glow faintly** - barrels and crates (in the colour of what they hold), cracked walls (lilac), barricades (embers) and crystals (ice); statues, which hold treasure, glow a little more.
+* **Scenery stands on the ground.** On levels drawn over a parallax picture nothing hangs in the air: wall torches become braziers on the floor (fewer of them, clear of doors), barred windows are gone, and every framed portrait - painted
+  or haunted - hangs on a freestanding pillar. Banners stay: they are fixed to the ceiling. (Towers have a brick shaft that does not slide, so they keep their wall torches.)
 * **Two floors.** Seven of the generated areas (Iron Gate, the Mourning Fields, Weeping Hollow, the Drowned Boardwalk, the Entrance Hall, the Nave, the Hall of Shadows) are tall rooms with a lower floor and an upper floor: a staircase of one-way platforms climbs to the upper floor, which has its own gaps, blocks and loot, and comes down again at the far end. Four of them hide a **door on the upper floor** to a small room of its own (the gravedigger's shed, the fisherman's hut, the servants' quarters, the scribe's study).
 * **Waystones (teleport rooms).** Every zone opens with a *waystone chamber*, a calm room with a glowing stone. Walk up to attune it, then press
   **Up** at any attuned stone to open the map: pick any other waystone you have already found with Left / Right and press Enter to travel there
@@ -71,14 +111,14 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
 * **Will-o'-the-wisps** drift through the Weeping Swamp: cold blue lights that float in and out of the background, shed real light and thin the mist wherever they go. You can never get near one - it bolts away into the background, and winks out if you keep coming.
 * **Portraits** hang on the walls of the halls, chapels and the throne room - painted faces (fifteen people, five moods each, pixelated to 26x33 by `tools/pixelate-portraits.ps1`) in gilt, oak, silver, bronze or ebony frames. **Some are haunted.** They begin with a hopeful face, but as you walk up to one the picture turns - happy, neutral, sad, furious - and then it wakes and fights: some **spit fire from their eyes** (the eyes burn first), some release **wisps of blue fire that follow you** (cut them down with the sword), some **tear off the wall and fly at you**, and some fly *and* shoot. Until one wakes it cannot be hurt, and it cannot hurt you.
 * **Waterfalls** pour through the tall rooms of the Weeping Swamp - from the sky, through the holes in the upper floor, down to the lower one - with spray where they land.
-* **3D hair:** the hero's hair is a short scalp and just a few loose strands that fall behind his head and beside his face, drawn as a little textured mesh that is simulated like his cloak: it streams back when he runs, lifts when he falls, is pressed flat when he rises (Options > 3D Hair, or `?hair=0`).
+* **3D hood:** the hero wears the hood of his white cloak - a rounded cowl over the crown, a brim over the brow and the eyes (the opening is dark inside; only the nose, mouth and chin show), and the cloth gathered on his shoulders - drawn as a little textured mesh that is simulated like his cloak: it streams back when he runs, the brim **lifts off his eyes when he falls**, it is pressed flat when he rises (Options > 3D Hood, or `?hair=0`).
 * **Hazards are always seen:** spikes are drawn again above the fog and the dark, and live only at the bottom of pits. Nothing stands in front of a door.
 * **Candelabras** are scenery now (indoors only - never in the graveyard or the mire): they flank doors and waystones, stand beside tablets and at the foot of walls and steps, and are spaced along the floor - never on top of loot.
 * **21 monster types:** bats, rising zombies, bone-throwing skeletons, phasing ghosts, orb-casting wraiths, charging fire skulls, hell hounds,
   burning ghouls and teleporting dark wizards - plus **bone / frost / ember wyrms** (skull-headed serpents whose whole body follows
   the head; they gape and rear back before they strike - a clean hit breaks the attack - and the ember kind spits fire),
   **swamp spiders** (they squat before they spring), **swamp things**, blue-robed **acolytes**, staff-wielding **archmages**, bronze-robed **brass sorcerers** (fire-hurling casters who slip away when you close in), red-robed **zealots** (Szadi's sickle fighter: he plants his feet, then lunges through a slash) and the **haunted portraits** on the walls.
-* **9 bosses** with two phases each (two are optional: the Crimson Count - a door on the upper floor of the Nave leads down to his crypt, and he leaves a heart container - and the **Reflection**, below): the Cinder Warden (the village's keeper - ember volleys, a staff slam, a leap, flame pillars once he is hurt; he leaves a heart container), the Gatekeeper (his fire breath is a tall arch of flame overhead - duck in the pocket right beside him, or stay out of its reach), the Mire Mother (a floating head of tentacles: marked holes in the ground, spore fans, spider summons; she leaves a mana crystal), the Phantom Steed, the Seraph of Ash, the Brazen Hierophant (master of the Underworks: he rises, then crashes down) the Shadow Lord, and
+* **10 bosses** with two phases each (one is optional: the **Reflection**, below; the Crimson Count now rules the Crypts and leaves Thunder): the Cinder Warden (the village's keeper - ember volleys, a staff slam, a leap, flame pillars once he is hurt; he leaves a heart container), the Gatekeeper (his fire breath is a tall arch of flame overhead - duck in the pocket right beside him, or stay out of its reach), the Mire Mother (a floating head of tentacles: marked holes in the ground, spore fans, spider summons; she leaves a mana crystal), the Phantom Steed, the Seraph of Ash, the Brazen Hierophant (master of the Clockwork Dungeon: he rises, then crashes down), the Drowned Warden (a blue many-armed thing over the flooded gate: tidal waves, water orbs, geysers, and a dive that comes up somewhere else), the Shadow Lord, and
   the optional **Reflection**: a second door on the upper floor of the Entrance Hall opens on the Mirror Room, where a great gilt mirror hangs on the back wall and shows you, mirrored, doing whatever you do. Walk in front of it and meet your reflection in the middle: the glass
   cracks and your reflection crashes out of it in silver and violet, with red eyes. It fights with a sword (a two-blow combo, three in the second half), a **shadow dash** that cuts as it ends, a leap,
   and the same items you carry: **daggers** (duck under them), an **axe**, a **torch** and **holy water** (lobbed at where you stand: the landing spot is marked) and a homing **magic arrow**
@@ -86,8 +126,8 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
   acts, then a coloured aura, a warning sound and a **danger zone** (charge lane, breath sweep, landing marker, slam
   area, lightning/flame columns) show during the windup. The boss is open to counter-attack after each move.
   Turn the icons/names off in Options > Boss Hints if you want a purer challenge (zones and sounds stay).
-* **Metroidvania progression:** Double Jump, Shadow Step (dash), Ember (fire - burns barricades) and Thunder
-  (lightning - shatters crystal). Several secrets (heart containers, mana crystals, whetstones) are only reachable once
+* **Metroidvania progression:** Double Jump (Aether), Quicksilver Step (dash), Sulphur (fire - burns barricades) and Vitriol
+  (lightning - shatters crystal). Several secrets (Elixirs Vitae, Quintessences, Sal Martis) are only reachable once
   you own the right power, so backtracking pays off. Levels, XP and item drops included. **Stone statues** are the breakable
   treasure: 2-3 sword hits to shatter, paying out 2-3 items instead of one, and they stand about 2.5x less often than the
   old candles did. Candelabras are scenery only.
@@ -108,10 +148,10 @@ A gamepad also works (A jump, X attack, B dash, Y use selected, bumpers move the
 Each new game builds its castle from a **seed**: the zones, boss order, abilities, save sanctuaries and secrets are always
 where they should be, but every room's insides are re-rolled - ground height, pits, bridges, spike runs, steps, ledges,
 the layout of the climbing towers, arena platforms, where the enemies stand and where the statues, barrels and scenery go. (The opening Market Street
-  is hand-built and the same every time.)
+  is hand-built and the same every time; everything else is generated, whatever the seed.)
 
 * New game = a random seed.  **Choose Seed** on the title screen lets you type one (the same seed always builds the same
-  castle, so you can share them).  `0` is the classic castle (the original hand-built rooms, plus the newer zones built from seed 1).  `?seed=1234` in the URL also works.
+  castle, so you can share them).  `?seed=1234` in the URL also works. (A save made before the castle's layout last changed wakes at the start with everything it carries.)
 * The seed is shown on the map and pause screens and is stored in your save, so Continue always loads the same castle.
 * **Nothing impossible ever ships.** Each generated room is simulated with the game's *real* movement code (same physics
   constants and collision routines as the player - checked jump-for-jump against the live player): a search over
@@ -147,15 +187,16 @@ src/
   items.js itemdata.js   throwable items: the data (limits, pack sizes) and the thrown objects / effects
   projectiles.js    fireballs, bones, shockwaves, fire patches     props.js   pickups, statues, barrels, altar, waystones, relics
   world.js          tile themes (auto-tiled from the tilesets), parallax backgrounds, collision queries
-  rooms.js          the hand-built castle (the builder DSL, zone themes, and the seed-0 / fallback layouts)
-  levelgen.js       procedural castle: seeded room generators + the world builder (validation, retries, linking)
+  rooms.js          Market Street, the builder DSL (B), the zone table (ZONES) and the old hand-built rooms (no longer used, kept as a reference)
+  levelgen.js       procedural castle: the room table (SPEC), the graph (CHAINS, PAIRS, RETURNS, PROGRESS), the room generators and the world builder (validation, retries, linking, map layout)
+  gears.js          the turning gears of the gear room: each tooth is a moving platform that carries the hero      scenes.js   scripted scenes (the Cinder Warden setting Prague alight)
   validate.js       reachability prover (jump simulation + search)       physics.js   movement constants shared with the player
   enchant.js        sword enchantment data + effects
   fx.js             three.js effects: particles, flame shaders, lightning, rings, magic circles, light/darkness
   procart.js        code-drawn pixel art: bat, icons, props
   audio.js          music manager + synthesized sound effects      ui.js   HUD, menus, map, story screens
   touch.js          the on-screen controls for phones and tablets (HTML buttons that hold the same actions as the keys)
-  font.js           gothic text: Pirata One + Almendra (+ Blackletter for the title) drawn as vector text on the hi-res canvas (bitmap fallback if the fonts are missing)
+  font.js           gothic text: Pirata One + Almendra (+ Blackletter for the title, Fraktur Handschrift for her gravestones) drawn as vector text on the hi-res canvas (bitmap fallback if the fonts are missing)
   assets.js input.js util.js decor.js viewer.js     decor.js also draws the bookcases and barred windows in code, and animates the torches
 assets/             sprites + environment art (+ sprites.json frame manifest, original licenses), fonts/ (the two gothic TTFs)
                     (assets/sprites/source/ holds the art packs as downloaded - keep that folder out of anything you publish, see CREDITS.md)
@@ -167,7 +208,7 @@ music/              your tracks + TRACKLIST.txt
 
 ```
 node tools/test-levels.mjs 300 1       # build 300 castles; reports retries, fallbacks, doorway problems
-node tools/test-fallback.mjs           # mixes hand-built rooms into generated castles; links must stay sound
+node tools/test-world.mjs 60 1         # plays every castle as a graph: each can be finished, and each lock really needs its key
 node tools/dbg-room.mjs h2 7 0         # ASCII picture of room h2 for seed 7 (attempt 0)
 ```
 
@@ -176,7 +217,7 @@ To change what can be generated edit the `SPEC` table (names, sizes, secrets, en
 
 ### Editing levels
 
-The classic castle (seed 0) is authored in `src/rooms.js` with a tiny builder - coordinates are in 16-px tiles:
+Market Street (and the older hand-built rooms, kept as a reference) are authored in `src/rooms.js` with a tiny builder - coordinates are in 16-px tiles:
 
 ```js
 const b = new B('g1', 'Iron Gate', 1, 60, 14, { weather: 'rain', storm: true });

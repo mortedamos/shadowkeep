@@ -33,8 +33,8 @@ const JUMP_CY = [56, 46, 31, 24.5, 31.5];      // vertical centre of each hero_j
 const JATK_CY = [59, 49, 34, 27.5, 22.5, 29.5];
 
 export const SPELLS = {
-  ember: { name: 'EMBER', cost: 12, icon: 'ember', cd: 24 },
-  thunder: { name: 'THUNDER', cost: 28, icon: 'thunder', cd: 50 },
+  ember: { name: 'SULPHUR', cost: 12, icon: 'ember', cd: 24 },
+  thunder: { name: 'VITRIOL', cost: 28, icon: 'thunder', cd: 50 },
 };
 
 export class Player extends Entity {
@@ -72,7 +72,9 @@ export class Player extends Entity {
       g.fx.ring(this.x, this.y - 19, 40, ENCH.aegis.rgb, 18, 0.18); g.fx.burst(this.x, this.y - 19, 14, [[0.8, 0.92, 1], [0.3, 0.5, 1]], { speed: 2.4, s0: 12 }); g.popup(this.x, this.y - 48, 'BLOCKED', '#9cd0ff');
       return true;
     }
-    { const el = opts.el || stainSource(g, fromX); if (el) this.addStain(el, clamp(dmg / 14, 0.18, 0.5)); }      // fire singes, filth dirties, claws and fangs draw blood
+    { const el = opts.el || stainSource(g, fromX);
+      if (el === 'soot' && S.flags.got_mantle) { dmg = Math.max(1, Math.round(dmg * 0.5)); g.popup(this.x, this.y - 52, 'ASHEN', '#ffb070'); }          // the Ashen Mantle: fire hurts half as much (and leaves no soot)
+      else if (el) this.addStain(el, clamp(dmg / 14, 0.18, 0.5)); }      // fire singes, filth dirties, claws and fangs draw blood
     S.hp -= Math.max(1, Math.round(dmg)); this.hurtT = opts.stun || 18; this.invT = opts.inv || 80; this.atk = 0; this.atkBuf = 0; this.dashT = 0; this.castT = 0;
     const d = this.x < fromX ? -1 : 1; this.vx = d * (opts.kb === undefined ? 2.0 : opts.kb); this.vy = -2.6; this.onGround = false; this.dir = -d;
     g.fx.hurtFlash(0.9); g.fx.sparks(this.x, this.y - 18, 10, COLORS.red, 3); g.shake(3, 10); g.hitstop = 5; A.sfx('hurt');
@@ -162,10 +164,11 @@ export class Player extends Entity {
     if (!this.atk && this.comboT > 0) this.comboT--;
     const locked = this.hurtT > 0 || g.cutscene || g.playerFrozen;
     const was = this.onGround;
+    if (this.ride) { if (room.gears && this.ride.active) { this.x += this.ride.dx; this.y += this.ride.dy; } else this.ride = null; }          // (standing on a turning gear's tooth: carried with it)
     let dx = locked ? 0 : I.horiz;
 
     // ---- duck: hold Down on the ground.  You can't start a duck mid-swing, and you only stand back up when there is headroom.
-    const wantCrouch = !locked && I.held.down && this.onGround && !this.dashT && !this.castT && !(this.atk && !this.crouch);
+    const kneel = !!(g.cutscene && g.cutscene.scene && g.cutscene.scene.kneel), wantCrouch = (kneel && this.onGround) || (!locked && I.held.down && this.onGround && !this.dashT && !this.castT && !(this.atk && !this.crouch));          // (kneel: the opening scene - he kneels at her grave)
     if (wantCrouch && !this.crouch) { this.crouch = true; this.h = CROUCH_H; this.crouchT = 0; }
     else if (!wantCrouch && this.crouch && !this.atk && this.canStand(room)) { this.crouch = false; this.h = PH; }
     if (this.crouch) this.crouchT++;
@@ -195,7 +198,7 @@ export class Player extends Entity {
       // ---- dash
       if (I.pressed.dash && S.abilities.dash && this.dashCd === 0 && !this.dashT && (this.onGround || this.canAirDash) && (!this.crouch || this.canStand(room))) {
         if (this.crouch) { this.crouch = false; this.h = PH; }
-        this.dashT = DASH_T; this.dashCd = 34; this.atk = 0; this.atkBuf = 0; this.castT = 0; if (dx) this.dir = dx; if (!this.onGround) this.canAirDash = false; this.invT = Math.max(this.invT, DASH_T + 3);
+        this.dashT = DASH_T; this.dashCd = S.flags.got_spring ? 15 : 34; this.atk = 0; this.atkBuf = 0; this.castT = 0; if (dx) this.dir = dx; if (!this.onGround) this.canAirDash = false; this.invT = Math.max(this.invT, DASH_T + 3); this.dashAtkId = ++g.attackCounter; this.dashHitDone = false;
         A.sfx('dash'); g.fx.burst(this.x, this.y - 18, 8, COLORS.purple, { speed: 1.5, s0: 10, s1: 2 });
       }
       // ---- jump
@@ -232,18 +235,23 @@ export class Player extends Entity {
     if (this.attackActive()) g.swordHit(this);
 
     // ---- horizontal motion
+    const RUNV = RUN * (S.flags.got_shoes ? 1.1 : 1);                       // the Magic Shoes: 10% faster
     const groundLock = (this.atk && this.onGround) || this.castT || this.crouch;
     if (this.crouch && dx && !this.atk) this.dir = dx;
-    if (this.dashT > 0) { this.dashT--; this.vx = this.dir * DASH_V; this.vy = 0; if (this.dashT === 0) this.vx = this.dir * 2.2; if (this.t % 2 === 0) g.fx.burst(this.x - this.dir * 6, this.y - 18, 1, COLORS.purple, { speed: 0.3, s0: 12, s1: 3, l0: 14, l1: 22 }); this.trail.push({ x: this.x, y: this.y, f: this.frameInfo(), dir: this.dir, life: 14 }); }
+    if (this.dashT > 0) { if (S.flags.got_tide) g.dashHit(this); this.dashT--; this.vx = this.dir * DASH_V; this.vy = 0; if (this.dashT === 0) this.vx = this.dir * 2.2; if (this.t % 2 === 0) g.fx.burst(this.x - this.dir * 6, this.y - 18, 1, COLORS.purple, { speed: 0.3, s0: 12, s1: 3, l0: 14, l1: 22 }); this.trail.push({ x: this.x, y: this.y, f: this.frameInfo(), dir: this.dir, life: 14 }); }
     else if (groundLock) { this.vx = approach(this.vx, 0, FRIC * 1.4); }
-    else if (dx) { this.vx = approach(this.vx, dx * RUN, this.onGround ? ACC : AIRACC); if (!this.atk || !this.onGround) this.dir = dx; }
+    else if (dx) { this.vx = approach(this.vx, dx * RUNV, this.onGround ? ACC : AIRACC); if (!this.atk || !this.onGround) this.dir = dx; }
     else this.vx = approach(this.vx, 0, this.onGround ? FRIC : 0.05);
-    if (this.dashT === 0 && Math.abs(this.vx) > RUN && !locked && !(this.atk && this.onGround)) this.vx = approach(this.vx, Math.sign(this.vx) * RUN, 0.06);
+    if (this.dashT === 0 && Math.abs(this.vx) > RUNV && !locked && !(this.atk && this.onGround)) this.vx = approach(this.vx, Math.sign(this.vx) * RUNV, 0.06);
 
     // ---- vertical motion
     if (!this.dashT) this.vy = Math.min(this.vy + GRAV, MAXFALL);
     this.fallSpeed = this.vy;
-    moveX(this, room); moveY(this, room);
+    // flowing water carries the hero: fully when wading, a little when in the air above it
+    let drift = 0; if (room.currents) for (const c of room.currents) if (this.x >= c.x0 && this.x <= c.x1 && this.y <= c.y + 4 && this.y >= c.y - 40) { drift = c.vx * (this.onGround ? 1 : 0.4); break; }
+    if (drift) { const v0 = this.vx; this.vx = v0 + drift; moveX(this, room); if (this.vx !== 0) this.vx = v0; } else moveX(this, room);
+    moveY(this, room);
+    if (room.gears) room.gears.land(this);
 
     // landing / coyote
     if (this.onGround) {
@@ -257,7 +265,7 @@ export class Player extends Entity {
     // footsteps / run animation
     if (this.onGround && Math.abs(this.vx) > 0.3) { this.runT += Math.abs(this.vx) * 0.13; if (Math.floor(this.runT) % 6 === 0 && Math.floor(this.runT) !== this._lastStep) { this._lastStep = Math.floor(this.runT); A.sfx('step'); } } else this.runT = 0;
     this.idleT = (Math.abs(this.vx) < 0.1 && this.onGround) ? this.idleT + 1 : 0;
-    this.updateEnchant(); this.updateStains(); this.updateHeal(); this.swishWind(); this.stepCloak(); this.stepHair();
+    this.updateEnchant(); this.updateStains(); this.updateHeal(); this.swishWind(); this.stepCloak(); this.stepHair(); this.stepLantern();
     if (touchesSpikes(this, room)) this.hurtSpikes();
   }
   updateHeal() {            // bandage: life flows back over ~1.5s
@@ -265,8 +273,20 @@ export class Player extends Entity {
     if (this.healT % 6 === 0) this.g.fx.souls(this.x + rand(-5, 5), this.y - 14, 1, COLORS.green);
     if (this.healT === 0) { this.g.popup(this.x, this.y - 42, 'HEALED', '#9fe8a8'); }
   }
+  // The Marshlight Lantern: a little wisp that follows the hero (a lazy bob a step behind and above), sheds light, thins the fog around it (fx.lantern: the fog shader's spare slot), and draws loot (see Pickup)
+  stepLantern() {
+    const g = this.g, fx = g.fx;
+    if (!this.S.flags.got_lantern) { fx.lantern = null; this.lan = null; return; }
+    const tx = this.x - this.dir * 15 + Math.sin(this.t * 0.045) * 7, ty = this.y - 48 + Math.sin(this.t * 0.07) * 4;
+    if (!this.lan || Math.hypot(this.lan.x - tx, this.lan.y - ty) > 150) this.lan = { x: tx, y: ty };
+    const L = this.lan; L.x += (tx - L.x) * 0.07; L.y += (ty - L.y) * 0.09; fx.lantern = { x: L.x, y: L.y };
+    fx.glow(L.x, L.y, 30, [0.2, 0.9, 0.72], 0.34); fx.glow(L.x, L.y, 12, [0.6, 1, 0.9], 0.7); fx.glow(L.x, L.y, 4.5, [1, 1, 1], 1); fx.light(L.x, L.y, 118, 0.9, [0.35, 1, 0.8]);
+    if (this.t % 4 === 0) fx.emit({ x: L.x + rand(-2, 2), y: L.y + 2, vx: rand(-0.1, 0.1), vy: rand(0.05, 0.3), life: rand(24, 44), s0: 5, s1: 1, c0: [0.5, 1, 0.85], c1: [0.2, 0.6, 0.7], a0: 0.8, a1: 0, kind: 6 });
+  }
+
   // ------------------------------------------------------------------ cloak stains (see stain.js)
   addStain(el, amt) {
+    if (el === 'soot' && this.S.flags.got_mantle) return;
     const g = this.g, st = this.stain, x = this.x - this.dir * 4, y = this.y - 24; st[el] = Math.min(1, st[el] + amt);
     if (el === 'soot') { g.fx.smoke(x, y, 2, { s0: 5, s1: 13, c0: [0.3, 0.27, 0.27], c1: [0.1, 0.09, 0.09], a: 0.5 }); g.fx.sparks(x, y, 5, [[1, 0.6, 0.2], [1, 0.3, 0.1]], 1.6, { gy: 0.1 }); }
     else if (el === 'mud') g.fx.burst(x, y, 6, [[0.43, 0.3, 0.17], [0.25, 0.17, 0.1]], { speed: 1.4, s0: 6, s1: 2 });

@@ -1,4 +1,6 @@
 // World objects: pickups, breakable candles, save altar, lore tablets, chests, upgrades, ability relics.
+import { KEYS } from './itemdata.js';
+import { STORY } from './story.js';
 import { Entity, moveX, moveY } from './entity.js';
 import { drawSheet, IMG } from './assets.js';
 import { ICON } from './procart.js';
@@ -9,18 +11,27 @@ import { ENCH, ENCH_TYPES, ENCH_BIAS, TUNE } from './enchant.js';
 import { ITEMS, addItem, randomItemId } from './itemdata.js';
 
 export const ABILITIES = {
-  djump: { name: 'RAVEN FEATHER', desc: 'PRESS JUMP AGAIN IN MIDAIR TO DOUBLE JUMP.', icon: 'feather', color: [0.6, 0.85, 1] },
-  dash: { name: 'SHADOW STEP', desc: 'PRESS SHIFT TO DASH. YOU CANNOT BE HURT WHILE STEPPING THROUGH SHADOW.', icon: 'boot', color: [0.75, 0.5, 1] },
-  ember: { name: 'EMBER RUNE', desc: 'PRESS C TO HURL FIRE. IT BURNS WOODEN BARRICADES. Q / V CHANGE WHAT C USES.', icon: 'ember', color: [1, 0.55, 0.2] },
-  thunder: { name: 'THUNDER RUNE', desc: 'PRESS C TO CALL LIGHTNING DOWN ON YOUR FOES AND SHATTER CRYSTAL.', icon: 'thunder', color: [0.9, 0.95, 1] },
-  dawn: { name: 'THE DAWN', desc: '', icon: 'orb', color: [1, 0.9, 0.5] },
+  djump: { name: 'AETHER FEATHER', desc: 'PRESS JUMP AGAIN IN MIDAIR TO DOUBLE JUMP.', icon: 'feather', color: [0.6, 0.85, 1] },
+  dash: { name: 'QUICKSILVER STEP', desc: 'PRESS SHIFT TO DASH. YOU CANNOT BE HURT WHILE YOU MOVE LIKE QUICKSILVER.', icon: 'boot', color: [0.75, 0.5, 1] },
+  ember: { name: 'SULPHUR RUNE', desc: 'PRESS C TO HURL FIRE. IT BURNS WOODEN BARRICADES. Q / V CHANGE WHAT C USES.', icon: 'ember', color: [1, 0.55, 0.2] },
+  thunder: { name: 'VITRIOL RUNE', desc: 'PRESS C TO CALL LIGHTNING DOWN ON YOUR FOES. THE CORROSIVE BOLT SHATTERS CRYSTAL.', icon: 'thunder', color: [0.9, 0.95, 1] },
+  dawn: { name: 'AZOTH', desc: 'THE LIGHT THAT WAKES THE SUN.', icon: 'orb', color: [1, 0.9, 0.5] },
 };
 export const UPGRADES = {
-  hpup: { name: 'HEART CONTAINER', desc: 'MAX HP UP', icon: 'hpup', color: [1, 0.3, 0.35] },
-  mpup: { name: 'MANA CRYSTAL', desc: 'MAX MP UP', icon: 'mpup', color: [0.4, 0.7, 1] },
-  atkup: { name: 'WHETSTONE OF WOE', desc: 'SWORD POWER UP', icon: 'atkup', color: [1, 0.85, 0.4] },
+  hpup: { name: 'ELIXIR VITAE', desc: 'MAX HP UP', icon: 'hpup', color: [1, 0.3, 0.35] },
+  mpup: { name: 'QUINTESSENCE', desc: 'MAX MP UP', icon: 'mpup', color: [0.4, 0.7, 1] },
+  atkup: { name: 'SAL MARTIS', desc: 'SWORD POWER UP', icon: 'atkup', color: [1, 0.85, 0.4] },
+  mantle: { name: 'SALAMANDER MANTLE', desc: 'FIRE HURTS HALF AS MUCH, AND SOOT NEVER STAINS YOUR CLOAK', icon: 'mantle', color: [1, 0.55, 0.25] },
+  lantern: { name: 'IGNIS FATUUS LANTERN', desc: 'A WISP GUIDES YOU: IT LIGHTS THE DARK, CLEARS THE FOG AND DRAWS LOOT TO YOU', icon: 'lantern', color: [0.4, 1, 0.8] },
+  shard: { name: 'SPECULUM SHARD', desc: 'YOUR SWORD TURNS ARROWS, BONES AND ORBS BACK AT THEIR THROWERS', icon: 'shard', color: [0.8, 0.88, 1] },
+  spring: { name: 'PERPETUUM', desc: 'A SPRING THAT NEVER RUNS DOWN: YOUR DASH RECHARGES TWICE AS FAST', icon: 'spring', color: [1, 0.8, 0.4] },
+  tide: { name: 'AQUA REGIA', desc: 'A DASH CUTS WHATEVER IT PASSES THROUGH', icon: 'e_ice', color: [0.4, 0.8, 1] },
+  shoes: { name: 'SHOES OF HERMES', desc: 'MOVE 10% FASTER', icon: 'shoes', color: [1, 0.45, 0.95] },          // (its id is the flag 'got_shoes': the Player reads it)
 };
 export const iconFrame = name => ICON.indexOf(name);
+// a key picked up from a chest, a ledge or the top of a tower (its id, with or without the chest's '_u', names it - see KEYS)
+const keyBase = id => String(id).replace(/_u$/, '');
+function keyUpgrade(id) { const K = KEYS.find(k => k.id === keyBase(id)); return { name: K ? K.name : 'IRON KEY', desc: 'OPENS A LOCKED DOOR', icon: 'key', color: K ? K.rgb.map(v => v / 255) : [1, 0.85, 0.4] }; }
 
 // ------------------------------------------------------------------------------------------------ pickups
 export class Pickup extends Entity {
@@ -32,8 +43,9 @@ export class Pickup extends Entity {
   update(g) {
     this.t++; const p = g.player, room = g.room;
     const pc = { x: p.x, y: p.y - 16 }, d = dist(this.x, this.y - 5, pc.x, pc.y);
-    if (this.t > 24 && d < 44 && !p.dead) this.magnet = true;
-    if (this.magnet) { const a = Math.atan2(pc.y - (this.y - 5), pc.x - this.x), sp = Math.min(4.5, 2 + this.t * 0.01 + (44 - Math.min(d, 44)) * 0.05); this.vx = Math.cos(a) * sp; this.vy = Math.sin(a) * sp; this.x += this.vx; this.y += this.vy; }
+    const reach = g.save && g.save.flags.got_lantern ? 96 : 44;          // (the Marshlight Lantern's wisp draws loot from much further)
+    if (this.t > 24 && d < reach && !p.dead) this.magnet = true;
+    if (this.magnet) { const a = Math.atan2(pc.y - (this.y - 5), pc.x - this.x), sp = Math.min(4.5, 2 + this.t * 0.01 + (reach - Math.min(d, reach)) * 0.05); this.vx = Math.cos(a) * sp; this.vy = Math.sin(a) * sp; this.x += this.vx; this.y += this.vy; }
     else { this.vy = Math.min(this.vy + 0.14, 4); this.vx *= 0.97; moveX(this, room); const vy0 = this.vy; moveY(this, room); if (this.onGround && Math.abs(vy0) > 1) { this.vy = -vy0 * 0.35; this.onGround = false; } }
     if (--this.life <= 0) this.dead = true;
     if (d < 11 && !p.dead) this.collect(g, p);
@@ -135,6 +147,14 @@ export class Statue {
 }
 
 // ------------------------------------------------------------------------------------------------ barrel / crate (Gothicvania Town art): one hit, one small treat
+// a faint glowing aura round anything breakable (statues glow more - they hold treasure): a soft pulse of light behind it and a thin glowing rim, in the colour of what is inside
+function breakAura(ctx, im, X, Y, w, h, rgb, t, seed) {
+  const pulse = 0.5 + 0.5 * Math.sin(t * 0.05 + seed), R = Math.max(w, h) * (0.85 + 0.08 * pulse), cx = X + w / 2, cy = Y + h * 0.55, k = rgb.join(','), gr = ctx.createRadialGradient(cx, cy, 1, cx, cy, R);
+  gr.addColorStop(0, 'rgba(' + k + ',' + (0.17 + 0.05 * pulse).toFixed(3) + ')'); gr.addColorStop(0.6, 'rgba(' + k + ',0.06)'); gr.addColorStop(1, 'rgba(' + k + ',0)');
+  ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = gr; ctx.fillRect(cx - R, cy - R, R * 2, R * 2);
+  if (im) { ctx.globalAlpha = 0.16 + 0.08 * pulse; ctx.drawImage(haloOf(im, rgb), Math.round(X - w * 0.09), Math.round(Y - h * 0.09), Math.round(w * 1.18), Math.round(h * 1.18)); }
+  ctx.restore();
+}
 export class Barrel {
   constructor(x, y, o = {}) { this.x = x; this.y = y; this.drop = o.drop; this.dead = false; this.t = 0; this.crate = Math.abs(Math.floor(x / 16)) % 3 === 0; this.broken = 0; }
   get box() { return this.crate ? { x: this.x - 11, y: this.y - 20, w: 22, h: 20 } : { x: this.x - 9, y: this.y - 24, w: 18, h: 24 }; }
@@ -145,7 +165,7 @@ export class Barrel {
   update() { this.t++; if (this.broken && ++this.broken > 80) this.dead = true; }
   draw(ctx, cx, cy) {
     const im = IMG[this.crate ? 'town_crate' : 'town_barrel'], sc = this.crate ? 0.6 : 0.82, w = Math.round(im.width * sc), h = Math.round(im.height * sc), X = Math.round(this.x - cx - w / 2), Y = Math.round(this.y - cy - h);
-    if (!this.broken) { ctx.drawImage(im, X, Y, w, h); return; }
+    if (!this.broken) { const d = this.drop || ''; breakAura(ctx, im, X, Y, w, h, d === 'heart' ? [255, 130, 150] : d === 'mana' ? [130, 170, 255] : [255, 214, 120], this.t, this.x * 0.37); ctx.drawImage(im, X, Y, w, h); return; }
     ctx.save(); ctx.globalAlpha = this.broken > 50 ? Math.max(0, 1 - (this.broken - 50) / 30) : 1;                   // what is left: the bottom third of it, splintered
     const keep = Math.round(im.height * 0.34), kh = Math.round(h * 0.34); ctx.drawImage(im, 0, im.height - keep, im.width, keep, X, Y + h - kh, w, kh); ctx.restore();
   }
@@ -205,10 +225,10 @@ export class Waystone {
 
 // ------------------------------------------------------------------------------------------------ lore tablet
 export class Tablet {
-  constructor(x, y, o) { this.x = x; this.y = y; this.text = o.text; this.id = o.id; this.t = 0; this.dead = false; }
+  constructor(x, y, o) { this.x = x; this.y = y; this.text = STORY.tablets[o.id] || o.text; this.id = o.id; this.sign = /^sign_/.test(o.id || ''); this.t = 0; this.dead = false; }          // (a signpost is a sign; every gravestone and tablet is her: see story.js)
   get box() { return { x: this.x - 12, y: this.y - 26, w: 24, h: 26 }; }
   update(g) { this.t++; if (this.t % 10 === 0 && !g.save.flags['read_' + this.id]) g.fx.emit({ x: this.x + rand(-5, 5), y: this.y - 18, vx: 0, vy: -rand(0.2, 0.5), life: 40, s0: 5, s1: 1, c0: [0.7, 0.85, 1], a0: 0.8, a1: 0, kind: 6 }); }
-  interact(g) { g.save.flags['read_' + this.id] = true; g.showDialog(this.text); A.sfx('select'); return true; }
+  interact(g) { g.save.flags['read_' + this.id] = true; if (!this.sign) g.ghost.reveal(280); g.showDialog(this.text, this.sign ? {} : { name: STORY.speaker, font: 'hand' });          A.sfx('select'); return true; }          // (her words are in her own handwriting)
   draw(ctx, cx, cy) { drawSheet(ctx, 'tablet', 0, this.x - cx, this.y - cy); }
 }
 
@@ -226,7 +246,7 @@ export class Chest {
 
 // ------------------------------------------------------------------------------------------------ permanent upgrade (floating item)
 export class Upgrade {
-  constructor(x, y, o) { this.x = x; this.y = y; this.kind = o.kind; this.id = o.id; this.t = 0; this.dead = false; this.U = UPGRADES[o.kind]; }
+  constructor(x, y, o) { this.x = x; this.y = y; this.kind = o.kind; this.id = o.id; this.t = 0; this.dead = false; this.U = o.kind === 'key' ? keyUpgrade(o.id) : UPGRADES[o.kind]; }
   get box() { return { x: this.x - 8, y: this.y - 16, w: 16, h: 16 }; }
   update(g) {
     this.t++; const bob = Math.sin(this.t * 0.07) * 2, p = g.player; this.by = bob;
@@ -236,11 +256,14 @@ export class Upgrade {
   }
   collect(g) {
     this.dead = true; const S = g.save; g.save.flags[this.id] = true;
-    if (this.kind === 'hpup') { S.maxHp += 20; S.hp = S.maxHp; } else if (this.kind === 'mpup') { S.maxMp += 10; S.mp = S.maxMp; } else if (this.kind === 'atkup') S.atk += 2;
+    if (this.kind === 'hpup') { S.maxHp += 20; S.hp = S.maxHp; } else if (this.kind === 'mpup') { S.maxMp += 10; S.mp = S.maxMp; } else if (this.kind === 'atkup') S.atk += 2; else if (this.kind === 'tide') S.flags.got_tide = true; else if (this.kind === 'mantle') S.flags.got_mantle = true; else if (this.kind === 'lantern') S.flags.got_lantern = true; else if (this.kind === 'shard') S.flags.got_shard = true; else if (this.kind === 'spring') S.flags.got_spring = true; else if (this.kind === 'key') S.flags['has_' + keyBase(this.id)] = true;
     A.sfx('item'); A.sting('sting_item'); g.fx.ring(this.x, this.y - 8, 44, this.U.color, 30); g.fx.flash(this.U.color, 0.3); g.fx.sparks(this.x, this.y - 8, 18, [[1, 1, 0.8], this.U.color], 3);
-    g.banner(this.U.name, this.U.desc);
+    g.banner(this.U.name, this.kind === 'tide' && !S.abilities.dash ? 'ITS POWER WAKES ONCE YOU CAN DASH' : this.U.desc);
   }
-  draw(ctx, cx, cy) { drawSheet(ctx, 'icons', iconFrame(this.U.icon), this.x - cx, this.y - 8 - cy + (this.by || 0), { ay: 0.5, scale: 1.4 }); }
+  draw(ctx, cx, cy) {
+    if (this.kind === 'shoes') drawSheet(ctx, 'pedestal', 0, this.x - cx, this.y + 12 - cy);          // (the shoes stand on a little pedestal of their own)
+    drawSheet(ctx, 'icons', iconFrame(this.U.icon), this.x - cx, this.y - 8 - cy + (this.by || 0), { ay: 0.5, scale: 1.4 });
+  }
 }
 
 // ------------------------------------------------------------------------------------------------ ability relic dropped by bosses

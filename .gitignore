@@ -29,3 +29,6 @@ desktop.ini
 
 # lets the generator tests run under Node (the browser ignores it)
 src/package.json
+
+# screenshots made for sharing (not part of the game)
+snapshots/

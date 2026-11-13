@@ -45,8 +45,11 @@ const ATTACKS = {
   axe: { label: 'AXE', rgb: [255, 190, 120], icon: 'axe' },
   torch: { label: 'TORCH', rgb: [255, 140, 60], icon: 'torchi' },
   marrow: { label: 'MAGIC ARROW', rgb: [200, 190, 255], icon: 'marrow' },
-  holy: { label: 'HOLY WATER', rgb: [190, 225, 255], icon: 'holy' },
-  bandage: { label: 'BANDAGE', rgb: [180, 255, 190], icon: 'bandage' },
+  holy: { label: 'AQUA VITAE', rgb: [190, 225, 255], icon: 'holy' },
+  tideorbs: { label: 'WATER ORBS', rgb: [120, 200, 255], icon: 'orb' },
+  geysers: { label: 'GEYSERS', rgb: [140, 205, 255], glyph: 'bars' },
+  submerge: { label: 'SUBMERGE', rgb: [150, 210, 255], glyph: 'diag' },
+  bandage: { label: 'PANACEA', rgb: [180, 255, 190], icon: 'bandage' },
 };
 const rgba = (c, a) => `rgba(${c[0]},${c[1]},${c[2]},${a})`;
 
@@ -673,7 +676,7 @@ const TOSS = new Set(['dagger', 'axe', 'torch', 'marrow', 'holy']), LOB = { axe:
 const P1 = ['slash', 'slash', 'dash', 'dagger', 'axe', 'torch', 'marrow', 'holy'], P2 = ['slash', 'slash', 'dash', 'dash', 'dagger', 'axe', 'torch', 'marrow', 'holy', 'leap'];
 export class BossMirror extends Boss {
   constructor(g, x, y, o) {
-    super(g, x, y, HPW, HPH, o); this.hp = this.maxHp = 230; this.dmg = 12; this.xp = 150; this.bossName = 'THE REFLECTION'; this.sub = 'WHAT THE GLASS KEPT'; this.dir = -1; this.deathFx = [[0.85, 0.85, 1], [0.3, 0.2, 0.6]]; this.ice = { w: 30, h: 56 };
+    super(g, x, y, HPW, HPH, o); this.hp = this.maxHp = 400; this.dmg = 17; this.xp = 220; this.bossName = 'THE REFLECTION'; this.sub = 'WHAT THE GLASS KEPT'; this.dir = -1; this.deathFx = [[0.85, 0.85, 1], [0.3, 0.2, 0.6]]; this.ice = { w: 30, h: 56 };
     this.mv = g.mirrorView; this.axis = this.mv ? this.mv.m.axis : x; this.triggerDist = 26; this.name = 'twin';
     this.reflecting = true; this.evil = 0; this.hold = null; this.live = false; this.hitDone = false; this.blow = 0; this.bt = 0; this.tx = x; this.trail = []; this.heals = 0; this.thrown = 0; this.lastToss = -99; this.hi = false;
   }
@@ -769,7 +772,7 @@ export class BossMirror extends Boss {
         const T0 = this.tele('bandage'); this.vx = approach(this.vx, 0, 0.3);
         if (this.st < T0) this.tell('bandage', this.st / T0);
         else if (this.st < T0 + 100) {
-          if (this.st === T0) { A.sfx('heal'); this.heals++; g.popup(this.x, this.y - 46, 'BANDAGE', '#f2efe6'); g.fx.ring(this.x, this.y - 18, 20, [0.95, 0.95, 0.9], 18, 0.2); }
+          if (this.st === T0) { A.sfx('heal'); this.heals++; g.popup(this.x, this.y - 46, 'PANACEA', '#f2efe6'); g.fx.ring(this.x, this.y - 18, 20, [0.95, 0.95, 0.9], 18, 0.2); }
           this.hp = Math.min(this.maxHp, this.hp + this.maxHp * 0.15 / 100);
           if (this.t % 5 === 0) g.fx.emit({ x: this.x + rand(-7, 7), y: this.y - rand(2, 26), vx: rand(-0.1, 0.1), vy: -rand(0.3, 0.8), life: 30, s0: 5, s1: 1, c0: [0.75, 1, 0.8], c1: [0.3, 0.9, 0.5], a0: 0.9, a1: 0, kind: 6 });
         } else { this.state = 'idle'; this.st = -16; }
@@ -829,4 +832,67 @@ export class BossMirror extends Boss {
   }
 }
 
-export const BOSS_TYPES = { boss_vampire: BossVampire, boss_beast: BossBeast, boss_nightmare: BossNightmare, boss_angel: BossAngel, boss_colossus: BossColossus, boss_shadow: BossShadow, boss_cinder: BossCinder, boss_bramble: BossBramble, boss_mirror: BossMirror };
+// ============================================================================================== 9. THE DROWNED WARDEN (the cistern)
+// A great blue many-armed thing (sprites: the unused 'minion' of the Arsenal pack) that keeps the flooded gate, and hangs in the air over the water.
+// TIDAL SLAM: it comes down on the floor and two waves race away along it (jump them).  WATER ORBS: a fan of slow blue orbs.  GEYSERS: columns of water burst up where you stand (the marks on the
+// floor warn you).  SUBMERGE: it sinks out of sight - nothing can touch it - and bursts up again somewhere else, and where it rises is a geyser too.  In the second half it is quicker and does more at once.
+export class BossDrowned extends Boss {
+  constructor(g, x, y, o) {
+    super(g, x, y + 39, 40, 78, o); this.hp = this.maxHp = 320; this.dmg = 13; this.xp = 170; this.bossName = 'THE DROWNED WARDEN'; this.sub = 'WHO KEEPS THE FLOODED GATE'; this.scale = 1.75; this.gravity = false; this.dir = -1;
+    this.deathFx = COLORS.blue; this.ice = { w: 80, h: 112 }; this.tx = x; this.under = false;
+  }
+  get spd() { return this.phase === 2 ? 1.25 : 1; }
+  intro(g) { if (this.st === 8) { A.sfx('roar'); g.shake(4, 40); g.fx.flash([0.4, 0.8, 1], 0.4); g.fx.ring(this.x, this.cy, 130, [0.4, 0.8, 1], 40, 0.1); } g.fx.glow(this.x, this.cy, 70, [0.4, 0.8, 1], 0.35); this.faceP(); }
+  physics() { this.x += this.vx; this.y += this.vy; const r = this.g.room; this.x = clamp(this.x, 40, r.pw - 40); this.y = clamp(this.y, 80, r.ph - 20); if (this.flashT > 0) this.flashT--; }
+  moveTo(tx, ty, k = 0.04, max = 2.2) { this.vx = clamp((tx - this.x) * k, -max, max); this.vy = clamp((ty - this.cy) * k, -max, max); }
+  groundY() { return this.g.room.ph - 32; }
+  ai(g) {
+    const p = g.player, spd = this.spd, gy = this.groundY();
+    if (!this.under) { g.fx.glow(this.x, this.cy, 50 + Math.sin(this.t * 0.09) * 6, [0.4, 0.8, 1], 0.2); g.fx.light(this.x, this.cy, 100, 0.7, [0.4, 0.8, 1]); }
+    if (this.t % 8 === 0 && !this.under) g.fx.emit({ x: this.x + rand(-26, 26), y: this.cy + rand(10, 40), vx: rand(-0.1, 0.1), vy: rand(0.4, 1.1), gy: 0.04, life: 30, s0: 3, s1: 1, c0: [0.6, 0.85, 1], c1: [0.3, 0.5, 0.9], a0: 0.85, a1: 0, kind: 1 });      // drips
+    switch (this.state) {
+      case 'idle':
+        this.alpha = 1; this.under = false; this.faceP(); this.moveTo(clamp(p.x + Math.sin(this.t * 0.02) * 90, 70, g.room.pw - 70), 92 + Math.sin(this.t * 0.05) * 12, 0.03);
+        this.planNext(this.phase === 2 ? ['slam', 'tideorbs', 'geysers', 'submerge', 'slam'] : ['slam', 'tideorbs', 'geysers', 'submerge'], Math.round(92 / spd)); break;
+      case 'slam': {
+        const T0 = Math.round(34 / spd);
+        if (this.st < T0) { this.moveTo(this.x, 76, 0.06); this.faceP(); this.tell('slam', this.st / T0, [{ type: 'ring', x: this.x, y: gy, r: 46 }]); this.vx *= 0.5; }
+        else if (this.cy < gy - 44 && this.st < T0 + 40) { this.vx = 0; this.vy = 7.5; }
+        else {
+          if (!this.hit0) { this.hit0 = true; this.vy = 0; A.sfx('boom'); g.shake(6, 20); g.fx.ring(this.x, gy - 4, 90, [0.4, 0.8, 1], 24, 0.15); g.fx.burst(this.x, gy - 6, 18, [[0.7, 0.9, 1], [0.3, 0.55, 0.9]], { speed: 3, s0: 14, up: 1 });
+            for (const sd of [-1, 1]) g.addProjectile(new Shockwave(this.x + sd * 30, gy, sd, { dmg: 10, speed: 2.1, life: 80, big: true, fire: 'blue' })); if (this.phase === 2) g.addProjectile(new Column(clamp(p.x, 40, g.room.pw - 40), gy, 'steam', { warn: 40, active: 30, dmg: 11, w: 24, h: 100 })); }
+          this.moveTo(this.x, 92, 0.05); if (this.st > T0 + 70) { this.hit0 = false; this.state = 'idle'; this.st = -14; }
+        }
+        break; }
+      case 'tideorbs': {
+        this.faceP(); this.moveTo(this.x, 92, 0.05); const T0 = this.phase === 2 ? [40, 70] : [40];
+        if (this.st < 40) this.tell('tideorbs', this.st / 40, [{ type: 'line', x0: this.x, y0: this.cy, x1: p.x, y1: p.y - 20 }]);
+        if (T0.includes(this.st)) { A.sfx('cast'); const base = Math.atan2(p.y - 24 - this.cy, p.x - this.x), n = this.phase === 2 ? 5 : 4; for (let i = 0; i < n; i++) { const a = base + (i - (n - 1) / 2) * 0.3; g.addProjectile(new Projectile(this.x, this.cy, Math.cos(a) * 1.6, Math.sin(a) * 1.6, 'tide', { dmg: 9, life: 280 })); } g.fx.ring(this.x, this.cy, 36, [0.4, 0.8, 1], 16); }
+        if (this.st > T0[T0.length - 1] + 40) { this.state = 'idle'; this.st = -20; } break; }
+      case 'geysers': {
+        this.moveTo(this.x, 84, 0.05); this.faceP(); if (this.st < 24) this.tell('geysers', this.st / 24);
+        if (this.st === 24) { A.sfx('steam'); const n = this.phase === 2 ? 4 : 3; for (let i = 0; i < n; i++) { const x = clamp(i === 0 ? p.x : p.x + rand(-150, 150), 30, g.room.pw - 30); g.addProjectile(new Column(x, gy, 'steam', { warn: 54 + i * 12, active: 38, dmg: 12, w: 26, h: 110 })); } }
+        if (this.st > (this.phase === 2 ? 150 : 128)) { this.state = 'idle'; this.st = -16; } break; }
+      case 'submerge': {
+        const T0 = 36;
+        if (this.st === 1) { this.tx = clamp(p.x + (p.x > g.room.pw / 2 ? -1 : 1) * rand(130, 200), 60, g.room.pw - 60); }
+        if (this.st < T0) { this.moveTo(this.x, gy - 10, 0.06, 4); this.tell('submerge', this.st / T0, [{ type: 'ring', x: this.tx, y: gy, r: 34 }]); }
+        else if (this.st < T0 + 50) {
+          if (this.st === T0) { A.sfx('flap'); g.fx.burst(this.x, gy - 8, 22, [[0.7, 0.9, 1], [0.3, 0.55, 0.9]], { speed: 2.6, s0: 16, up: 1 }); this.invuln = true; this.harmless = true; this.under = true; }
+          this.vx = this.vy = 0; this.alpha = Math.max(0, 1 - (this.st - T0) / 8);
+          if (this.st === T0 + 49) { this.x = this.tx; this.y = gy + 20; g.addProjectile(new Column(this.tx, gy, 'steam', { warn: 1, active: 30, dmg: 14, w: 34, h: 120 })); A.sfx('boom'); g.shake(4, 14); g.fx.burst(this.x, gy - 6, 26, [[0.7, 0.9, 1], [0.3, 0.55, 0.9]], { speed: 3, s0: 16, up: 1.2 }); }
+        } else {
+          this.under = false; this.alpha = Math.min(1, this.alpha + 0.12); this.invuln = false; this.harmless = false; this.moveTo(this.x, 92, 0.05, 3.2); this.faceP();
+          if (this.st > T0 + 50 + 30) { this.state = 'idle'; this.st = -16; }
+        }
+        break; }
+    }
+  }
+  draw(ctx, cx, cy) {
+    if (this.alpha <= 0.02) return;
+    const f = Math.floor(this.t / 9) % 3, id = this.state === 'slam' || this.state === 'geysers' ? 'ars_minion_r1' : 'ars_minion_r0';
+    drawSheet(ctx, id, f, this.x - cx, this.cy - cy + Math.sin(this.t * 0.07) * 2 + 8, { flash: this.flashT > 0, ay: 0.55, scale: this.scale, dir: this.dir, alpha: this.alpha < 1 ? this.alpha : undefined });
+  }
+}
+
+export const BOSS_TYPES = { boss_drowned: BossDrowned, boss_vampire: BossVampire, boss_beast: BossBeast, boss_nightmare: BossNightmare, boss_angel: BossAngel, boss_colossus: BossColossus, boss_shadow: BossShadow, boss_cinder: BossCinder, boss_bramble: BossBramble, boss_mirror: BossMirror };
