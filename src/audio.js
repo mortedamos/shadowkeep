@@ -12,7 +12,7 @@ const SAMPLES = { record_scratch: 'assets/sfx/record_scratch.mp3' };
 
 export const Audio_ = {
   ctx: null, master: null, sfxGain: null, noiseBuf: null,
-  settings: { music: 0.7, sfx: 0.8, muted: false, hints: true, cloak: true, hair: true },     // hints = show boss attack icons + names
+  settings: { music: 0.7, sfx: 0.8, muted: false, hints: true, cloak: true },     // hints = show boss attack icons + names
   tracks: {},          // id -> { file, type }
   available: null,     // Map (lowercase name -> real name) of the files in music/, when they can be listed (a local server, or music/files.json)
   cur: null, outgoing: [], want: null, failed: new Set(), duck: 1, duckTarget: 1, indoor: 1, indoorTarget: 1, stingEl: null, lastSfx: {}, unlocked: false, blurred: false,
@@ -38,6 +38,12 @@ export const Audio_ = {
     for (const src of local ? ['__music', 'music/files.json'] : ['music/files.json']) {
       try { const r = await fetch(src, { cache: 'no-cache' }); if (!r.ok) continue; const names = await r.json(); if (Array.isArray(names)) { this.available = new Map(names.map(s => [s.toLowerCase(), s])); break; } } catch {}
     }
+    // Recorded sound effects: a file in assets/sfx/ named after a built-in sound (jump.mp3, slash.ogg, ...) REPLACES that sound; jump_2.mp3, jump_3.mp3 ... are variants, picked at random.  The list comes from the
+    // local server (__sfx) or from assets/sfx/files.json (tools/sfx-manifest.mjs, for a static host).  Sounds without a file keep their built-in synthesized version.  See assets/sfx/SFX-LIST.txt.
+    this.fxFiles = {};
+    for (const src of local ? ['__sfx', 'assets/sfx/files.json'] : ['assets/sfx/files.json']) {
+      try { const r = await fetch(src, { cache: 'no-cache' }); if (!r.ok) continue; const names = await r.json(); if (!Array.isArray(names)) continue; for (const n of names) { const m = /^([a-z0-9]+?)(?:_(\d+))?\.(mp3|ogg|wav|m4a|flac|opus)$/i.exec(n); if (m && this.S[m[1].toLowerCase()]) (this.fxFiles[m[1].toLowerCase()] ||= []).push('assets/sfx/' + n); } break; } catch {}
+    }
     for (const ev of ['pointerdown', 'pointerup', 'touchend', 'click', 'keydown']) addEventListener(ev, () => this.unlock());          // (phones only let a touch RELEASE start the sound)
   },
   save() { try { localStorage.setItem('shadowkeep.audio', JSON.stringify(this.settings)); } catch {} },
@@ -51,6 +57,7 @@ export const Audio_ = {
       const len = this.ctx.sampleRate * 2, b = this.ctx.createBuffer(1, len, this.ctx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; this.noiseBuf = b;
     }
     this.ctx.resume(); this.unlocked = true; this.applyVolumes();
+    this.loadFx();
     if (this.wantSamples) { const w = [...this.wantSamples]; this.wantSamples.clear(); for (const n of w) this.loadSample(n); }          // (samples asked for before the first touch/key)
     if (this.cur && this.cur.el.paused) this.cur.el.play().catch(() => {});
   },
@@ -107,6 +114,16 @@ export const Audio_ = {
   },
   // Inside a building (a house, a shed, a hut...) the background music drops by 60%; stepping back outside lifts it to where it was.  It glides rather than jumps (instant = true at once, e.g. on the title screen).
   setIndoor(on, instant = false) { this.indoorTarget = on ? INDOOR_VOL : 1; if (instant) this.indoor = this.indoorTarget; },
+  fxBuf: {},
+  loadFx() {          // fetch and decode the recorded replacements for the built-in sounds (once, after the first touch / key)
+    if (this.fxLoading || !this.ctx || !this.fxFiles) return; this.fxLoading = true;
+    for (const [name, urls] of Object.entries(this.fxFiles)) for (const u of urls) fetch(u).then(r => r.arrayBuffer()).then(b => new Promise((ok, no) => this.ctx.decodeAudioData(b, ok, no))).then(buf => { (this.fxBuf[name] ||= []).push(buf); }).catch(() => {});
+  },
+  playFx(name, o) {
+    const bufs = this.fxBuf[name]; if (!bufs || !bufs.length) return false;
+    const s = this.ctx.createBufferSource(), g = this.ctx.createGain(); s.buffer = bufs[Math.floor(Math.random() * bufs.length)]; s.playbackRate.value = 0.93 + Math.random() * 0.14; g.gain.value = Math.min(1.2, 0.9 * (o && o.power ? Math.max(0.5, o.power) : 1));
+    s.connect(g); g.connect(this.sfxGain); s.start(); return true;
+  },
   // recorded sound effects: preload() fetches and decodes them (call it when a room that needs one is entered); sample() plays one (quietly skipping it if it is not ready or the game is silent)
   samples: {},
   preload(...names) { for (const n of names) this.loadSample(n); },
@@ -158,6 +175,7 @@ export const Audio_ = {
   sfx(name, o = {}) {
     if (!this.ctx || this.ctx.state !== 'running' || this.silent || this.blurred) return;
     const now = performance.now(); const gap = { step: 90, hit: 30, coin: 30 }[name] ?? 24; if (now - (this.lastSfx[name] || 0) < gap) return; this.lastSfx[name] = now;
+    if (this.playFx(name, o)) return;          // (a recorded file stands in for the built-in sound)
     const f = this.S[name]; if (f) f.call(this, o);
   },
   S: {

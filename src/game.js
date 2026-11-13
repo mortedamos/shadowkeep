@@ -6,7 +6,7 @@ import { Touch } from './touch.js';
 import { loadFonts, drawText, textWidth } from './font.js';
 import { Audio_ as A } from './audio.js';
 import { ZONES } from './rooms.js';
-import { buildWorld, randomSeed, GEN_VERSION } from './levelgen.js';
+import { buildWorld, randomSeed, GEN_VERSION, arrivalBesideStone } from './levelgen.js';
 import { Room, TILE, drawBackground, discoBeams } from './world.js';
 import { Player, SPELLS } from './player.js';
 import { ENEMY_TYPES } from './enemies.js';
@@ -21,7 +21,7 @@ import { Gears } from './gears.js';
 import { KEYS } from './itemdata.js';
 import { Projectile, Shockwave, FirePatch } from './projectiles.js';
 import { Statue, Barrel, Altar, Waystone, Tablet, Chest, Upgrade, Relic, Pickup, ABILITIES, UPGRADES } from './props.js';
-import { drawDeco, isBack, roomFlames, drawFlames2D, decoCoversHazard, drawCurrents } from './decor.js';
+import { drawDeco, isBack, roomFlames, drawFlames2D, decoCoversHazard } from './decor.js';
 import { drawIce } from './enchant.js';
 import { drawSheet } from './assets.js';
 import { HUD, drawBanner, drawPopups, drawPrompt, drawExitArrow, Dialog, TitleScreen, PauseMenu, MapScreen, IntroCrawl, GameOver, Ending } from './ui.js';
@@ -29,7 +29,7 @@ import { HUD, drawBanner, drawPopups, drawPrompt, drawExitArrow, Dialog, TitleSc
 const SAVE_KEY = 'shadowkeep.save.v1';
 const DOOR_CLEAR = 200;          // px: no enemy starts within this distance of a door you have just come through (about half a screen)
 const FLYERS = new Set(['bat', 'ghost', 'wraith', 'fireskull', 'wyrm', 'frostwyrm', 'emberwyrm']);
-const ITEM_IDS = ['g2_hp', 'g2_atk', 'h2_mp', 'h2_hp', 'c1_chest_u', 'u1_hp', 'u2_atk', 't1_mp', 'v2_atk', 'v3_mp', 'g4_mp', 'w1_hp', 'w2_mp', 'w3_atk', 'bu_vb', 'bu_wb', 'got_djump', 'got_dash', 'got_ember', 'got_thunder'];
+const ITEM_IDS = ['br_hp', 'g2_hp', 'g2_atk', 'h2_mp', 'h2_hp', 'c1_chest_u', 'u1_hp', 'u2_atk', 't1_mp', 'v2_atk', 'v3_mp', 'g4_mp', 'w1_hp', 'w2_mp', 'w3_atk', 'bu_vb', 'bu_wb', 'got_djump', 'got_dash', 'got_ember', 'got_thunder'];
 
 const newSave = world => ({
   seed: world.seed, room: world.start.room, spawnX: world.start.x * 16 + 8, spawnY: world.start.gy * 16, hp: 60, maxHp: 60, mp: 40, maxMp: 40, atk: 8, level: 1, xp: 0, gold: 0,
@@ -61,7 +61,7 @@ export class Game {
     // sprites are snapped to the logical grid so pixel art looks exactly as before.
     for (const c of [this.ctx, this.top]) { const di = c.drawImage; c.drawImage = function (img, ...a) { if (a.length === 2 || a.length === 4) { a[0] = Math.round(a[0]); a[1] = Math.round(a[1]); } else if (a.length === 8) { a[4] = Math.round(a[4]); a[5] = Math.round(a[5]); } return di.call(this, img, ...a); }; }
     this.fx = new FX(document.getElementById('fx')); this.fx.onThunder = p => A.sfx('thunder', { power: p });
-    Input.init(); Touch.init(this); await A.init(); if (new URLSearchParams(location.search).get('cloak') === '0') A.settings.cloak = false; if (new URLSearchParams(location.search).get('hair') === '0') A.settings.hair = false; await loadFonts(); this.resize(); addEventListener('resize', () => this.resize());
+    Input.init(); Touch.init(this); await A.init(); if (new URLSearchParams(location.search).get('cloak') === '0') A.settings.cloak = false; await loadFonts(); this.resize(); addEventListener('resize', () => this.resize());
     // Losing focus (clicking another window, switching tabs/apps) mutes all sound and pauses a running game; sound returns when focus does.
     // (`?nopause` in the URL turns this off - handy for automated testing in a background tab.)
     const lose = () => { if (this.noAutoPause) return; A.focusLost(); if (this.state === 'play') this.pause(); };
@@ -72,6 +72,7 @@ export class Game {
     this.state = 'title'; this.frame = 0; this.kills = 0; this.attackCounter = 0; this.hitstop = 0; this.shakeT = 0; this.shakeA = 0; this.slow = 0; this.save = null;
     this.enemies = []; this.projectiles = []; this.pickups = []; this.props = []; this.popups = []; this.flames = []; this.camera = { x: 0, y: 0 };
     this.bannerObj = null; this.dialog = null; this.boss = null; this.cutscene = null; this.trans = null; this.delayed = []; this.fade = 0; this.playerFrozen = false; this.zone = 0; this.room = null;
+    this.info = { ABILITIES, UPGRADES };          // (what the pause screen reads out about each thing you have found)
     this.ghost = new Ghost(this); this.player = new Player(this, 0, 0); this.toTitle(true);
   }
 
@@ -107,6 +108,14 @@ export class Game {
   areaLabel(top, name, x, y, align = 'center', color = '#ffe9a0', alpha = 1) {
     if (!name) return; const w = textWidth(name, 0.9, { outline: true }), lx = align === 'center' ? clamp(x, w / 2 + 4, W - w / 2 - 4) : x;
     drawText(top, name, Math.round(lx), Math.round(y), { align, color, outline: '#000', scale: 0.9, alpha });
+  }
+  // the room's streams and waterfalls, for the water shader (fx.setWater)
+  waterList() {
+    const r = this.room, out = [];
+    for (const c of r.currents || []) out.push({ type: 0, x0: c.x0, y0: c.y - 15, x1: c.x1, y1: c.y + 1, v: c.vx * 60 });
+    for (const c of r.rivers || []) out.push({ type: 0, x0: c.x0, y0: c.y, x1: c.x1, y1: r.ph, v: c.vx * 60 });
+    for (const d of r.decos) if (d.t === 'waterfall') out.push({ type: 1, x0: d.x - d.w / 2, y0: d.top, x1: d.x + d.w / 2, y1: d.y, v: 95 });
+    return out;
   }
   showDialog(text, o) { this.dialog = new Dialog(text, o); this.state = 'dialog'; }
   // a short exchange of words: lines = [[speaker, text], ...], each in a box of its own; done() runs when the last box is closed
@@ -156,7 +165,7 @@ export class Game {
   teleportTo(id) {
     const def = this.world.rooms[id], w = def && def.spawns.find(s => s.type === 'waystone'); if (!w) return;
     this.state = 'play'; A.sfx('ability'); this.fx.flash([0.45, 0.85, 1], 0.5); this.fx.burst(this.player.x, this.player.y - 16, 18, COLORS.blue, { speed: 2 });
-    this.changeRoom({ room: id, x: w.x * 16 + 8 + 34, y: w.y * 16 }, -1);
+    this.changeRoom({ room: id, x: arrivalBesideStone(def, w), y: w.y * 16 }, -1);          // (beside the stone but on solid floor: never out over a pit)
   }
   onPlayerDeath() { A.stop(0.8); this.slow = 90; this.boss && (this.boss.harmless = true); this.after(95, () => { this.state = 'dead'; this.gameOver = new GameOver(this); this.slow = 0; }); }
 
@@ -166,7 +175,7 @@ export class Game {
     for (let ty = 0; ty < def.h; ty++) for (let tx = 0; tx < def.w; tx++) { const v = tiles[ty * def.w + tx]; if ((v === 4 || v === 5 || v === 6) && S.flags[`b_${id}_${tx}_${ty}`]) tiles[ty * def.w + tx] = 0; }
     const prevZone = this.zone; this.room = new Room({ ...def, tiles }); this.room.flags = S.flags; this.room.ignited = new Set(); if (S.flags.boss_vb) S.flags.village_fire = true; S.visited[id] = true; this.zone = def.zone;          // (the room can see the save's flags: scenery such as the sigils over a locked door reads them)
     { const spk = []; for (let ty = 0; ty < def.h; ty++) for (let tx = 0; tx < def.w; tx++) if (tiles[ty * def.w + tx] === TILE.SPIKE) spk.push([tx, ty]); if (spk.length) this.room.decos = def.decos.filter(d => !decoCoversHazard(d, spk)); }          // nothing may stand in front of a hazard
-    this.enemies = []; this.projectiles = []; this.pickups = []; this.props = []; this.popups = []; this.boss = null; this.delayed = []; this.fx.reset(); this.fx.setWisps(def.wisps || 0); this.flames = roomFlames(this.room); this.falls = this.room.decos.filter(d => d.t === 'waterfall'); this.mirrorView = def.mirror ? new MirrorView(def.mirror, !!S.flags['boss_' + id]) : null;          // (the Mirror Room: a great mirror - whole until you walk up to it)
+    this.enemies = []; this.projectiles = []; this.pickups = []; this.props = []; this.popups = []; this.boss = null; this.delayed = []; this.fx.reset(); this.fx.setWisps(def.wisps || 0); this.flames = roomFlames(this.room); this.falls = this.room.decos.filter(d => d.t === 'waterfall'); this.fx.setWater(this.waterList()); this.mirrorView = def.mirror ? new MirrorView(def.mirror, !!S.flags['boss_' + id]) : null;          // (the Mirror Room: a great mirror - whole until you walk up to it)
     const dusk = def.zone === 6 && !S.flags.village_fire && !def.keepLook;          // Prague before the Cinder Warden's torches: a calm violet dusk, with golden dust in the air - the monsters are loose, but nothing burns yet
     this.fx.setAmbient(dusk ? Math.max(def.ambient, 0.42) : def.ambient, dusk ? [0.05, 0.03, 0.12] : def.tint, def.vig); if (def.dark) this.fx.setDark(); this.fx.setAmbientFx(dusk ? 'dust' : def.weather); A.setIndoor(def.indoor); this.fx.setStorm(def.storm, 0.0035);
     this.fx.setFog(def.fog * (def.theme === 'swamp' ? 0.8 : 1), def.horizon + 4, FOG_COL[def.theme] || FOG_COL.default, def.fogH);          // rolling ground fog in the damp, dead places
@@ -272,8 +281,7 @@ export class Game {
       if (e.dead || !e.hitBy(box)) continue;
       if (e.hurt(p.swordDamage(), dir, { id: p.atkId, kb: p.seq.kb })) {
         hit = true; p.gainMp(1.2); this.fx.sparks(e.x, e.cy, 4, COLORS.white, 3, { dir: dir > 0 ? 0 : Math.PI, spread: 0.6 });
-        if (!e.dead) p.onSwordHit(e);                          // enchantment procs: freeze / shield
-        else if (p.ench && p.ench.type === 'aegis' && p.ench.shield <= 0 && Math.random() < 0.35) p.raiseShield();
+        if (!e.dead) p.onSwordHit(e);                          // enchantment procs: freeze
       }
     }
     for (const o of this.props) if (o.hit && !o.dead && overlap(box, o.box)) { if (o.hit(this, p.swordDamage(), dir)) { hit = true; p.gainMp(2); } }
@@ -466,7 +474,7 @@ export class Game {
   }
   snapCamera() { const p = this.player, r = this.room; this.camera.x = this.camTargetX(p, r); this.camera.y = this.camTargetY(p, r); }
   camTargetX(p, r) { return r.pw <= W ? (r.pw - W) / 2 : clamp(p.x + p.dir * 18 - W / 2, 0, r.pw - W); }
-  camTargetY(p, r) { return r.ph <= H ? (r.ph - H) / 2 : clamp(p.y - 30 - H / 2, 0, r.ph - H); }
+  camTargetY(p, r) { return r.ph <= H ? (r.ph - H) / 2 : clamp(p.y + (r.rivers ? 24 : -30) - H / 2, 0, r.ph - H); }          // (over a river the picture looks further down, so the water shows)
   updateCamera() {
     const p = this.player, r = this.room, c = this.camera; c.x += (this.camTargetX(p, r) - c.x) * 0.1; c.y += (this.camTargetY(p, r) - c.y) * 0.12;
   }
@@ -501,7 +509,6 @@ export class Game {
     if (this.cutscene && this.cutscene.scene) this.cutscene.scene.drawWorld(ctx, cx, cy);
     p.draw(ctx, cx, cy);
     for (const d of r.decos) if (d.fore) drawDeco(ctx, d, cx, cy, t, r);                              // the foreground: things the hero walks BEHIND (fences)
-    if (r.currents && r.currents.length) drawCurrents(ctx, r.currents, cx, cy, t);                       // (flowing water laps over the hero's legs)
     for (const e of this.enemies) if (e.isBoss) e.drawIntent(ctx, cx, cy);                              // attack icon + name over its head
     for (const o of this.projectiles) o.draw(ctx, cx, cy);
     if (this.state === 'play' && !this.cutscene && this.fade < 0.05) {

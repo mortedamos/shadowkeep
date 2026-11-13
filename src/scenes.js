@@ -73,7 +73,7 @@ export class VillageScene {
     if (w.on) {
       let id = 'ars_gnu_r0', f = Math.floor(t / 12) % 5;
       if (w.pose === 'throw') { id = 'ars_gnu_r2'; f = w.st < 20 ? 0 : 1; } else if (w.pose === 'walk') { id = 'ars_gnu_r1'; f = Math.floor(t / 8) % 5; }
-      drawSheet(ctx, id, f, w.x - cx, w.y - cy + 1, { dir: w.dir, scale: 0.95 });
+      drawSheet(ctx, id, f, w.x - cx, w.y - cy, { dir: w.dir, scale: 0.95 });
     }
     for (const th of this.torches) { ctx.save(); ctx.translate(Math.round(th.x - cx), Math.round(th.y - cy)); ctx.rotate(th.rot); ctx.fillStyle = '#4a2c14'; ctx.fillRect(-1, -5, 3, 10); ctx.fillStyle = '#ffb040'; ctx.fillRect(-2, -7, 5, 3); ctx.restore(); }
   }

@@ -59,6 +59,9 @@ The Prague Orloj clock picture (pixelated) - the Orloj Tower
 ## heosphorus
 Animated Gears - Pixel Art Steampunk Machinery (turning gear accents in the Orloj Tower and the Clockwork Dungeon) - heosphorus.itch.io/animated-gears
 
+## FreeGameSprites.com
+Candelabra and Candelabra Stand (the candelabras in the castle's halls) and Sign Post (the signposts) - all CC0 - freegamesprites.com
+
 ## worldswithoutend
 Graveyard 400 Assets (two headstones, four flowers, a wreath, three iron fences and eight statues) - worldswithoutend.itch.io/graveyard-2d-game-assets
 
@@ -87,6 +90,7 @@ Some sprites are recoloured while the game loads.
 # FONTS
 ## SIL Open Font Licence 1.1
 Pirata One - Rodrigo Fuenzalida and Nicolas Massi
+Elementary Gothic Bookhand - Bill Roach - the Stranger's voice
 Almendra Bold - Ana Sanfelippo
 
 ## Typographer Mediengestaltung

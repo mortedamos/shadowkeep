@@ -1,6 +1,6 @@
 // HUD, menus and overlay screens (all drawn with the pixel font on the 384x216 canvas).
 import { W, H, clamp, lerp, fmtTime, easeOut, sentenceCase } from './util.js';
-import { drawText, textWidth, wrapText, handText } from './font.js';
+import { drawText, textWidth, wrapText, handText, hasFace } from './font.js';
 import { Input } from './input.js';
 import { Touch } from './touch.js';
 import { Audio_ as A } from './audio.js';
@@ -39,13 +39,12 @@ export const HUD = {
     drawText(ctx, 'MP', 7, 16.5, { color: '#8ab4ff', outline: '#000', scale: 1.15 }); bar(ctx, 24, 17, mpW, 5, S.mp / S.maxMp, '#5a9aff', '#2a4ab0');
     drawText(ctx, 'LV ' + S.level, 7, 25.5, { color: GOLD, outline: '#000', scale: 1.15 });
     const xf = p.xpNext ? S.xp / p.xpNext() : 0; ctx.fillStyle = '#000'; ctx.fillRect(34, 28, 40, 3); ctx.fillStyle = '#6a5a1a'; ctx.fillRect(35, 29, 38, 1); ctx.fillStyle = GOLD; ctx.fillRect(35, 29, Math.round(38 * clamp(xf, 0, 1)), 1);
-    // active sword enchantment: icon, name, time left, and (Aegis) whether the shield is up
+    // active sword enchantment: icon, name, time left
     const E = p.ench;
     if (E) {
       const def = ENCH[E.type], css = `rgb(${def.rgb.map(v => Math.round(v * 255)).join(',')})`, secs = Math.ceil(E.t / 60), low = E.t < 600 && Math.floor(E.t / 12) % 2;
       icon(ctx, def.icon, 15, 44, 1.1, low ? 0.4 : 1); drawText(ctx, `${def.name} ${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}`, 26, 36, { color: low ? '#8a7d9a' : css, outline: '#000' });
       ctx.fillStyle = '#000'; ctx.fillRect(25, 46, 52, 4); ctx.fillStyle = css; ctx.fillRect(26, 47, Math.round(50 * clamp(E.t / TUNE.time, 0, 1)), 2);
-      if (E.type === 'aegis') drawText(ctx, E.shield > 0 ? 'SHIELD READY' : 'NO SHIELD', 26, 53, { color: E.shield > 0 ? '#9cd0ff' : '#5a5a70', outline: '#000' });
     }
     // hotbar: unlocked spells + carried items.  Q / V move the box, C / I uses what is selected.
     const slots = p.hotbar();
@@ -106,7 +105,7 @@ export function drawExitArrow(ctx, x, y, t, dir) {
 }
 
 export class Dialog {
-  constructor(text, o = {}) { this.font = o.font || (o.name ? 'mixed' : undefined); if (this.font === 'hand') text = handText(text); else if (this.font === 'mixed') text = sentenceCase(text);          // (a named speaker - an NPC, a boss - talks in sentence case; the gravestones in their own face)
+  constructor(text, o = {}) { this.font = o.font || (o.name && /^the stranger$/i.test(o.name) && hasFace('stranger') ? 'stranger' : o.name ? 'mixed' : undefined); if (this.font === 'hand') text = handText(text); else if (this.font === 'mixed' || this.font === 'stranger') text = sentenceCase(text);          // (the Stranger speaks in his own bookhand)          // (a named speaker - an NPC, a boss - talks in sentence case; the gravestones in their own face)
     this.lines = wrapText(text, 300, 1, this.font); this.full = this.lines.join('\n'); this.t = 0; this.done = false; this.closed = false; this.name = o.name || null; this.onClose = o.onClose || null; this.choices = o.choices || null; this.sel = 0; this.choice = -1; this.footer = o.footer || null; }
   update() {
     this.t += 1.2; const skip = Input.pressed.confirm || Input.pressed.back || Input.pressed.attack || Input.pressed.jump;
@@ -259,7 +258,6 @@ function optionsMenu(onBack) {
     { label: 'MUTE', val: () => (A.settings.muted ? 'ON' : 'OFF'), action: () => A.toggleMute() },
     { label: 'BOSS HINTS', val: () => (A.settings.hints ? 'ON' : 'OFF'), action: () => { A.settings.hints = !A.settings.hints; A.save(); } },
     { label: 'WHITE CLOAK', val: () => (A.settings.cloak ? 'ON' : 'OFF'), action: () => { A.settings.cloak = !A.settings.cloak; A.save(); } },
-    { label: '3D HOOD', val: () => (A.settings.hair ? 'ON' : 'OFF'), action: () => { A.settings.hair = !A.settings.hair; A.save(); } },
     { label: 'TOUCH PAD', val: () => (Touch.on ? 'ON' : 'OFF'), action: () => Touch.show(!Touch.on, true) },
     { label: 'BACK', action: onBack },
   ]);
@@ -273,31 +271,69 @@ export function controlsScreen(ctx) {
 
 // what the hero has found, for the pause screen: the four powers (dim and unnamed until found), the Magic Shoes and the Tide Blade once found, and the keys he carries
 const POWERS = [['djump', 'feather', 'AETHER FEATHER'], ['dash', 'boot', 'QUICKSILVER'], ['ember', 'ember', 'SULPHUR'], ['thunder', 'thunder', 'VITRIOL']];
-function foundPanel(ctx, g) {
-  const S = g.save, F = S.flags, rows = [];
-  for (const [k, ic, name] of POWERS) rows.push({ ic, name: S.abilities[k] ? name : '???', has: !!S.abilities[k] });
-  for (const [f, ic, name] of [['got_mantle', 'mantle', 'SALAMANDER'], ['got_lantern', 'lantern', 'IGNIS FATUUS'], ['got_shard', 'shard', 'SPECULUM'], ['got_spring', 'spring', 'PERPETUUM'], ['got_shoes', 'shoes', 'HERMES SHOES'], ['got_tide', 'e_ice', 'AQUA REGIA']]) if (F[f]) rows.push({ ic, name, has: true });
-  const keys = KEYS.filter(k => F['has_' + k.id] && !F['unlocked_' + k.id]);
-  panel(ctx, 8, 36, 124, 174); drawText(ctx, 'FOUND', 70, 42, { align: 'center', color: GOLD, scale: 1.3 });
-  const step = rows.length > 8 ? 11 : 13;
-  rows.forEach((r, i) => { const y = 59 + i * step; icon(ctx, r.ic, 21, y, 1, r.has ? 1 : 0.2); drawText(ctx, r.name, 33, y - 4, { color: r.has ? PALE : '#4a4458' }); });
-  if (keys.length) {                                                                          // the keys you carry, in a row: each in its own colour
-    const y0 = 59 + rows.length * step + 3; drawText(ctx, 'KEYS', 14, y0 - 2, { color: DIM });
-    keys.forEach((k, i) => { const x = 22 + (i % 6) * 18, y = y0 + 14 + Math.floor(i / 6) * 17; icon(ctx, 'key', x, y, 1.1); ctx.fillStyle = 'rgb(' + k.rgb.join(',') + ')'; ctx.fillRect(x - 5, y + 8, 10, 2); });
-  }
+// what the pause screen lists as FOUND: the four powers, the relics the bosses leave, and the keys you carry (each with what it is and what it does, for the cursor to read out)
+const RELICS = [['got_mantle', 'mantle', 'SALAMANDER', 'mantle'], ['got_lantern', 'lantern', 'IGNIS FATUUS', 'lantern'], ['got_shard', 'shard', 'SPECULUM', 'shard'], ['got_spring', 'spring', 'PERPETUUM', 'spring'], ['got_shoes', 'shoes', 'HERMES SHOES', 'shoes'], ['got_tide', 'e_ice', 'AQUA REGIA', 'tide']];
+const KEY_USE = { key_grave: "THE GRAVEKEEPER'S VAULT, OFF THE MOURNING FIELDS.", key_hall: "THE STEWARD'S VAULT, OFF THE PORTRAIT GALLERY.", key_chapel: "THE VERGER'S VAULT, OFF THE BELL GALLERY.", key_crypt: 'THE DOOR OF THE ORLOJ TOWER, HIGH ABOVE SMOULDERING LANE IN PRAGUE.', key_mire: "THE FERRYMAN'S VAULT, OFF THE WEEPING HOLLOW.", key_gear: "THE ENGINEER'S VAULT, OFF THE ESCAPEMENT." };
+export function foundItems(g) {
+  const S = g.save, F = S.flags, AB = (g.info && g.info.ABILITIES) || {}, UP = (g.info && g.info.UPGRADES) || {}, rows = [];
+  for (const [k, ic, name] of POWERS) rows.push({ ic, name: S.abilities[k] ? name : '???', has: !!S.abilities[k], title: S.abilities[k] ? (AB[k] ? AB[k].name : name) : 'NOT YET FOUND', desc: S.abilities[k] && AB[k] ? AB[k].desc : 'A POWER YOU HAVE NOT FOUND YET. THE BOSSES OF THE CASTLE GUARD THEM.' });
+  for (const [f, ic, name, up] of RELICS) if (F[f]) rows.push({ ic, name, has: true, title: UP[up] ? UP[up].name : name, desc: UP[up] ? UP[up].desc : '' });
+  for (const k of KEYS) if (F['has_' + k.id] && !F['unlocked_' + k.id]) rows.push({ ic: 'key', name: k.name, has: true, key: k, title: k.name, desc: 'IT OPENS ' + (KEY_USE[k.id] || 'ONE LOCKED DOOR.') + ' THE DOOR IS DRAWN WITH ITS PADLOCK IN THE KEY\'S OWN COLOUR.' });
+  return rows;
 }
+// the list: each row's place (the keys sit in a grid under the list)
+function foundLayout(rows) {
+  const list = rows.filter(r => !r.key), step = list.length > 8 ? 11 : 13, y0 = 59 + list.length * step + 3, pos = [];
+  let ki = 0; for (const r of rows) { if (r.key) { pos.push({ x: 22 + (ki % 6) * 18, y: y0 + 14 + Math.floor(ki / 6) * 17, w: 16, h: 16, key: true }); ki++; } else pos.push({ x: 14, y: 59 + pos.length * step - 5, w: 112, h: step, key: false }); }
+  return { pos, y0, list };
+}
+function foundPanel(ctx, g, pm) {
+  const rows = foundItems(g), L = foundLayout(rows), sel = pm && pm.foc === 'found' ? pm.sel : -1;
+  panel(ctx, 8, 36, 124, 174); drawText(ctx, 'FOUND', 70, 42, { align: 'center', color: GOLD, scale: 1.3 });
+  let ki = 0;
+  rows.forEach((r, i) => {
+    const p = L.pos[i], on = i === sel;
+    if (!r.key) { const y = p.y + 5; if (on) { ctx.fillStyle = 'rgba(232,184,74,0.18)'; ctx.fillRect(10, y - 6, 120, p.h); } icon(ctx, r.ic, 21, y, 1, r.has ? 1 : 0.2); drawText(ctx, r.name, 33, y - 4, { color: !r.has ? '#4a4458' : on ? GOLD : PALE }); if (on) drawText(ctx, '>', 12, y - 4, { color: GOLD }); }
+    else {
+      if (ki === 0) drawText(ctx, 'KEYS', 14, L.y0 - 2, { color: DIM }); ki++;
+      if (on) { ctx.fillStyle = 'rgba(232,184,74,0.25)'; ctx.fillRect(p.x - 8, p.y - 9, 17, 19); }
+      icon(ctx, 'key', p.x, p.y, 1.1); ctx.fillStyle = 'rgb(' + r.key.rgb.join(',') + ')'; ctx.fillRect(p.x - 5, p.y + 8, 10, 2);
+    }
+  });
+}
+
 export class PauseMenu {
   constructor(g) {
-    this.g = g; this.mode = 'main'; this.opts = optionsMenu(() => { this.mode = 'main'; });
+    this.g = g; this.mode = 'main'; this.foc = 'menu'; this.sel = 0; this.opts = optionsMenu(() => { this.mode = 'main'; });
     this.main = new Menu([{ label: 'RESUME', action: () => g.resume() }, { label: 'MAP', action: () => g.openMap() }, { label: 'OPTIONS', action: () => { this.mode = 'options'; this.opts.i = 0; } }, { label: 'CONTROLS', action: () => { this.mode = 'controls'; } }, { label: 'QUIT TO TITLE', action: () => g.toTitle() }]);
   }
-  update() { if (this.mode === 'main') { this.main.update(this.g); if (Input.pressed.pkey || Input.pressed.back) this.g.resume(); } else if (this.mode === 'options') { this.opts.update(this.g); if (Input.pressed.back) this.mode = 'main'; } else if (Input.pressed.back || Input.pressed.confirm || Input.taps.length) this.mode = 'main'; }
+  // LEFT moves the cursor over to the list of found things: UP / DOWN read each one out (what it is, what it does); RIGHT, BACK or OK returns to the menu.  A tap on a thing reads it out too.
+  update() { if (this.mode === 'main') {
+      const rows = foundItems(this.g), L = foundLayout(rows);
+      for (const t of Input.taps) { const i = L.pos.findIndex(p => t.x >= p.x - 8 && t.x <= p.x + p.w && t.y >= p.y - 8 && t.y <= p.y + p.h); if (i >= 0 && t.x < 132) { this.foc = 'found'; this.sel = i; A.sfx('select'); } }
+      if (this.foc === 'found') {
+        if (this.sel >= rows.length) this.sel = Math.max(0, rows.length - 1);
+        if (Input.pressed.up && rows.length) { this.sel = (this.sel + rows.length - 1) % rows.length; A.sfx('click'); } if (Input.pressed.down && rows.length) { this.sel = (this.sel + 1) % rows.length; A.sfx('click'); }
+        if (Input.pressed.right || Input.pressed.back || Input.pressed.confirm) { this.foc = 'menu'; A.sfx('back'); }
+      } else {
+        this.main.update(this.g); if (Input.pressed.left && rows.length) { this.foc = 'found'; this.sel = Math.min(this.sel, rows.length - 1); A.sfx('select'); }
+        if (Input.pressed.pkey || Input.pressed.back) this.g.resume();
+      } } else if (this.mode === 'options') { this.opts.update(this.g); if (Input.pressed.back) this.mode = 'main'; } else if (Input.pressed.back || Input.pressed.confirm || Input.taps.length) this.mode = 'main'; }
   draw(ctx) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(0, 0, W, H);
     if (this.mode === 'main') {
-      const g = this.g, S = g.save, cx = 260; foundPanel(ctx, g); panel(ctx, 142, 36, 236, 174); drawText(ctx, 'PAUSED', cx, 46, { align: 'center', scale: 2, color: GOLD });
+      const g = this.g, S = g.save, cx = 260; foundPanel(ctx, g, this); panel(ctx, 142, 36, 236, 174);
+      if (this.foc === 'found') {                                                              // the thing under the cursor: what it is and what it does
+        const it = foundItems(g)[this.sel];
+        if (it) { icon(ctx, it.ic, 160, 54, 1.6, it.has ? 1 : 0.3); drawText(ctx, it.title, 176, 48, { color: GOLD, scale: 1.2, outline: '#000' });
+          wrapText(it.desc, 214, 1, 'mixed').forEach((ln, i) => drawText(ctx, ln, 154, 76 + i * 11, { color: PALE, font: 'mixed' }));
+          drawText(ctx, 'UP / DOWN CHOOSE    RIGHT: BACK', cx, 196, { align: 'center', color: DIM }); }
+      } else {
+      drawText(ctx, 'PAUSED', cx, 46, { align: 'center', scale: 2, color: GOLD });
       this.main.draw(ctx, cx, 74, 13);
       drawText(ctx, `LV ${S.level}   HP ${S.hp}/${S.maxHp}   MP ${S.mp}/${S.maxMp}`, cx, 146, { align: 'center', color: PALE }); drawText(ctx, `POWER ${g.player.atkPower}   GOLD ${S.gold}   TIME ${fmtTime(S.time)}`, cx, 158, { align: 'center', color: '#b5a47a' }); drawText(ctx, 'CASTLE SEED ' + S.seed, cx, 170, { align: 'center', color: DIM });
+      if (foundItems(g).length) drawText(ctx, 'LEFT: LOOK AT WHAT YOU HAVE FOUND', cx, 190, { align: 'center', color: '#6a6078' });
+      }
     } else if (this.mode === 'options') { panel(ctx, 70, 40, W - 140, 150); drawText(ctx, 'OPTIONS', W / 2, 47, { align: 'center', scale: 1.5, color: GOLD, outline: '#000' }); this.opts.draw(ctx, 94, 68, 14, 'left'); }
     else controlsScreen(ctx);
   }
@@ -409,7 +445,8 @@ export class MapScreen {
       drawText(ctx, Input.touchOn ? 'PAD LEFT / RIGHT CHOOSE     JUMP = TRAVEL     HIT = CANCEL' : 'LEFT / RIGHT CHOOSE     ENTER TRAVEL     ESC CANCEL', W / 2, H - 12, { align: 'center', color: PALE });
       return;
     }
-    { const here = ROOMS[g.room.id]; if (here) drawText(ctx, 'YOU ARE IN:  ' + (ZONES[here.zone].name + ' - ' + here.name).toUpperCase(), W / 2, H - 47, { align: 'center', color: '#ffffff', scale: 1.1 }); }          // where the hero is
+    { const here = ROOMS[g.room.id]; if (here) { const where = (ZONES[here.zone].name + ' - ' + here.name).toUpperCase(), one = 'YOU ARE IN:  ' + where, fits = sc => textWidth(one, sc) <= W - 16; if (fits(1.1)) drawText(ctx, one, W / 2, H - 47, { align: 'center', color: '#ffffff', scale: 1.1 }); else { drawText(ctx, 'YOU ARE IN:', W / 2, H - 58, { align: 'center', color: '#ffffff', scale: 1 }); let sc = 1.1; while (sc > 0.7 && textWidth(where, sc) > W - 16) sc -= 0.05; drawText(ctx, where, W / 2, H - 48, { align: 'center', color: '#ffffff', scale: sc }); } }          // (a long place name goes on a second line, and shrinks if it must, so it never runs off the screen)
+    }          // where the hero is
     const done = Object.keys(S.flags).filter(k => /^(g2|h2|c1|u1|u2|t1|c2|v2|v3|g4|w1|w2|w3|bu)_/.test(k) && !k.endsWith('_u')).length;
     drawText(ctx, 'WHITE = YOU   PURPLE = SAVE   CYAN CROSS = WAYSTONE', W / 2, H - 35, { align: 'center', color: DIM }); drawText(ctx, 'SKULL = BOSS   GOLD = DOOR   DOTS = ONE-WAY   ARROWS SCROLL', W / 2, H - 24, { align: 'center', color: DIM }); drawText(ctx, `ROOMS ${Object.keys(S.visited).length}/${Object.keys(ROOMS).length}   SECRETS ${done}   SEED ${S.seed}`, W / 2, H - 12, { align: 'center', color: PALE });
   }
@@ -466,7 +503,7 @@ export class Ending {
     if (t > 300) {                                                                    // the hill above Prague, in the sunlight: the Stranger kneels at her grave - and she is beside him, seen at last without any blue light
       const hk = SHEET.hero_crouch_cw ? 'hero_crouch_cw' : 'hero_crouch', fa = clamp((t - 300) / 60, 0, 1), ga = clamp((t - 480) / 120, 0, 1);
       ctx.fillStyle = '#0a0612'; ctx.beginPath(); ctx.moveTo(34, 169); ctx.lineTo(34, 150); ctx.quadraticCurveTo(41, 141, 48, 150); ctx.lineTo(48, 169); ctx.fill();
-      drawSheet(ctx, hk, 0, 68, 169, { dir: -1, alpha: fa }); drawSheet(ctx, 'hero_crouch_hair', 0, 68, 169, { dir: -1, alpha: fa });
+      drawSheet(ctx, hk, 0, 68, 169, { dir: -1, alpha: fa });
       drawSheet(ctx, 'ghost_lady', Math.floor(t / 10) % 7, 94, 169, { dir: -1, alpha: ga * 0.92 });
     }
     if (this.menu) this.menu.draw(ctx, W / 2, H - 38, 14);

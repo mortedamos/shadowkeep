@@ -92,6 +92,7 @@ function bmDraw(ctx, str, x, y, o = {}) {
 let vec = null;                                   // { body, display } once the fonts are loaded
 const FONT_FILES = [['body', 'SK Almendra', '../assets/fonts/Almendra-Bold.ttf', 1.06], ['display', 'SK Pirata', '../assets/fonts/PirataOne-Regular.ttf', 1.12]];
 const HAND_FONT = ['hand', 'SK Eroded', '../assets/fonts/erodedmotta.regular.ttf', 1.0];        // "Eroded Motta" (lirkiv AC): the lettering on the gravestones and tablets (font: 'hand'), in mixed case
+const STRANGER_FONT = ['stranger', 'SK Bookhand', '../assets/fonts/Elementary_Gothic_Bookhand.ttf', 0.87];        // "Elementary Gothic Bookhand" (Bill Roach, SIL OFL): the Stranger's own voice (font: 'stranger'), in mixed case
 const TITLE_FONT = ['title', 'SK Blackletter', '../assets/fonts/BLACEB__.TTF', 1.0];       // "Blackletter ExtraBold" (Typographer Mediengestaltung): the game title only
 export async function loadFonts() {
   try {
@@ -112,12 +113,17 @@ export async function loadFonts() {
       m.font = `100px "${HAND_FONT[1]}"`; const cap = m.measureText('H').actualBoundingBoxAscent / 100;
       if (cap > 0.3 && cap < 1) spec.hand = { fam: HAND_FONT[1], cap, fit: HAND_FONT[3] };
     } catch (e) { console.warn('Handwriting font unavailable - using the body font.', e); }
+    try {                                                    // the Stranger's face is optional too: without it he speaks in the body face
+      const f = new FontFace(STRANGER_FONT[1], `url(${new URL(STRANGER_FONT[2], import.meta.url).href})`); await f.load(); document.fonts.add(f);
+      m.font = `100px "${STRANGER_FONT[1]}"`; const cap = m.measureText('x').actualBoundingBoxAscent / 100;          // (this face's capitals are huge flourishes: it is sized by its small letters instead, so it reads about as large as the body face)
+      if (cap > 0.3 && cap < 1) spec.stranger = { fam: STRANGER_FONT[1], cap, fit: STRANGER_FONT[3] };
+    } catch (e) { console.warn('Stranger font unavailable - using the body font.', e); }
     vec = spec; widths.clear(); return true;
   } catch (e) { console.warn('Gothic fonts unavailable - using the bitmap font.', e); vec = null; return false; }
 }
 const measureCtx = document.createElement('canvas').getContext('2d'), widths = new Map();
 // Pirata One (display) for big text and anything outlined (HUD, menus, banners, floating text); Almendra (body) for dialogue and descriptive text.
-const pick = (scale, o) => { let k = (o && o.font) || (scale >= 2 || (o && o.outline) ? 'display' : 'body'); if (k === 'mixed') k = 'body'; return vec[k] || (k === 'hand' ? vec.body : vec.display); };          // ('mixed' = the body face, but keeping the text's own upper and lower case)
+const pick = (scale, o) => { let k = (o && o.font) || (scale >= 2 || (o && o.outline) ? 'display' : 'body'); if (k === 'mixed') k = 'body'; return vec[k] || (k === 'hand' || k === 'stranger' ? vec.body : vec.display); };          // ('mixed' = the body face, but keeping the text's own upper and lower case)
 const sizeOf = (F, scale) => 7 * scale * F.fit / F.cap;                       // font-size that gives caps ~7*fit px tall
 function vecWidth(str, scale, o) {
   const F = pick(scale, o), size = sizeOf(F, scale), key = F.fam + size + '|' + str; let w = widths.get(key);
@@ -126,7 +132,8 @@ function vecWidth(str, scale, o) {
 }
 // Eroded Motta has no colon or semicolon: they become a dash and a comma.  Call this on a gravestone's text before it is wrapped or typed out; it does nothing if the face did not load.
 export const handText = str => vec && vec.hand ? String(str).replace(/\s*:\s*/g, ' - ').replace(/\s*;\s*/g, ', ') : String(str);
-const casing = (str, font) => font === 'title' || font === 'mixed' || (font === 'hand' && vec && vec.hand) ? String(str) : String(str).toUpperCase();      // (the game draws capitals - except the blackletter title and the handwriting, which read far better in mixed case)
+export const hasFace = k => !!(vec && vec[k]);
+const casing = (str, font) => font === 'title' || font === 'mixed' || ((font === 'hand' || font === 'stranger') && vec && vec[font]) ? String(str) : String(str).toUpperCase();      // (the game draws capitals - except the blackletter title and the handwriting, which read far better in mixed case)
 export function textWidth(str, scale = 1, font) { const f = typeof font === 'object' ? font : { font }; str = casing(str, f.font); return vec ? vecWidth(str, scale, f) : bmWidth(str.toUpperCase(), scale); }
 
 export function drawText(ctx, str, x, y, o = {}) {

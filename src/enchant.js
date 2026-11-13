@@ -1,13 +1,12 @@
-// Sword enchantments: data, tuning numbers, and the small drawing helpers they need (ice block, energy shield).
+// Sword enchantments: data, tuning numbers, and the small drawing helpers they need (the ice block).
 // Enemies sometimes drop an enchantment gem; picking one up imbues the sword for a couple of minutes.
 // Only one enchantment is active at a time (a different gem replaces it, the same gem adds time).
-export const ENCH_TYPES = ['fire', 'ice', 'sun', 'aegis'];
+export const ENCH_TYPES = ['fire', 'ice', 'sun'];
 
 export const ENCH = {
   fire: { name: 'FLAME', title: 'FLAME BLADE', desc: 'MORE DAMAGE. EVERY SLASH HURLS A FIREBALL.', dmg: 1.3, rgb: [1, 0.55, 0.15], icon: 'e_fire', pal: { bright: [255, 228, 120], mid: [255, 112, 30], dark: [150, 34, 10] } },
   ice: { name: 'FROST', title: 'FROST BLADE', desc: 'HITS CAN FREEZE FOES SOLID FOR A FEW SECONDS.', dmg: 1.15, rgb: [0.55, 0.85, 1], icon: 'e_ice', pal: { bright: [240, 252, 255], mid: [110, 200, 255], dark: [40, 104, 190] } },
   sun: { name: 'SUN', title: 'SUNBRAND', desc: 'GREATLY INCREASED DAMAGE. SHEDS HOLY LIGHT.', dmg: 1.5, rgb: [1, 0.88, 0.4], icon: 'e_sun', pal: { bright: [255, 252, 226], mid: [255, 214, 84], dark: [190, 122, 22] } },
-  aegis: { name: 'AEGIS', title: 'AEGIS BLADE', desc: 'HITS CAN RAISE A SHIELD THAT BLOCKS ONE ATTACK.', dmg: 1.2, rgb: [0.5, 0.7, 1], icon: 'e_aegis', pal: { bright: [232, 244, 255], mid: [104, 154, 255], dark: [42, 72, 172] } },
 };
 
 // every balance knob in one place (all times are in 60ths of a second)
@@ -21,8 +20,6 @@ export const TUNE = {
   frozenBonus: 1.2,          // frozen things take 20% extra damage
   // FIRE
   fireballFrac: 0.4, fireballLife: 30,        // fireball damage = 40% of the swing; flies ~100px
-  // AEGIS
-  shieldChance: 0.2, shieldTime: 900,          // per successful hit; an unused shield fades after 15s
   // DROPS
   dropBase: 0.035, dropElite: 0.06, dropPity: 0.005, dropPityMax: 0.08,
 };
@@ -44,13 +41,3 @@ export function drawIce(ctx, e, cx, cy, t) {
   ctx.restore();
 }
 
-// ------------------------------------------------------------------------------------------ energy shield bubble
-export function drawShield(ctx, x, y, t, fading) {
-  const a = fading ? 0.45 + 0.35 * Math.sin(t * 0.8) : 0.9, cy = y - 19, rx = 17, ry = 26;
-  ctx.save(); ctx.globalAlpha = a;
-  const g = ctx.createRadialGradient(x, cy, 4, x, cy, ry); g.addColorStop(0, 'rgba(120,180,255,0.04)'); g.addColorStop(0.75, 'rgba(120,180,255,0.16)'); g.addColorStop(1, 'rgba(170,220,255,0.42)');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
-  ctx.strokeStyle = 'rgba(205,235,255,0.9)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.ellipse(x, cy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-  ctx.strokeStyle = 'rgba(160,210,255,0.55)'; for (let i = 0; i < 3; i++) { const s = t * 0.05 + i * 2.1; ctx.beginPath(); ctx.ellipse(x, cy, rx - 3, ry - 3, 0, s, s + 0.9); ctx.stroke(); }   // rotating arcs
-  ctx.restore();
-}

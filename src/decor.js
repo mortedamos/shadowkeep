@@ -11,10 +11,15 @@ const BACK_KINDS = new Set(['column', 'waterfall', 'portrait', 'cog', 'pendulum'
 export function decoCoversHazard(d, spikes) {
   if (isBack(d)) return false; let x0, y0, w, h;
   if (d.t === 'img') { const im = IMG[d.img]; if (!im) return false; const sc = d.scale || 1; w = Math.round(im.width * sc); h = Math.round(im.height * sc); x0 = d.x - w / 2; y0 = d.y - h + (d.sink || 0); }
-  else if (d.t === 'cdl' || d.t === 'brazier') { const s = SHEET[d.t === 'cdl' ? 'candelabra' : 'brazier']; if (!s) return false; w = s.w; h = s.h; x0 = d.x - s.ax * w; y0 = d.y - s.ay * h; }
+  else if (d.t === 'cdl') { const im = IMG[cdlOf(d).img]; if (!im) return false; w = im.width; h = im.height; x0 = d.x - w / 2; y0 = d.y - h; }
+  else if (d.t === 'brazier') { const s = SHEET.brazier; if (!s) return false; w = s.w; h = s.h; x0 = d.x - s.ax * w; y0 = d.y - s.ay * h; }
   else return false;
   return spikes.some(([tx, ty]) => x0 < tx * T + T - 1 && x0 + w > tx * T + 1 && y0 < ty * T + T && y0 + h > ty * T + 6);
 }
+// The candelabras are two CC0 pictures from freegamesprites.com (a brass one and a bronze stand), their painted flames cut away (tools/pixelate-candelabra.ps1); the flames are lit by the effects layer at each candle's top
+// (fl = the three wicks, [x from the picture's centre, y from its bottom]).  Which one stands where comes from the column, so a room always looks the same.
+const CDL = [{ img: 'cdl_a', fl: [[-10.7, -33.5], [-0.3, -35.8], [10.9, -34.3]] }, { img: 'cdl_b', fl: [[-9.2, -38.6], [-0.3, -41.8], [9.2, -39]] }];
+const cdlOf = d => CDL[(((Math.round(d.x) * 2654435761) >>> 0) >>> 20) & 1];
 export const isBack = d => BACK_KINDS.has(d.t) || (d.back && (d.t === 'img' || d.t === 'bookcase' || d.t === 'barwin'));
 
 // a turning brass cogwheel (the Orloj Tower's works): a toothed rim, six spokes and a hub.  r = radius, n = teeth, spin = radians a frame (the sign is the direction), a = its opacity
@@ -49,27 +54,7 @@ export function drawDeco(g, d, cx, cy, t, room) {
       g.restore(); break; }
     case 'img': { const im = IMG[d.img], sc = d.scale || 1, w = Math.round(im.width * sc), h = Math.round(im.height * sc); g.drawImage(im, Math.round(x - w / 2), y - h + (d.sink || 0), w, h); break; }
     case 'hang': { const im = IMG[d.img], sc = d.scale || 1, w = Math.round(im.width * sc), h = Math.round(im.height * sc); g.drawImage(im, Math.round(x - w / 2), y, w, h); break; }       // hangs from the top edge (banners, a caged skeleton)
-    case 'waterfall': {        // a waterfall: d.top = the world y it pours from (it may start above the room), d.y = where it lands, d.w = its width.  Drawn behind the ground and the hero.
-      const w = d.w, top = Math.max(Math.round(d.top - cy), -2), bot = y, x0 = x - Math.round(w / 2), len = bot - top; if (bot <= 0 || top >= 216 || len <= 0) break;
-      const hs = (a, b) => hash(d.x * 0.37 + a, b);
-      g.fillStyle = 'rgba(88,146,160,0.42)'; g.fillRect(x0, top, w, len);                                      // the body of the water
-      g.fillStyle = 'rgba(165,218,228,0.26)'; g.fillRect(x0 + 3, top, w - 6, len);                             // a paler heart
-            // ragged foam down both edges (a dash here, a gap there, wavering a pixel or two)
-      for (let yy = top; yy < bot; yy += 5) { const wy = Math.floor((yy + cy) / 5); if (hs(wy, 11) > 0.35) { g.fillStyle = 'rgba(232,250,252,' + (0.28 + 0.3 * hs(wy, 12)).toFixed(2) + ')'; const sw = Math.round(Math.sin((wy + t * 0.12) * 0.7) * 1.2); g.fillRect(x0 + sw, yy, 1 + (hs(wy, 13) > 0.7 ? 1 : 0), 4); g.fillRect(x0 + w - 1 - sw, yy, 1 + (hs(wy, 14) > 0.7 ? 1 : 0), 4); } }
-      const n = Math.max(5, Math.floor(w / 2.4));
-      for (let k = 0; k < n; k++) {                                                                            // streaks of white water racing down (anchored in the world, so they do not swim when the camera moves)
-        const sx = x0 + 1 + Math.floor(hs(k, 1) * (w - 3)), sp = 1.8 + hs(k, 2) * 2.4, per = 38 + Math.floor(hs(k, 6) * 26), ph = hs(k, 3) * per, ln = 6 + Math.floor(hs(k, 4) * 20), wd = hs(k, 7) > 0.6 ? 2 : 1;
-        g.fillStyle = 'rgba(240,253,255,' + (0.25 + 0.55 * hs(k, 5)).toFixed(2) + ')';
-        for (let wy = Math.floor((cy + top) / per) * per - per; wy < cy + bot; wy += per) { const a = Math.round(wy + ((t * sp + ph) % per) - cy), b = Math.min(a + ln, bot), a2 = Math.max(a, top); if (b > a2) g.fillRect(sx, a2, wd, b - a2); }
-      }
-      { const gr = g.createLinearGradient(0, Math.max(top, bot - 44), 0, bot); gr.addColorStop(0, 'rgba(215,242,248,0)'); gr.addColorStop(1, 'rgba(215,242,248,0.30)'); g.fillStyle = gr; g.fillRect(x0 - 2, Math.max(top, bot - 44), w + 4, Math.min(len, 44)); }      // the water turns to mist as it nears the bottom
-      if (top > 0) { g.fillStyle = 'rgba(210,240,246,0.30)'; g.fillRect(x0 - 2, top, w + 4, 2); }              // a lip where it leaves a ledge
-      // where it lands: a boiling of foam and ripples on a small pool
-      g.fillStyle = 'rgba(60,112,128,0.55)'; g.fillRect(x0 - 8, bot - 3, w + 16, 3); g.fillStyle = 'rgba(205,238,244,0.6)'; g.fillRect(x0 - 8, bot - 3, w + 16, 1);
-      for (let i = 0; i < 6; i++) { const fx = x0 + ((i * 9 + Math.floor(t * 0.5)) % (w + 8)) - 4, fh = 2 + Math.floor(hs(i, Math.floor(t / 5)) * 4); g.fillStyle = 'rgba(240,252,255,0.7)'; g.fillRect(fx, bot - 3 - fh, 3, fh); }
-      for (let i = 0; i < 2; i++) { const ph = ((t * 0.5 + i * 30) % 60) / 60, rw = Math.round((w + 10) * (0.5 + ph)); g.fillStyle = 'rgba(215,242,248,' + (0.5 * (1 - ph)).toFixed(2) + ')'; g.fillRect(x - Math.round(rw / 2), bot - 1, rw, 1); }
-      break;
-    }
+    case 'waterfall': break;          // (waterfalls and streams are water in the effects layer now: fx.setWater)
     case 'portrait': drawFramedPortrait(g, x, y, { ci: d.ci, a: d.emo, frame: d.frame }); break;          // a framed portrait on the wall: x = its centre, y = the bottom edge of the frame (see portraitart.js)
     case 'dgtorch': drawSheet(g, 'dg_torch', Math.floor(t / 6 + d.x) % 4, x, y); break;
     case 'bookcase': {         // a tall bookcase drawn in code: oak frame, three shelves of books in a dozen colours (the same books every time for the same place)
@@ -103,7 +88,7 @@ export function drawDeco(g, d, cx, cy, t, room) {
       g.fillStyle = 'rgba(28,64,82,0.62)'; g.fillRect(x0 + 1, y - 4, w - 2, 1); break;
     }
     case 'torch': drawSheet(g, 'torch', 0, x, y); break;
-    case 'cdl': drawSheet(g, 'candelabra', 0, x, y); break;
+    case 'cdl': { const im = IMG[cdlOf(d).img]; if (im) g.drawImage(im, Math.round(x - im.width / 2), Math.round(y - im.height)); else drawSheet(g, 'candelabra', 0, x, y); break; }
     case 'brazier': drawSheet(g, 'brazier', 0, x, y); break;
     case 'banner': {
       const len = (d.len || 5) * T, w = 20, sway = Math.sin(t * 0.03 + d.x * 0.05) * 2, top = y - 0; g.fillStyle = d.color || '#7a1e2a';
@@ -212,26 +197,13 @@ export function drawFlames2D(g, flames, cx, cy, t) {
 }
 
 // flowing water on the floor (the Cistern): a translucent knee-deep sheet drawn OVER the hero's legs, with streaks of foam sliding along it the way the water runs
-export function drawCurrents(g, list, cx, cy, t) {
-  for (const c of list) {
-    const x0 = Math.round(c.x0 - cx), x1 = Math.round(c.x1 - cx); if (x1 < 0 || x0 > 384) continue;
-    const y = Math.round(c.y - cy), a = Math.max(0, x0), b = Math.min(384, x1), h = 20, len = c.x1 - c.x0;
-    g.fillStyle = 'rgba(70,150,185,0.30)'; g.fillRect(a, y - h, b - a, h + 2);
-    g.fillStyle = 'rgba(160,220,240,0.40)'; g.fillRect(a, y - h, b - a, 1);
-    for (let i = 0; i < Math.round(len / 14); i++) {
-      const w = 5 + (i % 4) * 4, yy = y - 3 - ((i * 7) % (h - 5)), xw = c.x0 + ((((i * 53 + t * c.vx * 1.5) % len) + len) % len), xs = Math.round(xw - cx);
-      if (xs + w < a || xs > b) continue; g.fillStyle = 'rgba(200,240,250,' + (0.22 + 0.2 * ((i * 3) % 3) / 2).toFixed(2) + ')'; g.fillRect(Math.max(a, xs), yy, Math.min(w, b - xs), 1);
-    }
-    for (let i = 0; i < 8; i++) { const xw = c.x0 + ((((i * 97 + t * c.vx * 2.2) % len) + len) % len), xs = Math.round(xw - cx); if (xs < a || xs > b) continue; g.fillStyle = 'rgba(235,250,255,0.5)'; g.fillRect(xs, y - h - 1 + (i % 2), 3, 1); }          // foam on the surface
-  }
-}
 
 // flames that must be lit for this room's decor
 export function roomFlames(room) {
   const out = [];
   for (const d of room.decos) {
     if (d.t === 'torch') out.push({ x: d.x, y: d.y - 15, scale: 1.1, seed: d.x, light: 80 });
-    else if (d.t === 'cdl') for (const [ox, oy, s] of [[-5.5, -26, 0.8], [0.5, -31, 1], [6.5, -26, 0.8]]) out.push({ x: d.x + ox, y: d.y + oy, scale: s, seed: d.x + ox, light: ox === 0.5 ? 60 : 0, behind: true });
+    else if (d.t === 'cdl') cdlOf(d).fl.forEach(([ox, oy], i) => out.push({ x: d.x + ox, y: d.y + oy, scale: i === 1 ? 1 : 0.8, seed: d.x + ox, light: i === 1 ? 60 : 0, behind: true }));
     else if (d.t === 'blaze') {      // a building fire
       if (d.burn && !(room.flags && room.flags.village_fire) && !(room.ignited && room.ignited.has(d.burn))) continue;          // (a house's fires are unlit until a torch lands on it, or the village burns) (no sprite - just fire): windows burn big, and many small fires burn all over the walls and roof. Each is a little bigger or smaller than its scale says
       const sc = d.scale || 1.5, small = !!d.small, j = 0.82 + 0.36 * hash(d.x, d.y);

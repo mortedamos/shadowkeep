@@ -41,6 +41,7 @@ export const STORY = {
     tab5: `Here the faithful prayed, and here they were taken. I used to light candles in a church like this, and never asked for anything for myself. I should have.`,
     tab6: `The gulf is too wide for any leap. Only quicksilver crosses a gulf like this. Dash, and do not look down.`,
     tab7: `The lord laid his household to rest here and promised them sleep. Someone keeps waking them. I know what it is to be woken. They are not wicked. They are tired.`,
+    tab19: `Thirty saints stand watch on this bridge, and not one of them could stop the fire. The river takes what falls. Please do not fall.`,
     tab18: `The clock still keeps Prague's hour. The apostles still walk in their windows, and the sun is still on its dial. It is the only sun left.`,
     tab17: `It is very dark here. Do not be afraid of it. I will go ahead of you.`,
     tab16: `An engineer built a machine to hold the sun below the hills. Listen to the gears: the only clock in Prague that still keeps time - and it is keeping the wrong hour.`,

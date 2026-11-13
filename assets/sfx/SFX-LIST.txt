@@ -1,0 +1,119 @@
+=====================================================================
+  SHADOWKEEP  -  SOUND EFFECTS TO FIND
+=====================================================================
+
+HOW THIS WORKS
+--------------
+Every sound in the game is, for now, SYNTHESIZED by the game itself (the
+beeps, whooshes and bells you hear).  Each one can be replaced by a real
+recording, with no code changes:
+
+  1. Find a sound that fits (see "WHERE TO LOOK" at the bottom).
+  2. Save it in THIS folder (assets/sfx/) using the FILE NAME below.
+     .mp3, .ogg or .wav all work: "jump.mp3", "jump.ogg" or "jump.wav".
+  3. Reload the game.  That's all.  A sound with no file keeps its built-in
+     synthesized version, so you can add them one at a time, in any order.
+
+VARIANTS: for sounds that repeat a lot (footsteps, sword swings, hits),
+a few different recordings sound much better than one.  Add the extra ones
+with _2, _3, ... on the end of the name (step.wav, step_2.wav, step_3.wav).
+The game picks one at random each time and bends its pitch up or down by up to 7% (every file, even a single one, so repeats never sound identical).
+
+PUBLISHING: a plain web host (GitHub Pages) cannot list a folder, so before
+you publish run   node tools/sfx-manifest.mjs   (it writes assets/sfx/files.json).
+Playing locally with  node server.js  needs nothing.
+
+TIPS FOR EACH FILE
+ * Trim the silence off the start - the sound must begin the instant it plays.
+ * Keep them SHORT (the length is given below); no long reverb tails on the
+   sounds that repeat.
+ * Normalise them to about the same loudness (peak around -3 dB).  The game
+   has a SOUND volume slider, and plays every file at about 90% of its level.
+ * Mono is fine and keeps the files small.
+ * Write down where each one came from and its licence (CREDITS.md and
+   credits.txt need a line for it).  Prefer CC0 / public domain.
+
+(The old "record_scratch.mp3" is already here: it is the record-scratch gag
+in the disco room, and is separate from this list.)
+
+
+THE LIST
+--------
+Order: the ones you will hear MOST come first - they make the biggest
+difference.  "length" is a good length to look for.
+
+---------- 1. HEARD CONSTANTLY (do these first) ----------
+
+step         length 0.05-0.15 s     The hero's (and every creature's) footfall.  Soft stone / dirt step.
+             Find 3-4 variants: step.wav step_2.wav step_3.wav step_4.wav   (very quiet and dry)
+slash        length 0.2-0.4 s       A sword swing: a quick airy WHOOSH, no impact.  Hero and enemies both use it.
+             Variants: slash.wav slash_2.wav slash_3.wav
+hit          length 0.15-0.3 s      A blade or blow LANDING on an enemy: a meaty thwack / slice-into-flesh.
+             Variants: hit.wav hit_2.wav hit_3.wav
+hurt         length 0.3-0.6 s       The hero is wounded: a grunt of pain, or a heavy body-blow thud.
+jump         length 0.1-0.25 s      The hero (or a boss) leaps: a light cloth-and-boot push-off.
+land         length 0.1-0.2 s       Landing after a jump: a soft thud of boots on stone.
+kill         length 0.3-0.7 s       An enemy dies: a short burst / crumble / ghostly gasp.
+coin         length 0.15-0.4 s      Gold picked up: a bright little coin clink or two.
+pickup       length 0.1-0.3 s       A heart or mana drop is picked up: a small soft chime.
+click        length 0.03-0.08 s     Menu cursor moves: a tiny tick.
+select       length 0.08-0.2 s      Menu choice confirmed: a short bright blip or wooden knock.
+back         length 0.08-0.2 s      Menu cancelled: a short lower blip.
+
+---------- 2. COMBAT AND MAGIC ----------
+
+djump        length 0.2-0.4 s       The DOUBLE jump: a second airy flutter - like wings or a puff of wind.
+dash         length 0.2-0.4 s       The hero's dash: a fast rushing swoosh.
+block        length 0.1-0.25 s      A blow bounces off (armour or a shield): a bright metallic CLANG.
+fire         length 0.4-0.9 s       A flame bursts or burns: a rushing fire WHOOSH / crackle.
+fireball     length 0.3-0.7 s       A fireball is launched: a fiery whoosh with a bit of pitch rise.
+cast         length 0.3-0.7 s       Any spell being cast / an enemy sorcerer conjuring: a rising magical shimmer.
+enchant      length 0.5-1.0 s       The hero's sword takes an element (fire / ice / sun): sparkling magical shing.
+freeze       length 0.3-0.7 s       Ice: a glassy crystalline crackle-chime.
+thunder      length 1.5-3.0 s       The thunder spell and the storms: a big lightning crack rolling into thunder.
+crack        length 0.3-0.7 s       A sharp CRACK: lightning strike, glass breaking, a wall splitting (also the Mirror).
+boom         length 0.4-1.0 s       A heavy impact or blast: boss slams, explosions, a crash.  Deep and punchy.
+break        length 0.3-0.7 s       Something smashes: a barrel, a clay pot, a statue, a cracked wall (wood / stone / pottery).
+bone         length 0.05-0.2 s      A skeleton's bones clatter: a dry rattle or a bone clack.
+flap         length 0.1-0.3 s       Wings beat (bats, birds, the Count's mist): one soft flutter.
+shriek       length 0.5-1.2 s       A piercing screech: ghosts, bats, the Seraph.  High and eerie.
+ghost        length 0.5-1.5 s       A ghostly moan or whisper: low, airy, hollow.
+roar         length 0.8-1.8 s       A boss's roar: a deep monstrous growl / bellow.
+tell         length 0.15-0.35 s     The WARNING just before a boss attack: a sharp two-note alert tick (it is a gameplay
+                                    signal, so keep it clear and short).
+steam        length 0.3-0.8 s       A burst of steam: a hiss (the Clockwork Dungeon).
+gear         length 0.05-0.2 s      A cog or mechanism clunk: a small metal tick or clank (Clockwork Dungeon).
+
+---------- 3. WORLD, ITEMS AND FANFARES ----------
+
+heal         length 0.5-1.0 s       A potion or heart restores health: a warm rising chime / sparkle.
+mana         length 0.4-0.8 s       Mana restored: a cool watery shimmer.
+item         length 0.8-1.5 s       A special item is picked up (a key, a relic): a bright magical jingle.
+levelup      length 0.5-1.2 s       The hero gains a level: a short triumphant arpeggio / fanfare.
+ability      length 1.5-3.0 s       A great power is won (double jump, dash, ember, thunder...): a big rising, glowing swell.
+door         length 0.6-1.2 s       A heavy door opens, or you pass through one: wood or stone grinding, creaking.
+seal         length 0.5-1.0 s       A boss room's doors SEAL shut behind you: a grinding slam plus a magical hum.
+unseal       length 0.5-1.0 s       The seals are lifted when a boss falls: a release - the hum fading, the doors unlocking.
+save         length 1.5-3.0 s       The sanctuary / altar saves your game: soft bells, calm and holy.
+toll         length 2.5-4.5 s       A single deep church BELL tolling (the opening scene and story beats).  Low and resonant;
+                                    let it ring out.
+gameover     length 1.5-3.0 s       The hero dies: a sinking, mournful drone or a low descending toll.
+
+
+NOT USED RIGHT NOW (ignore these): candle, zap, shield.  They exist in the
+game but nothing plays them at the moment.
+
+
+WHERE TO LOOK
+-------------
+ * freesound.org           (huge; filter the licence to "Creative Commons 0" and you can use anything without credit)
+ * kenney.nl/assets        (CC0 sound packs: "Impact Sounds", "RPG Audio", "Interface Sounds", "Digital Audio")
+ * opengameart.org         (search "sword", "footsteps", "spell"; read the licence on each page)
+ * sonniss.com GDC bundles (free professional sound libraries, royalty-free for games)
+ * pixabay.com/sound-effects (free; credit not required)
+Search words that work well:  "sword whoosh", "sword hit flesh", "stone footstep", "wooden door creak",
+"church bell toll", "fire whoosh", "ice crystal", "lightning thunder crack", "magic spell cast",
+"ghost moan", "monster roar", "bone rattle", "steam hiss", "gear clank", "coin pickup".
+
+WHEN YOU HAVE A FEW:  tell me which ones you added and where they came from, and I
+will add them to CREDITS.md and credits.txt.

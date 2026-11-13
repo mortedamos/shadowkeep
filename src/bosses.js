@@ -124,6 +124,11 @@ export class Column {
 }
 
 // -------------------------------------------------------------------------------------------- Boss base
+// how bosses read the player (see Boss.choose): which of their attacks are for when you are close, far off, or in the air
+const CLOSE_ATK = new Set(['slam', 'stomp', 'lunge', 'strikes', 'tentacles', 'leap', 'dive', 'vents']);
+const FAR_ATK = new Set(['embers', 'breath', 'bolts', 'tideorbs', 'spores', 'skulls', 'feathers', 'gears', 'geysers', 'pillars', 'mist', 'summon', 'charge', 'gallop']);
+const AIR_ATK = new Set(['feathers', 'bolts', 'skulls', 'pillars', 'spores', 'embers', 'breath', 'tideorbs']);
+const combo_min = w => Math.max(58, Math.round(w * 0.5));
 export class Boss extends Enemy {
   constructor(g, x, y, w, h, o) {
     super(g, x, y, w, h, o); this.isBoss = true; this.active = false; this.invuln = true; this.harmless = true; this.state = 'dormant'; this.st = 0; this.dying = 0; this.reward = o.reward; this.bossName = 'BOSS'; this.phase = 1; this.cool = 60; this.triggerDist = 200; this.kbRes = 1; this.noKb = true; this.heavy = true; this.sub = '';
@@ -166,12 +171,35 @@ export class Boss extends Enemy {
   faceP() { this.dir = this.g.player.x >= this.x ? 1 : -1; }
 
   // ---- attack selection with a visible lead-in
-  choose(list) { const pool = list.length > 1 ? list.filter(k => k !== this.lastAtk) : list; return pool[Math.floor(Math.random() * pool.length)]; }
+  // So that no two fights go the same way, each boss CHOOSES what to do next from a few things (and a different few every fight):
+  //   * a MOOD, rolled once per fight: every attack gets a favour (some are loved this time, some almost forgotten);
+  //   * it never repeats its last attack, and rarely the one before that;
+  //   * it reads YOU: close in, it favours its close attacks; far away, the ranged ones; up in the air, whatever reaches the air;
+  //   * the rhythm changes: usually a breath of a pause, sometimes a long one (an opening), and now and then a COMBO - the next attack comes hard on the heels of the last (more often in the second phase);
+  //   * below a quarter of its life it grows impatient and pauses less.
+  choose(list) {
+    const p = this.g.player, dx = Math.abs(p.x - this.x), air = p.y < this.y - 70; this.mood ||= {}; this.hist ||= [];
+    const uniq = [...new Set(list)], base = uniq;
+    const wts = base.map(k => {
+      if (this.mood[k] === undefined) this.mood[k] = 0.4 + 1.5 * Math.random();
+      let w = this.mood[k] * (1 + 0.25 * (list.filter(q => q === k).length - 1));          // (a boss that lists an attack twice likes it more)
+      if (uniq.length > 1) w *= k === this.lastAtk ? (uniq.length > 3 ? 0 : 0.08) : this.hist.includes(k) ? 0.6 : 1;          // (the last attack again: never, or just now and then for a boss with only three; the one before it is a little less likely)
+      if (dx < 100 && CLOSE_ATK.has(k)) w *= 1.8; if (dx > 220 && FAR_ATK.has(k)) w *= 1.8; if (air && AIR_ATK.has(k)) w *= 1.6; return w;
+    });
+    if (!(wts.reduce((x, y) => x + y, 0) > 0)) return base[Math.floor(Math.random() * base.length)];
+    let r = Math.random() * wts.reduce((x, y) => x + y, 0); for (let i = 0; i < base.length; i++) { r -= wts[i]; if (r <= 0) return base[i]; } return base[base.length - 1];
+  }
   // call every idle step.  Picks the next attack right away, shows its icon for the last ~54 frames of the wait, then enters it.
   planNext(list, wait) {
-    if (!this.plan) this.plan = this.choose(list);
-    const lead = 54; if (this.st > wait - lead) this.tell(this.plan, clamp((this.st - (wait - lead)) / lead, 0, 1));
-    if (this.st >= wait) { const k = this.plan; this.plan = null; this.lastAtk = k; this.state = k; this.st = 0; return true; }
+    if (!this.plan) {
+      this.plan = this.choose(list);
+      const hurt = this.hp / this.maxHp < 0.25, combo = !this.comboRun && !!this.lastAtk && Math.random() < (this.phase === 2 ? 0.36 : 0.15);
+      this.comboRun = combo ? 1 : 0;
+      this.waitK = combo ? 0.5 : (Math.random() < 0.14 ? 1.45 : 0.8 + 0.4 * Math.random()); if (hurt) this.waitK *= 0.8;
+    }
+    const W = Math.max(combo_min(wait), Math.round(wait * (this.waitK || 1))), lead = Math.min(54, Math.max(30, W - 6));
+    if (this.st > W - lead) this.tell(this.plan, clamp((this.st - (W - lead)) / lead, 0, 1));
+    if (this.st >= W) { const k = this.plan; this.plan = null; this.lastAtk = k; (this.hist ||= []).push(k); if (this.hist.length > 2) this.hist.shift(); this.state = k; this.st = 0; return true; }
     return false;
   }
   // announce an attack: icon, aura, warning sound, optional danger zones.  `p` = windup progress 0..1
@@ -550,7 +578,7 @@ export class BossCinder extends Boss {
     else if (this.state === 'leap') { id = 'ars_gnu_r2'; f = this.st < T ? 0 : 2; }
     else if (this.state === 'pillars') { id = 'ars_gnu_r2'; f = this.st < 30 ? 0 : 1; }
     else if (Math.abs(this.vx) > 0.15) { id = 'ars_gnu_r1'; f = Math.floor(this.t / 8) % 5; }
-    this.spr(ctx, id, f, cx, cy + 1, { dx, flash: this.flashT > 0 });
+    this.spr(ctx, id, f, cx, cy, { dx, flash: this.flashT > 0 });
     this.g.fx.light(this.x, this.y - 44, 70, 0.5);
   }
 }
@@ -615,7 +643,8 @@ export class BossVampire extends Boss {
     g.fx.light(this.x, this.y - 40, 70, 0.4 * this.alpha);
     switch (this.state) {
       case 'idle':
-        this.alpha = 1; this.faceP(); this.vx = approach(this.vx, d > 130 ? this.dir * 1.1 : d < 56 ? -this.dir * 0.8 : 0, 0.06);
+        this.alpha = 1; this.faceP(); if (this.vx * this.dir < 0) this.vx = 0;          // (turning round - you jumped over him - stops him dead: no sliding on backwards)
+        this.vx = approach(this.vx, d > 130 ? this.dir * 1.1 : 0, 0.06);          // (he only ever walks TOWARD you: he used to back away when you came close - facing you, so it looked like walking backwards)
         this.planNext(this.phase === 2 ? ['lunge', 'bolts', 'mist', 'leap'] : ['lunge', 'bolts', 'mist'], Math.round(80 / spd)); break;
       case 'lunge': {
         const T0 = this.tele('lunge'), run = 30, sp = this.phase === 2 ? 6.2 : 5.2;
@@ -818,7 +847,7 @@ export class BossMirror extends Boss {
     const mv = this.mv, p = this.g.player; if (!mv) return;
     const fi = this.hold || p.frameInfo(), x = this.x - cx, y = this.y - cy, k = this.evil;
     mv.clip(ctx, cx, cy);
-    if (k < 1) { const o = { alpha: 0.94 * (1 - k) }; heroFrame(ctx, fi.sheet, fi, x, y, this.dir, p.h, o); heroFrame(ctx, fi.sheet + '_hair', fi, x, y, this.dir, p.h, o); }
+    if (k < 1) { const o = { alpha: 0.94 * (1 - k) }; heroFrame(ctx, fi.sheet, fi, x, y, this.dir, p.h, o); }
     if (k > 0) heroFrame(ctx, fi.sheet + '_evil', fi, x, y, this.dir, p.h, { alpha: 0.94 * k });
     ctx.restore(); mv.over(ctx, cx, cy);
   }

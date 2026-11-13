@@ -44,7 +44,9 @@ export class Pickup extends Entity {
     this.t++; const p = g.player, room = g.room;
     const pc = { x: p.x, y: p.y - 16 }, d = dist(this.x, this.y - 5, pc.x, pc.y);
     const reach = g.save && g.save.flags.got_lantern ? 96 : 44;          // (the Marshlight Lantern's wisp draws loot from much further)
-    if (this.t > 24 && d < reach && !p.dead) this.magnet = true;
+    const lamp = !!(g.save && g.save.flags.got_lantern);
+    if (this.t > 24 && !p.dead && (lamp ? (this.touched || d < 20) : d < reach)) this.magnet = true;          // (with the lantern, the wisp must first fly out and TOUCH the loot - see Player.stepLantern; then it comes)
+    if (this.touchT > 0) { this.touchT--; g.fx.glow(this.x, this.y - 6, 18 + this.touchT, [0.55, 0.78, 1], 0.5 * this.touchT / 14); }
     if (this.magnet) { const a = Math.atan2(pc.y - (this.y - 5), pc.x - this.x), sp = Math.min(4.5, 2 + this.t * 0.01 + (reach - Math.min(d, reach)) * 0.05); this.vx = Math.cos(a) * sp; this.vy = Math.sin(a) * sp; this.x += this.vx; this.y += this.vy; }
     else { this.vy = Math.min(this.vy + 0.14, 4); this.vx *= 0.97; moveX(this, room); const vy0 = this.vy; moveY(this, room); if (this.onGround && Math.abs(vy0) > 1) { this.vy = -vy0 * 0.35; this.onGround = false; } }
     if (--this.life <= 0) this.dead = true;
@@ -218,11 +220,13 @@ export class Waystone {
 export class Tablet {
   constructor(x, y, o) { this.x = x; this.y = y; this.text = STORY.tablets[o.id] || o.text; this.id = o.id; this.sign = /^sign_/.test(o.id || ''); this.t = 0; this.dead = false; }          // (a signpost is a sign; every gravestone and tablet is her: see story.js)
   get box() { return { x: this.x - 12, y: this.y - 26, w: 24, h: 26 }; }
-  update(g) { this.t++; if (this.t % 10 === 0 && !g.save.flags['read_' + this.id]) g.fx.emit({ x: this.x + rand(-5, 5), y: this.y - 18, vx: 0, vy: -rand(0.2, 0.5), life: 40, s0: 5, s1: 1, c0: [0.7, 0.85, 1], a0: 0.8, a1: 0, kind: 6 }); }
+  update(g) { this.t++; if (!this.sign) { const unread = !g.save.flags['read_' + this.id]; g.fx.glow(this.x, this.y - 13, 22 + 2 * Math.sin(this.t * 0.05), [0.6, 0.8, 1], (unread ? 0.3 : 0.14) + 0.04 * Math.sin(this.t * 0.04)); }          // (her stones glow faintly, softly: that is what tells them from the headstones that are only scenery, and from signs)
+    if (this.t % 10 === 0 && !g.save.flags['read_' + this.id]) g.fx.emit({ x: this.x + rand(-5, 5), y: this.y - 18, vx: 0, vy: -rand(0.2, 0.5), life: 40, s0: 5, s1: 1, c0: [0.7, 0.85, 1], a0: 0.8, a1: 0, kind: 6 }); }
   interact(g) { g.save.flags['read_' + this.id] = true; if (!this.sign) { if (g.save.flags.got_lantern) g.player.lanFlare = 260; else g.ghost.reveal(280); } g.showDialog(this.text, this.sign ? {} : { name: STORY.speaker, font: 'hand' });          A.sfx('select'); return true; }          // (her words are in her own handwriting)
   draw(ctx, cx, cy) {
     const x = this.x - cx, y = this.y - cy;
-    if (this.sign || !IMG.gy_stone) { drawSheet(ctx, 'tablet', 0, x, y); return; }          // (a signpost keeps the old board; her stones are the Graveyard pack's headstone, with flowers at its foot)
+    if (this.sign && IMG.signpost) { const im = IMG.signpost; ctx.drawImage(im, Math.round(x - im.width / 2), Math.round(y - im.height + 1)); return; }          // (a signpost is a wooden post and board - FreeGameSprites, CC0 - never a stone; her words are on the headstones below)
+    if (this.sign || !IMG.gy_stone) { drawSheet(ctx, 'tablet', 0, x, y); return; }          // (her stones are the Graveyard pack's headstone, with flowers at its foot)
     const st = IMG.gy_stone, fl = ['gy_lily', 'gy_rose', 'gy_daisy', 'gy_posy'], h = [...String(this.id)].reduce((a, ch) => (a * 31 + ch.charCodeAt(0)) >>> 0, 7);
     const put = (name, dx, up) => { const im = IMG[name]; if (im) ctx.drawImage(im, Math.round(x + dx - im.width / 2), Math.round(y - im.height + up)); };
     put(fl[h % 4], -11 - (h >> 3) % 3, 1); put(fl[(h >> 4) % 4], 11 + (h >> 6) % 3, 1);

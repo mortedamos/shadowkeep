@@ -1,14 +1,13 @@
 // The cloaked stranger (sprites: the "Gothic Hero" by Ansimuz, CC0).
 import { Entity, moveX, moveY, touchesSpikes } from './entity.js';
 import { Input } from './input.js';
-import { drawSheet, SHEET, sheetExtents, hairBox } from './assets.js';
-import { Hair } from './hair.js';
+import { drawSheet, SHEET, sheetExtents } from './assets.js';
 import { Audio_ as A } from './audio.js';
 import { COLORS } from './fx.js';
 import { T, clamp, approach, rand, TAU } from './util.js';
 import { TILE } from './world.js';
 import { Fireball, SwordFire } from './projectiles.js';
-import { ENCH, TUNE, drawShield } from './enchant.js';
+import { ENCH, TUNE } from './enchant.js';
 import { STAINS, STAIN_KEYS, RAIN_WASH, POOL_WASH, stainSource } from './stain.js';
 import { ITEM_ORDER, itemCount, canUseItem, releaseItem } from './items.js';
 
@@ -45,13 +44,12 @@ export class Player extends Entity {
     this.trail = []; this.fallSpeed = 0; this.dead = false; this.deathT = 0; this.landedT = 0; this.spell = 'ember'; this.castFired = false; this.interactCd = 0; this.idleT = 0; this.hitsThisSwing = 0;
     this.ench = null; this.fireFired = false; this.sunQuad = null; this.crouch = false; this.crouchT = 0;
     this.stain = { soot: 0, mud: 0, blood: 0 };       // what the cloak has picked up (see stain.js)
-    this.hair = new Hair();                             // his hair: a mesh that moves with him (see hair.js)
     this.sel = null; this.castItem = null; this.healT = 0; this.healPer = 0;      // hotbar selection, the item being thrown, bandage healing
   }
   get S() { return this.g.save; }
   get atkPower() { const S = this.S; return S.atk + Math.floor(S.level / 2); }
   get hurtbox() { const b = this.box; return { x: b.x + 1, y: b.y + 2, w: b.w - 2, h: b.h - 2 }; }
-  place(x, y, dir = 1) { this.x = x; this.y = y; this.vx = this.vy = 0; this.dir = dir; this.lastSafe = { x, y }; this.atk = 0; this.atkBuf = 0; this.dashT = 0; this.hurtT = 0; this.castT = 0; this.castItem = null; this.healT = 0; this.djumpT = 0; this.crouch = false; this.h = PH; this.trail.length = 0; if (this.g.fx.cloak) this.g.fx.cloak.ready = false; this.hair.reset(); }
+  place(x, y, dir = 1) { this.x = x; this.y = y; this.vx = this.vy = 0; this.dir = dir; this.lastSafe = { x, y }; this.atk = 0; this.atkBuf = 0; this.dashT = 0; this.hurtT = 0; this.castT = 0; this.castItem = null; this.healT = 0; this.djumpT = 0; this.crouch = false; this.h = PH; this.trail.length = 0; if (this.g.fx.cloak) this.g.fx.cloak.ready = false; }
 
   // ------------------------------------------------------------------ combat helpers
   swordDamage() { const E = this.ench; return Math.max(1, Math.round(this.atkPower * this.seq.dmg * (E ? ENCH[E.type].dmg : 1))); }
@@ -67,11 +65,6 @@ export class Player extends Entity {
   hurt(dmg, fromX, opts = {}) {
     const g = this.g, S = this.S, E = this.ench;
     if (this.invT > 0 || this.dead || g.cutscene) return false;
-    if (E && E.shield > 0 && !opts.unblockable) {      // AEGIS: the shield eats one hit
-      E.shield = 0; this.invT = Math.max(this.invT, 45); A.sfx('block'); g.shake(2, 6);
-      g.fx.ring(this.x, this.y - 19, 40, ENCH.aegis.rgb, 18, 0.18); g.fx.burst(this.x, this.y - 19, 14, [[0.8, 0.92, 1], [0.3, 0.5, 1]], { speed: 2.4, s0: 12 }); g.popup(this.x, this.y - 48, 'BLOCKED', '#9cd0ff');
-      return true;
-    }
     { const el = opts.el || stainSource(g, fromX);
       if (el === 'soot' && S.flags.got_mantle) { dmg = Math.max(1, Math.round(dmg * 0.5)); g.popup(this.x, this.y - 52, 'ASHEN', '#ffb070'); }          // the Ashen Mantle: fire hurts half as much (and leaves no soot)
       else if (el) this.addStain(el, clamp(dmg / 14, 0.18, 0.5)); }      // fire singes, filth dirties, claws and fangs draw blood
@@ -100,7 +93,7 @@ export class Player extends Entity {
   // ------------------------------------------------------------------ sword enchantments
   setEnchant(type) {
     const E = this.ench, def = ENCH[type], g = this.g;
-    if (E && E.type === type) E.t = Math.min(TUNE.maxTime, E.t + TUNE.addTime); else { this.clearEnchant(false); this.ench = { type, t: TUNE.time, shield: 0 }; }
+    if (E && E.type === type) E.t = Math.min(TUNE.maxTime, E.t + TUNE.addTime); else { this.clearEnchant(false); this.ench = { type, t: TUNE.time }; }
     A.sfx('enchant'); g.fx.ring(this.x, this.y - 18, 46, def.rgb, 30, 0.14); g.fx.flash(def.rgb, 0.22); g.fx.sparks(this.x, this.y - 18, 20, [[1, 1, 1], def.rgb], 3.2);
     g.banner(def.title, def.desc + ' ' + Math.round(this.ench.t / 3600) + ' MIN LEFT.', 200, { y: 56, color: '#ffe9a0' });
   }
@@ -109,17 +102,13 @@ export class Player extends Entity {
     if (announce && this.ench) { this.g.popup(this.x, this.y - 44, ENCH[this.ench.type].name + ' FADES', '#cfc2a0'); A.sfx('back'); this.g.fx.souls(this.x, this.y - 18, 6, COLORS.white); }
     this.ench = null;
   }
-  raiseShield() {
-    const E = this.ench; if (!E || E.shield > 0) return; E.shield = TUNE.shieldTime; A.sfx('shield');
-    this.g.fx.ring(this.x, this.y - 19, 34, ENCH.aegis.rgb, 22, 0.16); this.g.popup(this.x, this.y - 48, 'SHIELD UP', '#9cd0ff');
-  }
   // called by the game for every successful sword hit
   onSwordHit(e) {
     const E = this.ench; if (!E) return;
     if (E.type === 'ice') {
       const boss = e.isBoss, chance = boss ? TUNE.bossFreezeChance : TUNE.freezeChance;
       if (Math.random() < chance) e.freeze(boss ? rand(TUNE.bossFreezeMin, TUNE.bossFreezeMax) : rand(TUNE.freezeMin, TUNE.freezeMax), boss ? TUNE.bossFreezeImmune : TUNE.freezeImmune);
-    } else if (E.type === 'aegis' && E.shield <= 0 && Math.random() < TUNE.shieldChance) this.raiseShield();
+    }
   }
   // world positions of blade / slash-arc pixels in the current frame (empty while the sword is sheathed)
   swordPoints() {
@@ -132,7 +121,6 @@ export class Player extends Entity {
     const g = this.g, fx = g.fx, E = this.ench; if (!E) return; const def = ENCH[E.type], t = this.t, c = def.rgb;
     if (!g.cutscene) E.t--;
     if (E.t <= 0) { this.clearEnchant(true); return; }
-    if (E.shield > 0 && --E.shield === 0) { fx.burst(this.x, this.y - 19, 8, [[0.8, 0.92, 1], [0.3, 0.5, 1]], { speed: 1.2, s0: 10 }); }
     // FIRE: every slash flings a small fireball
     if (E.type === 'fire' && this.atk && !this.fireFired && this.atkDur - this.atk >= this.seq.s0) {
       this.fireFired = true; const heavy = this.seq.dmg > 1;
@@ -153,13 +141,12 @@ export class Player extends Entity {
     fx.light(this.x, this.y - 20, E.type === 'sun' ? 120 : E.type === 'fire' ? 78 : 62, E.type === 'sun' ? 0.95 : 0.55);   // SUN also lights up dark rooms
     // SUN: slow rotating sunburst behind the hero
     if (E.type === 'sun') { if (!this.sunQuad || !fx.quads.includes(this.sunQuad)) this.sunQuad = fx.quad({ kind: 'rays', x: this.x, y: this.y - 20, w: 76, h: 76, color: [1, 0.9, 0.5], life: 1, hold: true, spin: 0.015, p: [0, 10], a0: 0.3, a1: 0.3, order: 2 }); this.sunQuad.x = this.x; this.sunQuad.y = this.y - 20; }
-    if (E.shield > 0 && t % 4 === 0) fx.emit({ x: this.x + rand(-14, 14), y: this.y - 19 + rand(-22, 22), vx: 0, vy: -0.2, life: 18, s0: 3, s1: 1, c0: [0.7, 0.85, 1], a0: 0.9, a1: 0, kind: 1 });
   }
 
   // ------------------------------------------------------------------ update
   update() {
     const g = this.g, S = this.S, room = g.room, I = Input; this.t++;
-    if (this.dead) { this.deathT++; this.vy = Math.min(this.vy + GRAV, MAXFALL); moveY(this, room); this.vx *= 0.9; this.stepCloak(); this.stepHair(); return; }
+    if (this.dead) { this.deathT++; this.vy = Math.min(this.vy + GRAV, MAXFALL); moveY(this, room); this.vx *= 0.9; this.stepCloak(); return; }
     for (const k of ['invT', 'hurtT', 'dashCd', 'castCd', 'dropThrough', 'coyote', 'jumpBuf', 'interactCd', 'djumpT', 'atkBuf']) if (this[k] > 0) this[k]--;
     if (!this.atk && this.comboT > 0) this.comboT--;
     const locked = this.hurtT > 0 || g.cutscene || g.playerFrozen;
@@ -265,7 +252,7 @@ export class Player extends Entity {
     // footsteps / run animation
     if (this.onGround && Math.abs(this.vx) > 0.3) { this.runT += Math.abs(this.vx) * 0.13; if (Math.floor(this.runT) % 6 === 0 && Math.floor(this.runT) !== this._lastStep) { this._lastStep = Math.floor(this.runT); A.sfx('step'); } } else this.runT = 0;
     this.idleT = (Math.abs(this.vx) < 0.1 && this.onGround) ? this.idleT + 1 : 0;
-    this.updateEnchant(); this.updateStains(); this.updateHeal(); this.swishWind(); this.stepCloak(); this.stepHair(); this.stepLantern();
+    this.updateEnchant(); this.updateStains(); this.updateHeal(); this.swishWind(); this.stepCloak(); this.stepLantern();
     if (touchesSpikes(this, room)) this.hurtSpikes();
   }
   updateHeal() {            // bandage: life flows back over ~1.5s
@@ -277,13 +264,33 @@ export class Player extends Entity {
   stepLantern() {
     const g = this.g, fx = g.fx;
     if (!this.S.flags.got_lantern) { fx.lantern = null; this.lan = null; return; }
-    // (the wisp is HER: it floats where the ghost used to, a step behind him, at the height of her head)
-    const tx = this.x - this.dir * 20 + Math.sin(this.t * 0.045) * 6, ty = this.y - 38 + Math.sin(this.t * 0.07) * 4; if (this.lanFlare > 0) this.lanFlare--;          // (lanFlare: a gravestone has spoken - the wisp flares)
-    if (!this.lan || Math.hypot(this.lan.x - tx, this.lan.y - ty) > 150) this.lan = { x: tx, y: ty };
-    const L = this.lan; L.x += (tx - L.x) * 0.07; L.y += (ty - L.y) * 0.09; fx.lantern = { x: L.x, y: L.y };
-    const fl = Math.min(1, (this.lanFlare || 0) / 40);
-    fx.glow(L.x, L.y, 30 + 14 * fl, [0.3, 0.55, 1], 0.34 + 0.3 * fl); fx.glow(L.x, L.y, 12 + 4 * fl, [0.62, 0.8, 1], 0.7); fx.glow(L.x, L.y, 4.5, [1, 1, 1], 1); fx.light(L.x, L.y, 118 + 30 * fl, 0.9 + 0.3 * fl, [0.4, 0.66, 1]);
+    // (the wisp is HER: it floats where the ghost used to, a step behind him, at the height of her head.  Small things say it is a person and not a lamp:
+    //  she keeps close and lowers herself to his shoulder when he stands still; she darts in front of him, flaring, when he is hurt; her light falters when his life is low;
+    //  she sighs - a slow pale-rose swell and a drift of motes - now and then; and she trails a thin veil of light behind her, like long hair or a shroud, that follows her movement)
+    this.stillT = (Math.abs(this.vx) < 0.05 && this.onGround) ? (this.stillT || 0) + 1 : 0; const still = Math.min(1, Math.max(0, (this.stillT - 90) / 90));
+    if (this.lanHp === undefined) this.lanHp = this.S.hp; if (this.S.hp < this.lanHp) { this.lanFlare = 50; this.lanDart = 28; } this.lanHp = this.S.hp;
+    if (this.lanDart > 0) this.lanDart--; const dart = this.lanDart > 0 ? Math.sin(Math.PI * this.lanDart / 28) : 0;
+    let tx = this.x - this.dir * (20 - 12 * still - 36 * dart) + Math.sin(this.t * (0.045 - 0.02 * still)) * (6 - 3 * still), ty = this.y - 38 + 6 * still + Math.sin(this.t * 0.07) * (4 - 2 * still); if (this.lanFlare > 0) this.lanFlare--;          // (lanFlare: a gravestone has spoken - the wisp flares)
+    if (!this.lan || Math.hypot(this.lan.x - tx, this.lan.y - ty) > 150) this.lan = { x: tx, y: ty, trail: [] };
+    const L = this.lan; let k = dart > 0 ? 3 : 1;
+    // LOOT: she flies out to the nearest thing lying within reach, touches it (a little burst of light), and only then does it drift to him; she lingers a moment, then comes back
+    let pk = this.lanTarget; if (pk && (pk.dead || pk.magnet || this.dead)) pk = this.lanTarget = null;
+    if (!pk && !this.dead && !(this.lanHold > 0) && this.t % 4 === 0) { let best = 1e9; for (const q of g.pickups) { if (q.dead || q.magnet || q.touched || q.t <= 24 || q.fullT > 0) continue; const dd = Math.hypot(q.x - this.x, q.y - 5 - (this.y - 16)); if (dd < 112 && dd < best) { best = dd; pk = q; } } if (pk) { this.lanTarget = pk; this.lanChase = 0; } }
+    if (this.lanHold > 0) this.lanHold--;
+    if (pk) {
+      tx = pk.x; ty = pk.y - 8; k = 3.2; this.lanChase = (this.lanChase || 0) + 1;
+      if (Math.hypot(L.x - tx, L.y - ty) < 7 || this.lanChase > 60) { pk.touched = true; pk.touchT = 14; this.lanTarget = null; this.lanHold = 10; g.fx.burst(pk.x, pk.y - 6, 7, [[0.7, 0.85, 1], [0.4, 0.6, 1]], { speed: 1.4, s0: 5, s1: 1.5 }); g.fx.ring(pk.x, pk.y - 6, 12, [0.6, 0.8, 1], 10); A.sfx('select'); }
+    }
+    L.x += (tx - L.x) * 0.07 * k; L.y += (ty - L.y) * 0.09 * Math.min(k, 3.2); fx.lantern = { x: L.x, y: L.y };
+    const fl = Math.min(1, (this.lanFlare || 0) / 40), low = this.S.hp <= Math.max(2, this.S.maxHp * 0.25) ? 0.5 + 0.5 * Math.sin(this.t * 0.9) * Math.sin(this.t * 0.37) : 1;      // (low life: she gutters)
+    this.sighT = (this.sighT || 0) + 1; if (this.sighT > 900 + (this.t * 7 % 400)) this.sighT = -80; const sigh = this.sighT < 0 ? Math.sin(Math.PI * (this.sighT + 80) / 80) : 0;
+    if (sigh > 0.9 && this.sighT % 6 === 0) fx.emit({ x: L.x + rand(-4, 4), y: L.y, vx: rand(-0.2, 0.2), vy: rand(-0.3, -0.1), life: rand(40, 70), s0: 4, s1: 1, c0: [1, 0.8, 0.85], c1: [0.8, 0.5, 0.7], a0: 0.8, a1: 0, kind: 6 });
+    const rose = sigh * 0.6;
+    fx.glow(L.x, L.y, 30 + 14 * fl + 8 * sigh, [0.3 + rose * 0.7, 0.55 - rose * 0.1, 1 - rose * 0.2], (0.34 + 0.3 * fl + 0.2 * sigh) * low); fx.glow(L.x, L.y, 12 + 4 * fl, [0.62 + rose * 0.38, 0.8 - rose * 0.1, 1], 0.7 * low); fx.glow(L.x, L.y, 4.5, [1, 1, 1], 1 * low); fx.light(L.x, L.y, (118 + 30 * fl + 14 * sigh) * (0.7 + 0.3 * low), 0.9 + 0.3 * fl, [0.4 + rose * 0.5, 0.66, 1 - rose * 0.1]);
     if (this.t % 4 === 0) fx.emit({ x: L.x + rand(-2, 2), y: L.y + 2, vx: rand(-0.1, 0.1), vy: rand(0.05, 0.3), life: rand(24, 44), s0: 5, s1: 1, c0: [0.6, 0.8, 1], c1: [0.25, 0.4, 0.8], a0: 0.8, a1: 0, kind: 6 });
+    // the veil: her last positions, drawn as a fading thread of tiny lights that sways (like hair in water)
+    L.trail ||= []; if (this.t % 2 === 0) { L.trail.unshift({ x: L.x, y: L.y }); if (L.trail.length > 9) L.trail.pop(); }
+    L.trail.forEach((q, i) => { if (i < 1) return; const f = 1 - i / L.trail.length; fx.glow(q.x + Math.sin(this.t * 0.08 + i * 0.8) * i * 0.5, q.y + i * 1.2, 3.2 * f + 1, [0.55, 0.72, 1], 0.32 * f * low); });
   }
 
   // ------------------------------------------------------------------ cloak stains (see stain.js)
@@ -357,11 +364,6 @@ export class Player extends Entity {
     const X0 = Math.round(-s.w * s.ax) + s.dx * (flip ? -1 : 1), Y0 = Math.round(-s.h * ay) + s.dy;
     return { fi, rest: (sx, sy) => [flip ? tx - X0 - sx : tx + X0 + sx, ty + Y0 + sy] };
   }
-  // his hair is simulated every step (see hair.js); the picture it is cut from depends on the animation frame
-  stepHair() {
-    const sp = this.spritePoint(); if (!sp) return; const boxes = hairBox(sp.fi.sheet), f = ((Math.floor(sp.fi.f) % SHEET[sp.fi.sheet].n) + SHEET[sp.fi.sheet].n) % SHEET[sp.fi.sheet].n;
-    this.hair.step({ box: boxes && boxes[f], rest: sp.rest, vx: this.vx, vy: this.vy, dir: this.dir });
-  }
   // The hero's silhouette for the frame being drawn: row (world y) -> { back, front } = world x of the sprite's back / front edge on that row, or null.
   // (mirrors exactly what drawSheet does with the frame: anchor, flip, jump-frame offset)
   silhouette() {
@@ -382,7 +384,6 @@ export class Player extends Entity {
     const sid = suf && SHEET[base + suf] ? base + suf : base;       // enchanted variants recolor the slash arc
     const jump = fi.cy !== undefined, yy = jump ? y - this.h / 2 + 1 : y, extra = jump ? { ay: fi.cy / fi.ch } : {};
     drawSheet(ctx, sid, fi.f, x, yy, { dir, ...extra, ...o });
-    if (!A.settings.hair || o.flash || o.noFx) drawSheet(ctx, fi.sheet + '_hair', fi.f, x, yy, { dir, ...extra, ...o });                   // 3D Hair off (or a flash / an afterimage): the loose hair as a still picture
     if (cw && !o.flash && !o.noFx) for (const k of STAIN_KEYS) {       // stains on the sprite's mantle: its cape-only mask, tinted, laid over it
       const a = this.stain[k]; if (a > 0.02) drawSheet(ctx, fi.sheet + '_cwm', fi.f, x, yy, { dir, ...extra, flash: STAINS[k].color, alpha: (o.alpha !== undefined ? o.alpha : 1) * Math.min(0.6, a * 0.65) });
     }
@@ -394,8 +395,6 @@ export class Player extends Entity {
     if (this.onGround) { ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(Math.round(x - 7), Math.round(y - 1), 14, 2); }     // soft shadow
     const cl = this.g.fx.cloak; if (cl && A.settings.cloak) cl.draw(ctx, cx, cy, this.dead ? Math.max(0, 1 - Math.max(0, this.deathT - 60) / 60) : 1);       // the cloak hangs BEHIND the hero
     this.drawFrame(ctx, this.frameInfo(), x, y, this.dir, this.dead ? { alpha: Math.max(0, 1 - Math.max(0, this.deathT - 60) / 60) } : {});
-    if (A.settings.hair) { const fi = this.frameInfo(), hs = SHEET[fi.sheet + '_hair']; if (hs) { const f = ((Math.floor(fi.f) % hs.n) + hs.n) % hs.n; this.hair.draw(ctx, cx, cy, hs.img, f * hs.w, 0, this.dead ? Math.max(0, 1 - Math.max(0, this.deathT - 60) / 60) : 1); } }          // his hair: over the head
     ctx.globalAlpha = 1;
-    const E = this.ench; if (E && E.shield > 0) drawShield(ctx, x, y, this.t, E.shield < 180);
   }
 }

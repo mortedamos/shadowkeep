@@ -139,6 +139,14 @@ export function groundScenery(def) {
 export function tidyRoom(def) {
   if (def.tidied) return; def.tidied = true;
   groundScenery(def);
+  // no scenery in front of a door (carts, wells, lamps, signs, braziers...): a door must always be seen
+  def.decos = def.decos.filter(d => { if (!(d.t === 'img' || d.t === 'brazier') || (d.t === 'img' && d.back)) return true; return !(def.doors || []).some(o => Math.abs(d.x - (o.x * 16 + 8)) < 30 && d.y > o.gy * 16 - 74 && d.y < o.gy * 16 + 8); });
+  // a flame is drawn in the effects layer, ABOVE the whole scene: so nothing that stands in front of a brazier or candelabra (a crate, a barrel, a cart) may stand near it, or it looks as if the crate were burning
+  { const flames = def.decos.filter(d => d.t === 'brazier' || d.t === 'cdl');
+    if (flames.length) {
+      def.spawns = def.spawns.filter(s => !(s.type === 'barrel' || s.type === 'statue') || !flames.some(f => Math.abs(f.x - (s.x * 16 + 8)) < 48 && Math.abs(f.y - s.y * 16) < 44));
+      def.decos = def.decos.filter(d => !(d.t === 'img' && !d.back && /crate|barrel|cart/.test(d.img || '') && flames.some(f => Math.abs(f.x - d.x) < 48 && Math.abs(f.y - d.y) < 44)));
+    } }
   if (def.boss || def.spawns.some(s => s.type.startsWith('boss_'))) def.spawns = def.spawns.filter(s => s.type !== 'statue');
   const W = def.w, H = def.h, T = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? 1 : def.tiles[y * W + x]), floor = (x, y) => { const v = T(x, y); return (v === TILE.SOLID || v === TILE.PLAT) && T(x, y - 1) === 0 && T(x, y - 2) === 0 && T(x, y - 3) === 0; };
   const spare = (x, y, type, self) => { const b = PROP_BOX[type]; return !(def.doors || []).some(d => hidesDoor({ type, x, y }, d) || (Math.abs(d.gy - y) <= 3 && Math.abs((x - d.x) * 16) < b[0] + DOOR_HW + 6)) && !def.spawns.some(o => o !== self && Math.abs(o.y - y) <= 3 && Math.abs(o.x - x) < 2 && (PROP_BOX[o.type] || o.type === 'altar' || o.type === 'waystone' || o.type === 'itemspawn' || o.type === 'upgrade')); };

@@ -126,6 +126,57 @@ void main(){
   gl_FragColor = vec4(col*d, d);
 }`;
 
+// ---------------------------------------------------------------- water
+// Every stream and waterfall of the room is one rectangle in a single full-screen pass (like the fog): uR = [x0, y0, x1, y1] in the world, uQ = [type (0 a stream along the floor, 1 a waterfall), speed in
+// px/s (a stream's sign is its direction), seed].  A stream is a shallow channel with a wavering surface, drifting ripples and streaks of foam; a fall is a sheet with streaks racing down it, foam
+// along its edges and a mist where it lands.  All patterns are carried along WITH the water, so the water looks like it flows rather than like lines painted on the screen.
+const WATERFRAG = /* glsl */`
+precision highp float; varying vec2 vUv;
+uniform vec2 uCam; uniform vec2 uRes; uniform float uTime; uniform int uN; uniform vec4 uR[10]; uniform vec4 uQ[10];
+float h21(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+float vn(vec2 p){ vec2 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f); return mix(mix(h21(i),h21(i+vec2(1.0,0.0)),f.x),mix(h21(i+vec2(0.0,1.0)),h21(i+vec2(1.0,1.0)),f.x),f.y); }
+float fbm(vec2 p){ float a=0.5, s=0.0; for(int i=0;i<4;i++){ s+=a*vn(p); p=p*2.03+vec2(17.0,9.0); a*=0.5; } return s; }
+void main(){
+  vec2 w = uCam + vec2(vUv.x*uRes.x, vUv.y*uRes.y);
+  vec4 acc = vec4(0.0);
+  for(int i=0;i<10;i++){
+    if(i>=uN) break;
+    vec4 r=uR[i]; vec4 q=uQ[i];
+    if(w.x < r.x-6.0 || w.x > r.z+6.0 || w.y < r.y-30.0 || w.y > r.w+30.0) continue;
+    float wd=r.z-r.x, ht=r.w-r.y, px=w.x-r.x, py=w.y-r.y, v=q.y; vec3 col=vec3(0.0); float a=0.0;
+    if(q.x < 0.5){
+      float xs = w.x - v*uTime;                                                    // the water's own x: everything below moves with it
+      float surf = 1.1*sin(xs*0.23 + q.z) + 0.8*sin(xs*0.51 + q.z*2.0 + uTime*1.3);
+      float inside = smoothstep(-0.6, 0.9, py - surf) * step(py, ht + 0.5) * step(0.0, px) * step(px, wd);
+      float dpt = clamp((py - surf)/ht, 0.0, 1.0);
+      float n = fbm(vec2(xs*0.07 + q.z, py*0.22));
+      float streak = smoothstep(0.56, 0.86, fbm(vec2(xs*0.05 + q.z*1.7, py*0.45 + uTime*0.25)));
+      col = mix(vec3(0.50,0.78,0.88), vec3(0.09,0.26,0.40), dpt) + vec3(0.55,0.75,0.8)*streak*0.55 + vec3(0.18)*(n-0.4);
+      a = inside*(0.42 + 0.26*dpt);
+      float line = smoothstep(1.8, 0.0, abs(py - surf - 0.7)) * step(0.0, px) * step(px, wd);
+      col = mix(col, vec3(0.92,0.99,1.0), line*0.85); a = max(a, line*0.8);
+      float foam = (smoothstep(6.0,0.0,px) + smoothstep(6.0,0.0,wd-px)) * inside * (0.5 + 0.5*n);
+      col = mix(col, vec3(0.94,0.99,1.0), clamp(foam,0.0,1.0)*0.6); a = max(a, foam*0.5);
+    } else {
+      float edge = smoothstep(0.0,2.5,px)*smoothstep(0.0,2.5,wd-px);
+      float inside = edge*step(0.0,py)*step(py,ht);
+      float ys = w.y - v*uTime;                                                    // falling with the water
+      float s1 = fbm(vec2(px*0.5 + q.z, ys*0.05));
+      float s2 = fbm(vec2(px*1.25 + q.z*3.0, ys*0.1));
+      float streak = smoothstep(0.34, 0.8, s1*0.6 + s2*0.5);
+      col = mix(vec3(0.34,0.60,0.74), vec3(0.88,0.97,1.0), streak);
+      a = inside*(0.28 + 0.36*streak)*smoothstep(0.0,20.0,py);
+      float fe = (smoothstep(4.0,0.0,px)+smoothstep(4.0,0.0,wd-px)) * step(0.5, fbm(vec2(ys*0.13, px*0.3+q.z)));
+      col = mix(col, vec3(1.0), clamp(fe,0.0,1.0)*0.7); a = max(a, inside*fe*0.6);
+      float mx = (w.x-(r.x+r.z)*0.5)/(wd*0.5+12.0), my = (r.w-w.y)/24.0;
+      float mist = smoothstep(1.0, 0.0, length(vec2(mx, my*1.2))) * step(-0.4, my) * (0.55 + 0.45*fbm(vec2(w.x*0.09 + uTime*0.4, w.y*0.09 - uTime*0.3)));
+      col = mix(col, vec3(0.9,0.98,1.0), clamp(mist,0.0,1.0)*0.6); a = max(a, mist*0.5);
+    }
+    acc.rgb += col*a*(1.0-acc.a); acc.a += a*(1.0-acc.a);
+  }
+  gl_FragColor = acc;
+}`;
+
 // ---------------------------------------------------------------- particle storage
 const STR = 24; // floats per particle
 const [X, Y, VX, VY, GX, GY, DRAG, LIFE, MAXL, S0, S1, R0, G0, B0, R1, G1, B1, A0, A1, KIND, ROT, VROT] = Array.from({ length: 22 }, (_, i) => i);
@@ -265,6 +316,9 @@ export class FX {
       uG: { value: Array.from({ length: 6 }, () => new THREE.Vector4()) }, uGP: { value: Array.from({ length: 6 }, () => new THREE.Vector2(1, 0)) }, uW: { value: Array.from({ length: 6 }, () => new THREE.Vector4(0, 0, 1, 0)) } };
     this.fogMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.ShaderMaterial({ vertexShader: QVERT, fragmentShader: FOGFRAG, uniforms: this.fogU, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, ...NORMAL_PM }));
     this.fogMesh.renderOrder = -2; this.fogMesh.frustumCulled = false; this.fogMesh.visible = false; this.scene.add(this.fogMesh);
+    this.waterU = { uCam: { value: new THREE.Vector2() }, uRes: { value: new THREE.Vector2(W, H) }, uTime: { value: 0 }, uN: { value: 0 }, uR: { value: Array.from({ length: 10 }, () => new THREE.Vector4()) }, uQ: { value: Array.from({ length: 10 }, () => new THREE.Vector4()) } };
+    this.waterMesh = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.ShaderMaterial({ vertexShader: QVERT, fragmentShader: WATERFRAG, uniforms: this.waterU, transparent: true, depthTest: false, depthWrite: false, side: THREE.DoubleSide, ...NORMAL_PM }));
+    this.waterMesh.renderOrder = -3; this.waterMesh.frustumCulled = false; this.waterMesh.visible = false; this.scene.add(this.waterMesh);
     this.gusts = [];                              // bursts of moving air (see gust())
     this.wisps = new Wisps(this);                  // will-o'-the-wisps (see Wisps)
     this.focus = null;                              // the hero's position {x, y}: wisps will not let it come near
@@ -280,12 +334,19 @@ export class FX {
 
   // wipe everything (used when changing rooms)
   reset() {
+    this.waterU.uN.value = 0; this.waterMesh.visible = false;
     this.add.n = 0; this.alpha.n = 0; this.gusts.length = 0; this.wisps.set(0); this.lights.length = 0; this.pendingThunder.length = 0; this.flashA = 0; this.hurt = 0;
     for (const q of this.quads) { q.m.visible = false; this.quadPool.push(q.m); } this.quads.length = 0;
     for (const b of this.bolts) { for (const m of b.parts) { this.scene.remove(m); m.material.dispose(); } for (const g of b.geos) g.dispose(); } this.bolts.length = 0;
   }
 
-  setCamera(x, y) { this.camX = x; this.camY = y; this.cam.position.x = x + this.shakeX; this.cam.position.y = y + this.shakeY; this.darkMesh.position.set(x + W / 2 + this.shakeX, y + H / 2 + this.shakeY, -1); this.fogMesh.position.set(x + W / 2 + this.shakeX, y + H / 2 + this.shakeY, -1); this.flashMesh.position.set(x + W / 2, y + H / 2, 0); }
+  // the room's water: [{ type: 0 stream | 1 fall, x0, y0, x1, y1 (world px), v (px/s, signed for a stream) }]
+  setWater(list) {
+    const u = this.waterU, n = Math.min(10, list.length); u.uN.value = n;
+    for (let i = 0; i < n; i++) { const o = list[i]; u.uR.value[i].set(o.x0, o.y0, o.x1, o.y1); u.uQ.value[i].set(o.type, o.v, (Math.abs(o.x0 * 0.137) % 6.28), 0); }
+    this.waterMesh.visible = n > 0;
+  }
+  setCamera(x, y) { this.camX = x; this.camY = y; this.cam.position.x = x + this.shakeX; this.cam.position.y = y + this.shakeY; this.darkMesh.position.set(x + W / 2 + this.shakeX, y + H / 2 + this.shakeY, -1); this.fogMesh.position.set(x + W / 2 + this.shakeX, y + H / 2 + this.shakeY, -1); this.waterMesh.position.set(x + W / 2 + this.shakeX, y + H / 2 + this.shakeY, -1); this.flashMesh.position.set(x + W / 2, y + H / 2, 0); }
   setShake(sx, sy) { this.shakeX = sx; this.shakeY = sy; }
 
   // ------------------------------------------------------------ quads
@@ -467,6 +528,7 @@ export class FX {
         for (let i = 0; i < 6; i++) { const wf = this.wisps.fog(i); F.uW.value[i].set(wf[0], wf[1], wf[2], wf[3]); }
         if (this.lantern) F.uW.value[5].set(this.lantern.x, this.lantern.y, 150, 0.92);          // (the Marshlight Lantern's wisp)
         for (let i = 0; i < 6; i++) { const g = this.gusts[i]; if (g) { F.uG.value[i].set(g.x, g.y, g.vx, g.vy); F.uGP.value[i].set(g.r, g.k); } else { F.uG.value[i].set(0, 0, 0, 0); F.uGP.value[i].set(1, 0); } } } }
+    if (this.waterMesh.visible) { this.waterU.uCam.value.set(this.camX + this.shakeX, this.camY + this.shakeY); this.waterU.uTime.value = this.time; }
     this.add.mat.uniforms.uTime.value = this.time; this.alpha.mat.uniforms.uTime.value = this.time;
     this.add.upload(); this.alpha.upload();
     for (const q of this.quads) {

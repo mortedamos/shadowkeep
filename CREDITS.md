@@ -49,6 +49,8 @@ Not used right now. The pack ships without a formal license file; see `assets/ar
 | the Prague astronomical clock picture (`assets/sprites/source/orloj.png`, supplied by the project owner; pixelated into `assets/env/orloj.png` by `tools/pixelate-orloj.ps1`) | unknown (a photograph of the Prague Orloj) | **free to use** - confirmed by the project owner (no licence file; the original author is not recorded) |
 | the Prague Orloj tower photograph (`assets/sprites/source/orloj_tower.png`, supplied by the project owner; only the calendar dial is cut out of it, pixelated into `assets/env/orloj_calendar.png` by `tools/pixelate-orloj-calendar.ps1`; the rest of the street tower is drawn in code, `src/orlojtower.js`) | the project owner | **the owner's own photograph** - free to use |
 | [Animated Gears - Pixel Art Steampunk Machinery](https://heosphorus.itch.io/animated-gears) (heosphorus, itch.io; free) - five of its ten gear animations, packed into strips `assets/env/gear_*.png` by `tools/pack-gears.ps1`: faded, slowly turning accents behind the generated gears of the Orloj Tower and the Clockwork Dungeon | heosphorus | free to use **with attribution** (confirmed by the project owner); the original zip stays in `assets/sprites/source/` |
+| [Candelabra](https://freegamesprites.com/en/assets/candelabra) and [Candelabra Stand](https://freegamesprites.com/en/assets/candelabra-stand) (FreeGameSprites.com, 256x256) | CC0 (per their pages) | the room candelabras `assets/env/cdl_a.png` / `cdl_b.png`: trimmed, shrunk and with their painted flames removed by `tools/pixelate-candelabra.ps1` (the flames are drawn by three.js); originals in `assets/source/freegamesprites/` |
+| [Sign Post](https://freegamesprites.com/en/assets/sign-post) (FreeGameSprites.com, 256x256) | CC0 (per its page) | the wooden signposts at the crossroads and the doors, `assets/env/signpost.png` (trimmed and shrunk by `tools/pixelate-sprite.ps1`; original in `assets/source/freegamesprites/`) |
 | Metroidvania Kit (in `assets/sprites/source/`) | CC0 (per its page) | not used yet |
 | xxg_4_free (vampire character sheet) | xxg | **no licence file came with the download - confirm the terms with the author before a public release** | the Crimson Count (the boss of the Crypts's crypt); the painted sheet is cut into strips and scaled down by the build step |
 | Pixel Platformer Set 1 | Szadi art | public domain - may be edited, but the pack may not be sold | the sickle-fighter **zealot** and the sparkling diamond |
@@ -74,6 +76,7 @@ The game does not ship the full-size pictures: `tools/pixelate-portraits.ps1` sh
 | Font | Used for | Source |
 |---|---|---|
 | **Pirata One** (Rodrigo Fuenzalida, Nicolas Massi) | the logo, banners, menus, HUD and floating text | https://fonts.google.com/specimen/Pirata+One |
+| **Elementary Gothic Bookhand** (`Elementary_Gothic_Bookhand.ttf`, (c) 2012 Bill Roach, SIL OFL 1.1; licence in `assets/credits/`) | the Stranger's own voice in dialogue and boss exchanges (in mixed case) | supplied by the project owner |
 | **Almendra Bold** (Ana Sanfelippo) | dialogue, boss exchanges and descriptive text | https://fonts.google.com/specimen/Almendra |
 
 The font files are in `assets/fonts/`; the licenses are in `assets/credits/license-pirata-one-OFL.txt` and `license-almendra-OFL.txt`.
